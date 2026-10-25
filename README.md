@@ -1,5 +1,7 @@
 # moonbase skill
 
+`v1.0.0`
+
 Teach any AI assistant to deploy and manage apps on [moonbase](https://moonbase.cloud) — the hosting platform for apps built with AI.
 
 Ask your AI *"deploy this to moonbase"* and it ships your project to a live HTTPS URL in minutes. This repo is the open guide that makes that work across tools, plus ready-to-use config files for each one.
