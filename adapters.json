@@ -1,0 +1,61 @@
+{
+  "$comment": "Which moonbase Skill file goes with which tool. skill/build.mjs writes each file from skill/moonbase/; the /skill page renders this table. Edit here, then run skill/package.sh.",
+  "adapters": [
+    {
+      "id": "skill",
+      "tools": "Claude, Claude Code (Anthropic skills)",
+      "kitPath": "moonbase/",
+      "download": "/api/skill/moonbase",
+      "use": "Claude Code: put the moonbase/ folder in .claude/skills/. Claude apps: upload moonbase.skill as a custom skill."
+    },
+    {
+      "id": "agents",
+      "tools": "Codex CLI, Cursor, Windsurf, Cline, Gemini CLI, Copilot agent mode and other tools that read AGENTS.md",
+      "kitPath": "AGENTS.md",
+      "download": "/skill/files/AGENTS.md",
+      "use": "Put AGENTS.md in your project's root folder (or add its text to the one you have). Short instructions (about 6 KB, loaded every session) that point to the full guide, read on demand."
+    },
+    {
+      "id": "cursor",
+      "tools": "Cursor",
+      "kitPath": ".cursor/rules/moonbase.mdc",
+      "download": "/skill/files/moonbase.mdc",
+      "use": "Save as .cursor/rules/moonbase.mdc in your project. The full guide (about 70 KB), loaded only when the conversation is about hosting or moonbase."
+    },
+    {
+      "id": "claude-md",
+      "tools": "Claude Code (project memory)",
+      "kitPath": "CLAUDE.md",
+      "download": "/skill/files/CLAUDE-snippet.md",
+      "use": "Paste into your project's CLAUDE.md (about 6 KB). It points Claude Code to the full guide, read on demand; put moonbase-guide.md in the project too to read it offline."
+    },
+    {
+      "id": "copilot",
+      "tools": "GitHub Copilot",
+      "kitPath": ".github/copilot-instructions.md",
+      "download": "/skill/files/copilot-instructions.md",
+      "use": "Save as .github/copilot-instructions.md in your repository (or add its text to yours). Short instructions (about 6 KB, loaded every session) that point to the full guide, read on demand."
+    },
+    {
+      "id": "chatgpt",
+      "tools": "ChatGPT (Custom GPT)",
+      "kitPath": "chatgpt/instructions.txt",
+      "download": "/skill/files/chatgpt-instructions.txt",
+      "use": "Create a GPT: paste instructions.txt into Instructions and upload moonbase-guide.md under Knowledge."
+    },
+    {
+      "id": "gemini",
+      "tools": "Gemini (Gem)",
+      "kitPath": "gemini/gem-instructions.md",
+      "download": "/skill/files/gemini-gem-instructions.md",
+      "use": "Create a Gem: paste gem-instructions.md into its instructions and add moonbase-guide.md as a knowledge file."
+    },
+    {
+      "id": "guide",
+      "tools": "Any other AI chat",
+      "kitPath": "moonbase-guide.md",
+      "download": "/api/skill",
+      "use": "Attach moonbase-guide.md, or paste it as your first message."
+    }
+  ]
+}
