@@ -2,9 +2,11 @@
 
 `r16`
 
-Teach any AI assistant to deploy and manage apps on [moonbase](https://moonbase.cloud) — the hosting platform for apps built with AI.
+**What it is** — the moonbase skill teaches any AI coding agent to deploy and manage apps on moonbase, the hosting platform for apps built with AI, so asking it to deploy ships your project to a live HTTPS URL in one step.
+**Install it** — download the file for your tool from `dist/` (or drop the whole `moonbase/` skill into a Claude-compatible assistant), or just hand this repo to your agent and let it read the skill.
+**Example prompt** — *"Deploy this project to moonbase and give me the link."*
 
-Ask your AI *"deploy this to moonbase"* and it ships your project to a live HTTPS URL in minutes. This repo is the open guide that makes that work across tools, plus ready-to-use config files for each one.
+### → [moonbase.cloud](https://moonbase.cloud)
 
 ## What's here
 
