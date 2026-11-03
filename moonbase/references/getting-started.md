@@ -69,7 +69,10 @@ Steps:
 6. *You'll see "Your mission is live" (or "<name> is online").* Click
    **Open project** to see it, or **Go to mission control** to manage it.
 
-That link works for anyone, right now. Tell the user to share it.
+That link works for anyone, right now. Tell the user to share it. This
+`<address>.moonbase.host` link is automatic — the mission is live on it with
+HTTPS the moment it deploys. A custom domain is an optional, later step
+(`custom-domains.md`), set up only after the mission already exists.
 
 ### If moonbase asks a question during the launch
 
@@ -84,8 +87,11 @@ Sometimes moonbase finds something it wants to fix that needs the user's OK
 ### If it fails
 
 The console shows the first problem and an **Error ID** (`TRK-…`). Click
-**Copy Error ID** and keep it. Then open `troubleshooting.md`. A failed deploy
-never takes a mission offline: the previous version keeps working.
+**Copy Error ID** and keep it. Then open `troubleshooting.md`. This is a first
+deploy, so nothing is live yet — fixing the error and uploading again is all
+that's needed; you're not taking anything down. (Once a mission has a working
+version, a later failed deploy never replaces it — the live version keeps
+serving.)
 
 ## What the user has now
 

@@ -1,7 +1,11 @@
 # Troubleshooting
 
-First rule: **a failed deploy never takes a mission offline.** The previous
-version keeps serving. Stay calm, and tell the user that.
+First rule: **a failed deploy never takes a working mission offline.** If the
+mission already had a live version, that version keeps serving while you fix
+the new one — stay calm and tell the user that. On a **first** deploy it's
+different: there's no earlier version to fall back to, so a failed first deploy
+means the mission isn't up yet. Don't reassure the user that "the old version
+is still live" when there isn't one.
 
 Second rule: read moonbase's own message first. Every failure shows a plain
 title, an explanation, a next step and a **TRK-ID** (`TRK-…`, also called
@@ -13,17 +17,55 @@ delete a mission to "start fresh".
 1. Read the first red line in the deploy console, and copy the **Error ID**
    (**Copy Error ID**).
 2. Find its title or code in the table below and do what it says.
-3. If it's a build problem, check on your own computer:
-   `npm install && npm run build && npm start`. If it fails there, fix it
-   there first.
-4. Check the usual suspects: the app listens on `PORT`, `package.json` has a
-   production `start` script, every environment variable it needs is set.
-   (See `building-for-moonbase.md`.)
+3. If it's a build problem, reproduce it on your own computer **the way your
+   app is built** — if it fails there, fix it there first:
+   - **Node / JS:** `npm install && npm run build && npm start`.
+   - **Python:** `pip install -r requirements.txt`, then start it the way
+     moonbase will — `gunicorn app:app` (WSGI) or `uvicorn main:app` (ASGI).
+4. Check the usual suspects **for your stack**: the app listens on `PORT`;
+   **Node** has a production `start` script in `package.json`; **Python**
+   exposes a top-level app object and lists every dependency in
+   `requirements.txt`; every environment variable it needs is set. (See
+   `building-for-moonbase.md`.)
 5. Deploy a new version. Still stuck? Send the TRK-ID to support.
 
 Common console lines: "npm install failed" (a dependency problem), "npm run
 build failed" (a build error in the code), "Port not bound" (the app isn't
 listening on `PORT`), "Container exited" (the app crashed when starting).
+
+### When the build itself fails (the raw message)
+
+A build crash comes back as an `error` event whose raw `message` starts with
+`docker_build_failed:exit=1`, followed by the real cause. The code is a plain
+build failure (not a setup code from the table below); read the tail:
+
+Every build or container-start failure carries a **stable `friendly.code`**
+(branch on it, not on the wording) and often a `friendly.culprit` naming the
+exact token at fault. The full code list and its retry classification live in
+`api-and-ci.md` ("Build logs and build failures") — the single source of truth
+for which codes exist and which are retryable; the fix per code is in the
+tables on this page. The common tails:
+
+| Tail of the message | What it is → fix |
+|---|---|
+| `npm error` / `ETARGET` / `ERESOLVE` | Node dependency or version clash. Run `npm install` locally, fix the pin, redeploy. |
+| `npm run build` error | A real build error in the code. Reproduce with `npm run build` locally and fix it. |
+| "Unsupported engine" / "EBADENGINE" | The project pins a Node version moonbase's image doesn't provide. Widen `engines.node` in `package.json` to a current LTS. |
+| `Missing script: "start"` | No production `start` script. Add one to `package.json` (e.g. `node server.js`). |
+| `pip` / "Could not find a version" / "No matching distribution" | Python dependency: a package with no Linux wheel, a bad pin, or a `-r`/`-c` reference that isn't at the project root. See the Python contract in `building-for-moonbase.md`. |
+| "ResolutionImpossible" / "conflicting dependencies" | Two Python pins demand incompatible versions. Align the pins in `requirements.txt`. |
+| "Could not open requirements file" | A `-r`/`-c` file referenced from `requirements.txt` wasn't included. Ship it, or drop the line. |
+| "ModuleNotFoundError" at start | A dependency the app imports is missing from `requirements.txt` (or `package.json`). Add it and redeploy. |
+| "could not connect to server" / "Connection refused" to a DB port | The app couldn't reach its database (missions can reach a database directly now). Check the host, port and credentials; set the connection string in Mission Control → Environment Variables. |
+| "KeyError" / "environment variable … not set" | A required environment variable isn't set. Set it in Mission Control → Environment Variables, then deploy a new version. |
+
+Node build steps stream as `build_log` lines while they run; Python build
+output isn't streamed, so for a Python failure the `message` on the `error`
+event is the diagnosis. Read it yourself; show the user `friendly.*`, and if
+you share a log excerpt, redact and bound it first (`api-and-ci.md`). There's
+no way to fetch the full build log once the stream closes — keep the **TRK-ID**
+and give it to support to read the full log. (`api-and-ci.md`, "Build logs and
+build failures", has the detail.)
 
 ## "It deployed but the page is blank or broken"
 
@@ -32,6 +74,20 @@ Usually inside the app, not the deploy:
   address, upload a new version;
 - a needed environment variable is empty: set it in Mission Control →
   Environment Variables, then **Deploy new version**.
+
+## "It says deployed, but not ready"
+
+The deploy landed and the app answered its readiness check with "not ready" (the
+deploy result shows `app_ready: false`; the status endpoint shows
+`"deployed_not_ready"` and `appReady: false`). It is **not** a failed deploy and
+you should **not** upload again. It usually means the app still needs
+configuration (a missing environment variable or secret) or is warming up:
+- set what it needs in Mission Control → Environment Variables, then **Deploy new
+  version** only if the app needs a restart to read it;
+- check the app's readiness endpoint (`/readyz` by default, or the path in
+  `MOONBASE_READINESS_PATH`) returns 2xx once it is configured;
+- poll the status endpoint: it re-checks readiness and flips to `live` when the
+  app answers ready.
 
 ## "My mission is offline"
 
@@ -98,8 +154,11 @@ safe to try again after waiting.
 | `no_html_or_package_json_found` | We couldn't find anything to launch | No `index.html` or `package.json` anywhere. Add one. |
 | `no_html_found` | No HTML found | Looks static but has no `.html` file. Include one. |
 | `classification_error` | We couldn't read this upload | moonbase couldn't work out how to deploy it. Contact support with the TRK-ID. |
-| `python_runtime_not_supported` | Python isn't supported yet | Python isn't supported. Deploy a static export instead. |
-| `framework_unsupported:<framework>` | Framework not supported yet | Recognised framework moonbase can't build yet (e.g. Astro, SvelteKit, Vue, Nuxt). Deploy a static build. |
+| `python_entrypoint_not_detected` | We couldn't find your Python app's entry point | Python web apps deploy now, but moonbase needs a standard app object — a top-level `app = Flask(__name__)`, `app = FastAPI()`, or a Django `manage.py` + `wsgi.py`. Add one and re-upload. |
+| `python_runtime_not_supported` | Python isn't supported yet | Legacy code — Python web apps now deploy (see `python_entrypoint_not_detected` above and `building-for-moonbase.md`). A current upload won't return this. |
+| `framework_unsupported:<framework>` | Framework not supported yet | A recognised framework moonbase can't build yet (a backend language, or a framework not on the supported list). Deploy a static build. |
+| `astro_ssr_not_supported` | Astro SSR isn't supported yet | Astro deploys its **static** output in v1. Remove the SSR adapter / set `output: 'static'` so `astro build` produces `dist/`, then re-upload. |
+| `sveltekit_adapter_node_required` | SvelteKit needs the Node adapter | moonbase runs SvelteKit with `@sveltejs/adapter-node`. Switch `svelte.config.js` to that adapter and re-upload. |
 | `hardcoded_secret_detected` | Possible secret found in your upload | A key or password is in the files. Remove it, use environment variables, upload again. |
 | `malware_detected` | Upload blocked — malware detected | Something harmful was found. Remove it; false positive? Contact support with the TRK-ID. |
 | `scanner_unavailable` | Upload paused — scanner temporarily unavailable | Retry ✓ in a few minutes. |
@@ -127,7 +186,9 @@ safe to try again after waiting.
 | `weight_overage` | Storage upgrade needed | Would pass the free storage. Upgrade or free up storage. |
 | `upgrade_required` | Upgrade required | This needs a paid plan. Upgrade. |
 
-The `message` always states the exact limit; pass it on.
+Show the exact limit from the **structured fields** (`reason`, and
+`limit`/`current`/`max` where present), not by quoting the raw `message` (see
+`api-and-ci.md`, "Build logs and build failures").
 
 ### Timing and approvals
 
@@ -152,8 +213,8 @@ it in Mission Control → **Password protection** (`mission-control.md`).
 
 | Code | Title | What it means → what to do |
 |---|---|---|
-| `internal` | Something went wrong | Retry ✓ once. Keeps happening? Support with the TRK-ID. |
-| `service_draining` | | moonbase is restarting. Retry ✓ in a few seconds. |
+| `internal` | Something went wrong | Retry ✓ under the one retry policy (`api-and-ci.md`): bounded attempts, honour any `Retry-After`. Keeps happening? Support with the TRK-ID. |
+| `service_draining` | | moonbase is restarting. Retry ✓ under the same bounded policy (wait the server's delay first). |
 
 ## When nothing here fits
 

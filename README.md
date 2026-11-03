@@ -1,6 +1,6 @@
 # moonbase skill
 
-`v1.0.0`
+`r16`
 
 Teach any AI assistant to deploy and manage apps on [moonbase](https://moonbase.cloud) — the hosting platform for apps built with AI.
 

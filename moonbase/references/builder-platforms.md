@@ -36,7 +36,7 @@ Be honest about two things:
 | Lovable | Vite / React | Detected automatically; usually live within a minute or two. |
 | Bolt | Usually Vite-based | If an unusual setup fails, the deploy console shows the exact step. |
 | v0 | Next.js | Deployed as a dynamic (server-rendered) mission. Set its API keys as environment variables. A monorepo layout or unusual build script may need fixing. |
-| Replit | Depends on the project | Node and static projects can deploy. Python projects (common on Replit) aren't supported (`python_runtime_not_supported`). |
+| Replit | Depends on the project | Node and static projects deploy. Python web apps (Flask/Django/FastAPI) deploy too when they expose a standard WSGI/ASGI app object and a `requirements.txt`; one with no startable app is rejected (`python_entrypoint_not_detected`). |
 
 ## Updating later
 

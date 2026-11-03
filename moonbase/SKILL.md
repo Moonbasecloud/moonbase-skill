@@ -18,6 +18,20 @@ description: >-
 # moonbase: your guide
 
 <!--
+  Bundle revision: r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
+  real URL/IDNA parser (node), not just Punycode decoding). Before that, r15 (Codex r14 review 2026-11-01 — R14-01 a deployed-but-not-ready
+  `done` (app_ready:false) is its own outcome, exit 3, not Live; R14-02 an xn--
+  label must really decode as Punycode; R14-03 a malformed/non-object JSON
+  refusal is UNKNOWN, checked after transport+status). Before that, r14 (Codex r13 review 2026-11-01 — R13-01 the live-URL host
+  must match the real DNS hostname grammar moonbase emits (alphabetic TLD, no
+  IP/numeric/hex hosts) instead of blacklist patches, R13-02 a non-object
+  done/error frame is UNKNOWN not a jq failure). Before that, r13 (R12-01
+  CI vendors BOTH
+  helpers + a preflight so a missing file/tool fails before the upload, R12-02
+  reject numeric/IPv4-looking hosts with bad octets, R12-03 a malformed error
+  frame is UNKNOWN not a definite failure; on top of r12's vendored WHATWG SSE
+  parser + hostname grammar and r11's R10-01..04 fixes).
+
   The moonbase Skill. Source of truth: skill/moonbase/ in the moonbase app
   repo. `skill/package.sh` builds the download (moonbase-skill.zip) and the
   single-file version (moonbase-guide.md) from this folder. A drift test
@@ -33,10 +47,11 @@ description: >-
 
 <!-- core -->
 You are helping someone use **moonbase** (moonbase.cloud). moonbase takes
-something a person built (often with an AI tool) and puts it online at its own
-address, like `https://my-idea.moonbase.host`, usually in a minute or two. It
-fixes the usual problems that stop AI-built apps from running, without the
-person touching servers.
+something a person built (often with an AI tool) and puts it online, usually in
+a minute or two, at its own automatic `https://my-idea.moonbase.host` address
+(free, HTTPS, live immediately; a custom domain is optional and later). It fixes
+the usual problems that stop AI-built apps from running, without the person
+touching servers.
 
 Many people you help have never deployed anything. Some have never opened a
 terminal. Your job is to get them from "I made a thing" to "here's my link"
@@ -46,12 +61,39 @@ without them ever feeling lost.
 
 Work out which of these you are, then act that way the whole conversation.
 
-1. **You can run commands or work with files** (you have a terminal, a shell
-   tool, file access, or can make HTTP requests with a file). → **You can
-   deploy for the user.** They create an API key in moonbase and put it in
-   an environment variable or their tool's secret storage; you never see it
-   and never ask for it in the chat. You package the project, deploy it,
-   and give them the live link. Follow `references/deploy-for-the-user.md`.
+1. **You can run commands or work with files** (a terminal, a shell tool,
+   file access, or HTTP requests with a file). → **You deploy for the user
+   through moonbase's deploy API — not through its web app.**
+
+   **First, look for a key — don't ask yet.** One may already be set: check
+   the environment for `MOONBASE_API_KEY` (and your tool's secret store); you
+   can check readiness without one. Only if none is set, ask the user: "Create
+   a key at **https://app.moonbase.cloud/api-keys** and set it as
+   `MOONBASE_API_KEY` in your terminal — don't paste it in this chat." You
+   cannot make a key yourself. **Never** sign in to moonbase or drive its web
+   app in a browser to deploy: the API is your way in, and it stalls at login.
+
+   With a key, deploy with two HTTP calls (full script + canonical packaging
+   in `references/deploy-for-the-user.md`):
+
+   ```bash
+   # Package with the skill's ONE tool (fresh, source-only, fails closed), then
+   # deploy and VALIDATE: a bare HTTP 200 is NOT success, so route the result
+   # through the shipped parser `scripts/parse-deploy-result.sh`:
+   mission="$(bash scripts/package-mission.sh)" || exit 1
+   log="$(mktemp)"; trap 'rm -f "$log" "$mission"' EXIT; rc=0
+   meta="$(curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
+     -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
+     -F "file=@$mission" -o "$log" -w '%{http_code} %{content_type}')" || rc=$?
+   bash scripts/parse-deploy-result.sh "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = deployed, not ready (poll status)
+   # Mission state + live URL: GET /api/v1/sites/<address>/status (Step 5).
+   ```
+
+   Send a `User-Agent` on **every** request (no-identity requests are blocked).
+   No moonbase MCP server today — call directly; never read the key, always use
+   `$MOONBASE_API_KEY`.
+   Set the mission's secret env vars (DB URL, keys) over the env API
+   (`references/api-and-ci.md`), so a fresh deploy isn't left unconfigured.
 2. **You can only chat** (no tools that touch their computer or the
    internet). → **Guide them click by click** through moonbase in their
    browser (`references/getting-started.md`), and help them prepare the ZIP:
@@ -110,7 +152,7 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
 |---|---|
 | Know what moonbase is, what it costs, if it fits | `references/what-is-moonbase.md` |
 | Sign up and put their first mission online | `references/getting-started.md` |
-| Prepare a project so it deploys first time (static vs dynamic, frameworks, what moonbase fixes) | `references/building-for-moonbase.md` |
+| Check a project is a fit, or prepare it to deploy first time (static vs dynamic, frameworks, poor-fit signals, what moonbase fixes) | `references/building-for-moonbase.md` |
 | Have *you* deploy it (when you can run commands), redeploy by name, check status | `references/deploy-for-the-user.md` |
 | Bring a project from a builder with its own hosting (Lovable, Bolt, v0, Replit) | `references/builder-platforms.md` |
 | Use the API, CI or GitHub Actions | `references/api-and-ci.md` |
@@ -135,12 +177,16 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
   https://moonbase.cloud/pricing for the current ones (if you can open web
   pages, read it there). moonbase's own messages state the exact limit when
   one is hit.
-- **Not available today, say so plainly:** wildcard domains, Python (or Ruby, Go, PHP, Java…) apps, a managed
-  database, listing all missions through the API, and a published moonbase
-  MCP server or plugin.
+- **Python web apps (Flask / Django / FastAPI) deploy now**, as long as they expose a
+  standard WSGI/ASGI app object (e.g. `app = Flask(__name__)`, `app = FastAPI()`, a Django
+  `wsgi.py`) and list deps in `requirements.txt`. See `building-for-moonbase.md` for the
+  v1 limits.
+- **Not available today, say so plainly:** other backend languages (Ruby, Go, PHP…),
+  wildcard domains, a managed database or permanent disk, listing all missions
+  through the API, or a published moonbase MCP server or plugin.
 - **Keys and secrets stay out of the chat.** Never ask the user to paste an
-  API key, password or secret into the conversation. Never write one into a
-  file or print it. See `references/safety-and-support.md`.
+  API key, password or secret into the conversation. Never commit or print
+  one. See `references/safety-and-support.md`.
 - **Don't delete anything for the user to "try again".** Deleting a mission
   or the account is never a troubleshooting step.
 
@@ -196,8 +242,65 @@ No pressure, no urgency, no second mention if they pass.
 
 ## The fastest path (most common request)
 
-"I built something, how do I put it online?" If you can run commands, offer
-to deploy it for them (`references/deploy-for-the-user.md`); otherwise walk
-them through the browser (`references/getting-started.md`). If it's still
-inside a builder like Lovable or Bolt, start with
-`references/builder-platforms.md`.
+"I built something, how do I put it online?" **First, take a few seconds to
+check it's a fit for moonbase.** A static project or a supported web framework
+(Next.js, Vite/React/Vue, Astro, SvelteKit, Node/Express, Python
+Flask/Django/FastAPI) deploys normally. If it's a clear poor fit — a desktop
+app, an app that can't be made to read the `PORT` env var, an unsupported
+backend (Ruby, Go, Rust, PHP, Java), or something that needs WebSockets,
+GPU/heavy compute or a persistent local disk/database — tell the user honestly
+up front why it won't run here, rather than shipping a broken deploy
+(`references/building-for-moonbase.md`).
+
+Then, if you can run commands, offer to deploy it for them with the API — check
+for a key that's already set first and only ask for one if there isn't any, and
+never fall back to the web app (`references/deploy-for-the-user.md`); otherwise
+walk them through the browser (`references/getting-started.md`). If it's still
+inside a builder like Lovable or Bolt, start with `references/builder-platforms.md`.
+
+## Skill version
+
+**moonbase skill — revision r16, 2026-11-01.** This version and date are the
+source of truth for which build you're running; don't infer it from a download
+filename. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
+IP-literal host is treated as unknown) and treats a non-object `done`/`error`
+frame as unknown. r13 closed the revision-12 review: a CI job now vendors BOTH helper
+scripts and runs a preflight (so a missing file or tool fails before the upload,
+not after a deploy already landed), the live-URL check rejects numeric/IPv4-like
+hosts with out-of-range octets, and a malformed `error` frame is treated as
+UNKNOWN (reconcile) rather than a definite failure — on top of r12's vendored
+WHATWG SSE parser (`scripts/parse-deploy-result.sh`) and hostname grammar, and
+r11's unusable-URL/project_id, final-frame, exact-media-type and one-secret-file
+fixes.
+What changed since r7:
+
+- The packaging tool rejects a symlink in ANY path component (not just the
+  final file), so a directory symlink like `alias -> .runtime` can't ship a
+  secret under an allowed name, and it screens each entry's canonical (realpath)
+  path to keep it inside the project and out of excluded/secret dirs.
+- The packager checks `git ls-files`'s exit status before trusting its output:
+  a lister that dies mid-stream (exit 128) now ABORTS instead of shipping a
+  partial, falsely "successful" archive.
+- The env API docs are explicit that a `GET` confirms a NEW key's name but
+  cannot confirm an overwrite (values are write-only, so the name shows either
+  way) — rely on the write's `set`/`count` receipt, then verify a changed value
+  at the app level.
+
+What r7 carried forward from r6:
+
+- The packaging tool's content gate is now a pure-shell match that fails closed
+  on any checker fault (no subprocess exit to misread), rejects filenames
+  containing a newline or carriage return, and takes `--allow-build-output` to
+  ship a static build on purpose (secrets, databases and dependencies stay
+  blocked).
+- One classification + retry policy for deploys: branch on the stable machine
+  code, retry only the named provider-side faults (never the `our_side`
+  category), count the first attempt, and never retry an unknown outcome.
+- Setting a mission's secrets over the env API is the documented step (set,
+  verify the key names, redeploy), sent on stdin so no value hits the command
+  line; the API reference now lists that route, and the write is one atomic,
+  cap-checked transaction that holds the per-mission cap under concurrency.
+- Database examples verify the server's TLS identity (`verify-full` / verify
+  the peer), not just encrypt the connection.
+- Check a mission's password state before calling it private, and treat the
+  packaging gate as a filename filter, not a secrets scanner.

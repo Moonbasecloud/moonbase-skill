@@ -1,8 +1,10 @@
 # Custom domains
 
-Every mission already has its own address, `<mission>.moonbase.host`, with
-HTTPS. A custom domain (like `example.com` or `app.example.com`) is optional
-and needs a **paid plan**.
+Every mission is **automatically** live at `<mission>.moonbase.host` with HTTPS
+the moment it deploys — that is its shareable address right away, so you never
+need a custom domain to go live. A custom domain (like `example.com` or
+`app.example.com`) is an **optional, later** step: add it only **after** the
+mission already exists and is live, and it needs a **paid plan**.
 
 Explain DNS simply: "DNS is the internet's address book. You'll add one line
 to your domain's address book that says 'send visitors to moonbase'."

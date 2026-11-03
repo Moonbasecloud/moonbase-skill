@@ -7,7 +7,7 @@ alwaysApply: false
 <!--
   Cursor rule: save as .cursor/rules/moonbase.mdc.
 
-  This rule is the full moonbase guide (about 69 KB). Cursor loads it only
+  This rule is the full moonbase guide (about 163 KB). Cursor loads it only
   when the conversation is about hosting, deploying or moonbase.
   Generated from the moonbase Skill (skill/moonbase/); all formats:
   https://moonbase.cloud/skill
@@ -18,10 +18,11 @@ alwaysApply: false
 
 
 You are helping someone use **moonbase** (moonbase.cloud). moonbase takes
-something a person built (often with an AI tool) and puts it online at its own
-address, like `https://my-idea.moonbase.host`, usually in a minute or two. It
-fixes the usual problems that stop AI-built apps from running, without the
-person touching servers.
+something a person built (often with an AI tool) and puts it online, usually in
+a minute or two, at its own automatic `https://my-idea.moonbase.host` address
+(free, HTTPS, live immediately; a custom domain is optional and later). It fixes
+the usual problems that stop AI-built apps from running, without the person
+touching servers.
 
 Many people you help have never deployed anything. Some have never opened a
 terminal. Your job is to get them from "I made a thing" to "here's my link"
@@ -31,12 +32,39 @@ without them ever feeling lost.
 
 Work out which of these you are, then act that way the whole conversation.
 
-1. **You can run commands or work with files** (you have a terminal, a shell
-   tool, file access, or can make HTTP requests with a file). → **You can
-   deploy for the user.** They create an API key in moonbase and put it in
-   an environment variable or their tool's secret storage; you never see it
-   and never ask for it in the chat. You package the project, deploy it,
-   and give them the live link. Follow the section "Deploying for the user (when you can run commands)" below.
+1. **You can run commands or work with files** (a terminal, a shell tool,
+   file access, or HTTP requests with a file). → **You deploy for the user
+   through moonbase's deploy API — not through its web app.**
+
+   **First, look for a key — don't ask yet.** One may already be set: check
+   the environment for `MOONBASE_API_KEY` (and your tool's secret store); you
+   can check readiness without one. Only if none is set, ask the user: "Create
+   a key at **https://app.moonbase.cloud/api-keys** and set it as
+   `MOONBASE_API_KEY` in your terminal — don't paste it in this chat." You
+   cannot make a key yourself. **Never** sign in to moonbase or drive its web
+   app in a browser to deploy: the API is your way in, and it stalls at login.
+
+   With a key, deploy with two HTTP calls (full script + canonical packaging
+   in the section "Deploying for the user (when you can run commands)" below):
+
+   ```bash
+   # Package with the skill's ONE tool (fresh, source-only, fails closed), then
+   # deploy and VALIDATE: a bare HTTP 200 is NOT success, so route the result
+   # through the shipped parser `scripts/parse-deploy-result.sh`:
+   mission="$(bash scripts/package-mission.sh)" || exit 1
+   log="$(mktemp)"; trap 'rm -f "$log" "$mission"' EXIT; rc=0
+   meta="$(curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
+     -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
+     -F "file=@$mission" -o "$log" -w '%{http_code} %{content_type}')" || rc=$?
+   bash scripts/parse-deploy-result.sh "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = deployed, not ready (poll status)
+   # Mission state + live URL: GET /api/v1/sites/<address>/status (Step 5).
+   ```
+
+   Send a `User-Agent` on **every** request (no-identity requests are blocked).
+   No moonbase MCP server today — call directly; never read the key, always use
+   `$MOONBASE_API_KEY`.
+   Set the mission's secret env vars (DB URL, keys) over the env API
+   (the section "The deploy API, CI and GitHub Actions" below), so a fresh deploy isn't left unconfigured.
 2. **You can only chat** (no tools that touch their computer or the
    internet). → **Guide them click by click** through moonbase in their
    browser (the section "Getting started: sign up and put the first mission online" below), and help them prepare the ZIP:
@@ -94,7 +122,7 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
 |---|---|
 | Know what moonbase is, what it costs, if it fits | the section "What moonbase is" below |
 | Sign up and put their first mission online | the section "Getting started: sign up and put the first mission online" below |
-| Prepare a project so it deploys first time (static vs dynamic, frameworks, what moonbase fixes) | the section "Building for moonbase: a project that deploys first time" below |
+| Check a project is a fit, or prepare it to deploy first time (static vs dynamic, frameworks, poor-fit signals, what moonbase fixes) | the section "Building for moonbase: a project that deploys first time" below |
 | Have *you* deploy it (when you can run commands), redeploy by name, check status | the section "Deploying for the user (when you can run commands)" below |
 | Bring a project from a builder with its own hosting (Lovable, Bolt, v0, Replit) | the section "Bringing a project from a builder with its own hosting" below |
 | Use the API, CI or GitHub Actions | the section "The deploy API, CI and GitHub Actions" below |
@@ -118,12 +146,16 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
   https://moonbase.cloud/pricing for the current ones (if you can open web
   pages, read it there). moonbase's own messages state the exact limit when
   one is hit.
-- **Not available today, say so plainly:** wildcard domains, Python (or Ruby, Go, PHP, Java…) apps, a managed
-  database, listing all missions through the API, and a published moonbase
-  MCP server or plugin.
+- **Python web apps (Flask / Django / FastAPI) deploy now**, as long as they expose a
+  standard WSGI/ASGI app object (e.g. `app = Flask(__name__)`, `app = FastAPI()`, a Django
+  `wsgi.py`) and list deps in `requirements.txt`. See the section "Building for moonbase: a project that deploys first time" for the
+  v1 limits.
+- **Not available today, say so plainly:** other backend languages (Ruby, Go, PHP…),
+  wildcard domains, a managed database or permanent disk, listing all missions
+  through the API, or a published moonbase MCP server or plugin.
 - **Keys and secrets stay out of the chat.** Never ask the user to paste an
-  API key, password or secret into the conversation. Never write one into a
-  file or print it. See the section "Safety and support" below.
+  API key, password or secret into the conversation. Never commit or print
+  one. See the section "Safety and support" below.
 - **Don't delete anything for the user to "try again".** Deleting a mission
   or the account is never a troubleshooting step.
 
@@ -178,63 +210,497 @@ No pressure, no urgency, no second mention if they pass.
 
 ## The fastest path (most common request)
 
-"I built something, how do I put it online?" If you can run commands, offer
-to deploy it for them (the section "Deploying for the user (when you can run commands)" below); otherwise walk
-them through the browser (the section "Getting started: sign up and put the first mission online" below). If it's still
-inside a builder like Lovable or Bolt, start with
-the section "Bringing a project from a builder with its own hosting" below.
+"I built something, how do I put it online?" **First, take a few seconds to
+check it's a fit for moonbase.** A static project or a supported web framework
+(Next.js, Vite/React/Vue, Astro, SvelteKit, Node/Express, Python
+Flask/Django/FastAPI) deploys normally. If it's a clear poor fit — a desktop
+app, an app that can't be made to read the `PORT` env var, an unsupported
+backend (Ruby, Go, Rust, PHP, Java), or something that needs WebSockets,
+GPU/heavy compute or a persistent local disk/database — tell the user honestly
+up front why it won't run here, rather than shipping a broken deploy
+(the section "Building for moonbase: a project that deploys first time" below).
+
+Then, if you can run commands, offer to deploy it for them with the API — check
+for a key that's already set first and only ask for one if there isn't any, and
+never fall back to the web app (the section "Deploying for the user (when you can run commands)" below); otherwise
+walk them through the browser (the section "Getting started: sign up and put the first mission online" below). If it's still
+inside a builder like Lovable or Bolt, start with the section "Bringing a project from a builder with its own hosting" below.
+
+## Skill version
+
+**moonbase skill — revision r16, 2026-11-01.** This version and date are the
+source of truth for which build you're running; don't infer it from a download
+filename. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
+IP-literal host is treated as unknown) and treats a non-object `done`/`error`
+frame as unknown. r13 closed the revision-12 review: a CI job now vendors BOTH helper
+scripts and runs a preflight (so a missing file or tool fails before the upload,
+not after a deploy already landed), the live-URL check rejects numeric/IPv4-like
+hosts with out-of-range octets, and a malformed `error` frame is treated as
+UNKNOWN (reconcile) rather than a definite failure — on top of r12's vendored
+WHATWG SSE parser (`scripts/parse-deploy-result.sh`) and hostname grammar, and
+r11's unusable-URL/project_id, final-frame, exact-media-type and one-secret-file
+fixes.
+What changed since r7:
+
+- The packaging tool rejects a symlink in ANY path component (not just the
+  final file), so a directory symlink like `alias -> .runtime` can't ship a
+  secret under an allowed name, and it screens each entry's canonical (realpath)
+  path to keep it inside the project and out of excluded/secret dirs.
+- The packager checks `git ls-files`'s exit status before trusting its output:
+  a lister that dies mid-stream (exit 128) now ABORTS instead of shipping a
+  partial, falsely "successful" archive.
+- The env API docs are explicit that a `GET` confirms a NEW key's name but
+  cannot confirm an overwrite (values are write-only, so the name shows either
+  way) — rely on the write's `set`/`count` receipt, then verify a changed value
+  at the app level.
+
+What r7 carried forward from r6:
+
+- The packaging tool's content gate is now a pure-shell match that fails closed
+  on any checker fault (no subprocess exit to misread), rejects filenames
+  containing a newline or carriage return, and takes `--allow-build-output` to
+  ship a static build on purpose (secrets, databases and dependencies stay
+  blocked).
+- One classification + retry policy for deploys: branch on the stable machine
+  code, retry only the named provider-side faults (never the `our_side`
+  category), count the first attempt, and never retry an unknown outcome.
+- Setting a mission's secrets over the env API is the documented step (set,
+  verify the key names, redeploy), sent on stdin so no value hits the command
+  line; the API reference now lists that route, and the write is one atomic,
+  cap-checked transaction that holds the per-mission cap under concurrency.
+- Database examples verify the server's TLS identity (`verify-full` / verify
+  the peer), not just encrypt the connection.
+- Check a mission's password state before calling it private, and treat the
+  packaging gate as a filename filter, not a secrets scanner.
 
 ---
 
 ## Deploying for the user (when you can run commands)
 
 When the user says **"deploy this to moonbase"** and you can run shell
-commands (or make an HTTP request with a file), you can do the deploy
-yourself with moonbase's deploy API. If you can only chat, walk the user
-through the browser upload in the section "Getting started: sign up and put the first mission online" instead.
+commands (or make an HTTP request with a file), you do the deploy yourself
+with moonbase's deploy API. If you can only chat, walk the user through the
+browser upload in the section "Getting started: sign up and put the first mission online" instead.
+
+**Send a `User-Agent` header on every request.** Each `curl` below carries
+`-H "User-Agent: my-agent/1.0"` — put your own tool's name and version there.
+moonbase is behind a filter that blocks requests with no client identity, so
+a missing or default `User-Agent` is refused before it reaches the API.
+
+**Deploy through the API, never through the web app.** A moonbase API key is
+what lets you deploy on your own — but **look for one before you ask** (Step
+1): it may already be set in the environment or your tool's secrets, and you
+can review whether the project is ready without one. You cannot create a key
+yourself. Do **not** try to sign in to moonbase or automate its web app in a
+browser to deploy: that path needs a human and stalls at the login screen.
+The browser upload exists for people who don't want to use the API, not as a
+fallback for you — with one narrow exception (`consent_required`, in Step 4).
 
 Note: there is **no published moonbase MCP server or plugin** today. Use the
 API with `curl`, as below. It's the same endpoint the browser uses, with the
 same checks.
 
-### Step 1. The user makes an API key (they do this, not you)
+### Step 1. Find a key first; only ask if there isn't one
 
-Tell the user, one step at a time:
+**Before you ask for anything, check for a key that already exists** — this is
+an automated flow and the user may have set one up already:
+
+- the `MOONBASE_API_KEY` environment variable,
+- your tool's own secret store or configured-secrets reference,
+- the project's deployment config (never a key hardcoded in source — if you
+  find one there, treat it as leaked: tell the user to delete it on the API
+  Keys page and create a new one).
+
+If a key is set, use it (always as `$MOONBASE_API_KEY`, never by reading its
+value). You can also review whether the project is moonbase-ready — layout,
+`PORT`, start script, secrets — **without** a key; only the deploy call itself
+needs one.
+
+**Only if no key is set,** ask the user to make one (they do this, not you):
 
 1. Open **https://app.moonbase.cloud/api-keys**.
 2. Click **Create API key** and give it a name (like the name of the tool
    that will deploy).
 3. *You'll see the full key once, starting with `mb_live_`.* Copy it now: it
    can never be shown again.
-4. Store it where I can use it without seeing it: an environment variable
-   named `MOONBASE_API_KEY`, set in your own terminal (not in this chat), or
-   your tool's secret storage. In a terminal:
+4. Store it where I can use it without seeing it: your tool's secret storage or
+   a secret manager is best. If you set an environment variable named
+   `MOONBASE_API_KEY` in your own terminal (not in this chat), don't type the
+   key as a literal — that records it in your shell history. Read it in without
+   echoing instead, so nothing is logged:
    ```bash
-   export MOONBASE_API_KEY="paste-your-key-here"
+   read -rs MOONBASE_API_KEY && export MOONBASE_API_KEY   # prompts; input hidden, not saved to history
    ```
+   (or load it from your secret manager / a `0600` file). Avoid a plain
+   `export MOONBASE_API_KEY="…"` with the key inline.
 
-**Never ask the user to paste the key into the chat.** Never write it into a
-file or the repository, and never print it. Always use `$MOONBASE_API_KEY`.
-If a key was pasted into the chat by accident, tell the user to delete it on
-the API Keys page and create a new one.
+**Never ask the user to paste the key into the chat.** Never commit it to the
+repository and never print it. Always use `$MOONBASE_API_KEY`. (The one narrow
+exception to "not in a file" is a deliberate `0600` secrets file **outside** the
+repo — e.g. a curl `--config`/`-H @file` header file, see the section "The deploy API, CI and GitHub Actions"; a
+secret manager or a stdin pipe is better.) If a key was pasted into the chat by
+accident, tell the user to delete it on the API Keys page and create a new one.
 
 Facts about keys: every key has one scope, **Deploy**. A key works for every
 mission on its account (it can't be limited to one mission). Up to 10 keys per
 account. Each key can be deleted on its own; the others keep working.
 
-### Step 2. Package the project
+### Step 2. Package the project (the one packaging tool)
 
-From the project's root folder, make `mission.zip` without dependencies,
-build output, git data or secrets:
+The skill ships **one** packaging tool, `scripts/package-mission.sh`, and the
+quickstart, this recipe and the CI example all run **that same file** — there
+is no second, looser packaging command anywhere. It builds a **fresh,
+uniquely-named** archive (it never updates or reuses one, so a stale zip can't
+carry an old `.env`), takes an explicit **source allowlist** (your git-tracked
+files, or `--manifest <file>` for a project that isn't in git), packages
+**regular files only** (symlinks are rejected — in any path component, since a
+directory symlink can point outside the project and ship its target under an
+allowed name — and every path must resolve inside the project root),
+**screens every source path before archiving** (so a flattening zip option like
+`ZIPOPT=-j` can't smuggle a forbidden file in under a clean name — the tool also
+clears `ZIPOPT`/`UNZIP`), and **fails closed**: it re-reads the real archive
+and aborts with a non-zero exit (deleting the archive) on **any** forbidden
+entry (a secret/`.env`, `node_modules`, a virtualenv, build output, a SQLite
+file or its `-wal`/`-shm`/`-journal` sidecar, runtime/upload data, or a nested
+copy), on an archived file set that doesn't **equal** the intended source list,
+**or any tool/parse failure** — an unknown inspection outcome is never
+treated as success. What it does **not** do: catch a secret hardcoded *inside* a
+source file — that's still on you (moonbase also blocks `hardcoded_secret_detected`
+server-side). A printed `unzip -l` listing is **not** a gate.
+
+If your tool has the skill installed, run the shipped file directly
+(`.claude/skills/moonbase/scripts/package-mission.sh`). Otherwise save this
+exact script as `scripts/package-mission.sh` in the project (commit it, so CI
+runs the identical tool — see the section "The deploy API, CI and GitHub Actions"):
 
 ```bash
-zip -r mission.zip . -x "node_modules/*" "*/node_modules/*" ".git/*" ".next/*" "dist/*" "build/*" ".env" ".env.*" ".DS_Store"
+#!/usr/bin/env bash
+# moonbase mission packager — the ONE packaging tool for the whole skill.
+# The quickstart, the deploy recipe and the CI example all run THIS file.
+#
+# Safety contract (what the gate does and does NOT promise):
+#   - FRESH, uniquely-named archive — never updates or reuses one.
+#   - Explicit SOURCE allowlist: your git-tracked files, or `--manifest <file>`
+#     (one path per line) for a project that isn't in git. The git file list is
+#     only trusted when `git ls-files` EXITS 0 — a lister that dies mid-stream
+#     (exit 128) must never yield a "successful" but INCOMPLETE archive.
+#   - Regular files only: symlinks are REJECTED — not just a final-component
+#     symlink, but a symlink in ANY path component (a directory symlink like
+#     `alias -> .runtime` would otherwise ship `alias/secret` from an excluded
+#     dir under an allowed name). Every entry's CANONICAL (realpath) path must
+#     resolve INSIDE the project root and must not resolve into an excluded or
+#     secret location. Submodule contents and directory symlinks are not
+#     packaged.
+#   - Newline/carriage-return filenames are REJECTED: the archiver (`zip -@`)
+#     and the re-read gate (`unzip -Z1`) are both line-oriented, so a name with
+#     an embedded newline could smuggle an unlisted file past the gate while
+#     the intended file is left out (R6-02).
+#   - EVERY source path is screened BEFORE archiving (not only the archived
+#     member names), and the archiver's option strings (ZIPOPT/UNZIP…) are
+#     cleared, so a flattening option like `ZIPOPT=-j` cannot rename
+#     `.runtime/x` to a clean `x` and slip it past a gate that only reads the
+#     archived names (R8-01).
+#   - FAILS CLOSED: the forbidden-path gate is a pure-shell pattern match (no
+#     external checker whose error exit could be misread as "nothing
+#     forbidden"), the archive is re-read, and ANY tool/parse/pattern failure,
+#     any forbidden entry, or an archived file set that doesn't EQUAL the
+#     intended source list, ABORTS with a non-zero exit and deletes the
+#     archive. An unknown outcome is never treated as success (R6-01).
+# The gate stops dependencies, build output, virtualenvs, runtime data and
+# obvious secrets (`.env`). It is NOT a secrets scanner: it cannot catch a
+# secret a developer hardcoded inside a source file — that is the uploader's
+# responsibility (moonbase also blocks `hardcoded_secret_detected` server-side).
+#
+# Usage:  archive="$(bash package-mission.sh)" || exit 1      # git mode
+#         archive="$(bash package-mission.sh --manifest files.txt)" || exit 1
+#         # ship a static build dir on purpose (secrets/deps still blocked):
+#         archive="$(bash package-mission.sh --manifest files.txt --allow-build-output)" || exit 1
+#         # then upload "$archive" (stdout is only the archive name on success)
+set -euo pipefail
+
+say() { printf '%s\n' "$*" >&2; }           # human output on stderr; stdout = archive name
+die() { say "$@"; exit 1; }
+
+# The hint under a BLOCKED list. Don't tell the user to re-pass a flag they
+# already passed: once --allow-build-output is on, remaining blocks are the
+# always-excluded set (build caches, secrets, databases, node_modules).
+blocked_hint() {
+  say "Remove them (git rm --cached <file>, add to .gitignore)."
+  if [ "${allow_build_output:-0}" -eq 1 ]; then
+    say "These stay excluded even with --allow-build-output: build caches"
+    say "(e.g. .next/cache), secrets, databases, logs, node_modules and .git."
+  else
+    say "To ship a static build directory (dist/, build/, out/) on purpose,"
+    say "re-run with --allow-build-output — it still blocks build caches"
+    say "(.next/cache), secrets, databases and node_modules."
+  fi
+}
+
+# Neutralise env-configured option strings. ZIPOPT=-j would make Info-ZIP
+# FLATTEN directories, so `.runtime/x` would ship as `x` and slip past a gate
+# that only checks archived member names; UNZIP/UNZIPOPT could likewise distort
+# the validation listing. Clear them so the tool sees real paths (R8-01).
+unset ZIP ZIPOPT UNZIP UNZIPOPT
+
+# Prerequisites must exist, or we ABORT — a missing checker must never be read
+# as "nothing forbidden found".
+command -v zip   >/dev/null 2>&1 || die "zip is required but not installed."
+command -v unzip >/dev/null 2>&1 || die "unzip is required but not installed (needed to validate the archive)."
+
+# --- Arguments --------------------------------------------------------------
+# --manifest <file>      explicit source list for a project that isn't in git
+# --allow-build-output   intentionally ship a static build directory (dist/,
+#                        build/, out/, .next/, coverage/). Secrets, databases,
+#                        logs, node_modules, virtualenvs, caches and .git stay
+#                        blocked (R6-05: without this the "ship a build dir"
+#                        advice was false — every mode blocked those names).
+manifest=""
+allow_build_output=0
+while [ "$#" -gt 0 ]; do
+  arg="${1:-}"
+  case "$arg" in
+    --manifest)
+      manifest="${2:-}"
+      { [ -n "$manifest" ] && [ -f "$manifest" ]; } || die "--manifest needs a readable file listing your source paths, one per line."
+      shift 2 ;;
+    --allow-build-output)
+      allow_build_output=1
+      shift ;;
+    *)
+      die "Unknown argument: $arg (use --manifest <file> and/or --allow-build-output)." ;;
+  esac
+done
+
+# --- Forbidden-path test (defined early: used to screen CANONICAL source paths
+#     BEFORE archiving, and again on the real archive listing AFTER) ----------
+# Pure-shell pattern match, so there is NO external checker whose error exit
+# could be read as "nothing forbidden" (R6-01: the old `grep -Eiq` inside an
+# `if` sent grep's exit 2 — a tool error — down the same "allowed" branch as
+# exit 1 — no match). `[[ =~ ]]` yields 0 match / 1 no-match / 2 bad-regex; 2
+# cannot happen for these constant patterns, and is_forbidden ABORTS on it.
+#   ALWAYS blocked (even with --allow-build-output): secrets, databases, logs,
+#   node_modules, virtualenvs, `.next/cache`, .git, runtime/upload data.
+#   BUILD OUTPUT (.next|dist|build|out|coverage): blocked by default; allowed
+#   only with --allow-build-output, to ship a static build on purpose — but
+#   `.next/cache` stays blocked even then (a build cache, never a shippable
+#   artifact).
+always_re='(^|/)(node_modules|\.?venv|__pycache__|\.git|uploads|\.runtime)/|(^|/)\.next/cache/|(^|/)\.env($|\.)|\.(sqlite[0-9]?.*|db|pyc|log)$|(-journal|-wal|-shm)$'
+build_re='(^|/)(\.next|dist|build|out|coverage)/'
+
+# 0 = forbidden, 1 = allowed, 2 = pattern-engine fault (caller aborts).
+is_forbidden() {
+  local e=${1:-} rc
+  shopt -s nocasematch
+  if [[ $e =~ $always_re ]]; then rc=0; else rc=$?; fi
+  if [ "$rc" -eq 0 ]; then shopt -u nocasematch; return 0; fi
+  if [ "$rc" -ne 1 ]; then shopt -u nocasematch; return 2; fi
+  if [ "$allow_build_output" -eq 0 ]; then
+    if [[ $e =~ $build_re ]]; then rc=0; else rc=$?; fi
+    if [ "$rc" -eq 0 ]; then shopt -u nocasematch; return 0; fi
+    if [ "$rc" -ne 1 ]; then shopt -u nocasematch; return 2; fi
+  fi
+  shopt -u nocasematch
+  return 1
+}
+
+# Reject a symlink in ANY component of a path, not only the final one. A
+# directory symlink (e.g. `alias -> .runtime`) would otherwise let a listed
+# path like `alias/customer.txt` ship a file from an excluded/secret dir under
+# an allowed name. Walks components with parameter expansion (no word-splitting,
+# so a name with `*` or IFS bytes can't glob or re-split).
+reject_symlink_components() {
+  local p="${1:-}" partial="" comp rest="${1:-}"
+  while [ -n "$rest" ]; do
+    comp="${rest%%/*}"
+    if [ "$comp" = "$rest" ]; then rest=""; else rest="${rest#*/}"; fi
+    [ -z "$comp" ] && continue
+    partial="${partial:+$partial/}$comp"
+    if [ -L "$partial" ]; then
+      die "Refusing a path that passes through a symlink (it can ship a file from outside the project or from an excluded dir): $p"
+    fi
+  done
+}
+
+# --- Source allowlist -------------------------------------------------------
+include=()
+if [ -n "$manifest" ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"                        # tolerate a CRLF-authored manifest
+    case "$line" in ""|"#"*) continue ;; esac   # skip blanks and comments
+    include+=("$line")
+  done < "$manifest"
+elif git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  # Capture the file list to a temp file and CHECK the producer's EXIT STATUS
+  # before trusting it. A `git ls-files` that emits some names then fails (e.g.
+  # exits 128) must ABORT — never yield a "successful" but INCOMPLETE archive.
+  # The temp file keeps the output NUL-separated (command substitution would
+  # strip the NUL bytes and mangle the names).
+  gitlist="$(mktemp)" || die "Could not create a temp file for the git file list."
+  if ! git ls-files -z >"$gitlist"; then
+    rm -f "$gitlist"
+    die "git ls-files failed — refusing to package an incomplete file list."
+  fi
+  # NUL-separated: a filename's exact bytes, never split or mangled (paired
+  # with the newline/CR rejection below, which keeps those bytes safe to feed
+  # to the line-oriented archiver and gate).
+  while IFS= read -r -d '' f; do include+=("$f"); done < "$gitlist"
+  rm -f "$gitlist"
+else
+  die "Not a git repository and no --manifest given. Either run from a git repo (git init && git add your source), or pass --manifest <file> listing the source paths to ship."
+fi
+
+# A root-level .env.example (placeholders, not secrets) is the one env file
+# allowed. Add it if present and not already listed.
+if [ -f .env.example ]; then
+  case " ${include[*]} " in *" .env.example "*) : ;; *) include+=(".env.example") ;; esac
+fi
+[ "${#include[@]}" -gt 0 ] || die "No source files to package."
+
+# --- Keep only regular files that resolve INSIDE the project root, and screen
+# --- every SOURCE path against the forbidden list before it can be archived.
+root="$(pwd -P)"
+safe=()
+blocked=""
+for f in "${include[@]}"; do
+  case "$f" in
+    *$'\n'*|*$'\r'*) die "Refusing a path with a newline or carriage return — it could smuggle an unlisted file past the gate." ;;
+    /*|../*|*/../*|*/..) die "Refusing unsafe path in the source list: $f" ;;
+  esac
+  [ -e "$f" ] || die "Listed source file is missing: $f"
+  if [ -L "$f" ]; then
+    die "Refusing to package a symlink (it can point outside the project and ship its target): $f"
+  fi
+  # A symlink anywhere ABOVE the file is just as dangerous as the file itself.
+  reject_symlink_components "$f"
+  if [ ! -f "$f" ]; then
+    say "Skipping non-regular entry (directory, submodule or special file): $f"
+    continue
+  fi
+  # Screen the CANONICAL (realpath) path. It must resolve INSIDE the project
+  # root (a symlink that escaped the checks above and pointed elsewhere is
+  # caught here). When the real path DIFFERS from the listed name — i.e. a
+  # component redirected it — screen the real relative path against the
+  # forbidden patterns too, so `alias/ok.txt -> .runtime/secret` can't ship a
+  # secret under an allowed name.
+  rp="$(cd "$(dirname -- "$f")" >/dev/null 2>&1 && pwd -P)/$(basename -- "$f")"
+  case "$rp" in
+    "$root"/*) rel="${rp#"$root"/}" ;;
+    *) die "Refusing a file that resolves outside the project root: $f" ;;
+  esac
+  if [ "$rel" != "$f" ] && [ "$rel" != ".env.example" ]; then
+    if is_forbidden "$rel"; then
+      die "Refusing a file whose real path resolves into an excluded or secret location: $f (resolves to $rel)"
+    else
+      rc=$?
+      [ "$rc" -eq 1 ] || die "Could not screen a source path (pattern-engine fault) — aborting (fail-closed)."
+    fi
+  fi
+  # Screen the LISTED path too — this is the name the archive member carries,
+  # so screening it here (not only the archive afterwards) is what stops a
+  # flattening/renaming zip option from smuggling it in under a clean name.
+  if [ "$f" != ".env.example" ]; then
+    if is_forbidden "$f"; then
+      blocked+="$f"$'\n'
+      continue
+    else
+      rc=$?
+      [ "$rc" -eq 1 ] || die "Could not screen a source path (pattern-engine fault) — aborting (fail-closed)."
+    fi
+  fi
+  safe+=("$f")
+done
+
+if [ -n "$blocked" ]; then
+  say "BLOCKED — these must not ship:"
+  printf '%s' "$blocked" >&2
+  blocked_hint
+  exit 1
+fi
+[ "${#safe[@]}" -gt 0 ] || die "No regular source files to package after safety checks."
+
+# --- Fresh, uniquely-named archive -----------------------------------------
+archive="mission-$(date -u +%Y%m%d-%H%M%S)-$$.zip"
+[ -e "$archive" ] && die "Refusing to reuse an existing $archive."
+# From here an archive may exist but is NOT yet validated. A scoped EXIT trap
+# removes it (and any temp dir) on ANY exit — a failed checker, a `set -e`
+# abort, a BLOCKED exit — so an unvalidated or rejected archive is never left
+# behind (R9-04). We clear the trap only after every check passes.
+exdir=""
+trap 'rm -f "$archive"; [ -n "$exdir" ] && rm -rf "$exdir"' EXIT
+# Store symlinks as links instead of following them (defence in depth; we also
+# rejected them above). Names are newline-free (checked above), so `-@` maps
+# one line to exactly one intended file.
+printf '%s\n' "${safe[@]}" | zip -q --symlinks "$archive" -@ || die "zip failed; no archive produced."
+
+# --- FAIL-CLOSED content gate ----------------------------------------------
+# Re-read the REAL archive. Any failure to enumerate it aborts (we never treat
+# an unknown outcome as success). Forbidden-path checks run FIRST; only a
+# root-level .env.example is exempt. (`unzip -Z1` renders non-ASCII names
+# lossily, which is harmless here: the forbidden patterns are ASCII, and the
+# real source paths were already screened by name above.)
+listing="$(unzip -Z1 "$archive")" || die "Could not read the archive to validate it — aborting (fail-closed)."
+[ -n "$listing" ] || die "Archive listing was empty — aborting (fail-closed)."
+
+forbidden=""
+while IFS= read -r entry; do
+  [ -z "$entry" ] && continue
+  case "$entry" in */) continue ;; esac       # a directory entry, not a file
+  [ "$entry" = ".env.example" ] && continue   # narrow, root-only exemption
+  if is_forbidden "$entry"; then
+    forbidden+="$entry"$'\n'
+  else
+    rc=$?
+    [ "$rc" -eq 1 ] || die "Could not screen an archive entry (pattern-engine fault) — aborting (fail-closed)."
+  fi
+done <<< "$listing"
+
+if [ -n "$forbidden" ]; then
+  say "BLOCKED — these must not ship:"
+  printf '%s' "$forbidden" >&2
+  blocked_hint
+  exit 1
+fi
+
+# EXACT membership — nothing added, dropped or renamed. We must NOT compare
+# `unzip -Z1`'s TEXT, because it renders non-ASCII names lossily (Apple shows
+# UTF-8 bytes as `?`), which would falsely reject a valid Unicode name such as
+# a Hebrew filename (R9-02). Instead EXTRACT the archive — extraction preserves
+# the real bytes on disk — and compare the extracted paths to the intended
+# list, byte-for-byte. Each `$(...)` is guarded so a checker fault aborts with a
+# diagnostic (and the trap deletes the archive).
+exdir="$(mktemp -d)" || die "Could not create a temp dir to validate the archive — aborting (fail-closed)."
+unzip -qq -o "$archive" -d "$exdir" >/dev/null 2>&1 || die "Could not extract the archive to validate it — aborting (fail-closed)."
+members="$( (cd "$exdir" && find . \( -type f -o -type l \) -print) | sed 's|^\./||' | LC_ALL=C sort )" || die "Could not enumerate the archive to validate it — aborting (fail-closed)."
+intended="$(printf '%s\n' "${safe[@]}" | LC_ALL=C sort)" || die "Could not enumerate the intended source list — aborting (fail-closed)."
+if [ "$members" != "$intended" ]; then
+  die "Archived files do not match the intended source list — aborting (fail-closed)."
+fi
+
+# All checks passed: keep the archive (clear the trap) and report.
+rm -rf "$exdir"; exdir=""
+trap - EXIT
+say "Packaged ${#safe[@]} source files into $archive"
+printf '%s\n' "$archive"
 ```
 
-Keep `.env.example` if it exists (the `-x ".env.*"` pattern also skips it; add
-it back with `zip mission.zip .env.example` when it has no secrets). Check the
-rules in the section "Building for moonbase: a project that deploys first time" first: root layout, `PORT`, `start`
-script.
+Run it and capture the archive name it prints — that's what you upload (in a
+non-git project, pass `--manifest files.txt` listing your source paths):
+
+```bash
+mission="$(bash scripts/package-mission.sh)" || exit 1   # fails closed; nothing to upload on error
+```
+
+Shipping a **static build on purpose** (a prebuilt `dist/`, `build/` or `out/`
+is the mission)? Those directory names are blocked by default; add
+`--allow-build-output` to include them (list the exact files with `--manifest`,
+or run from the build folder so its `index.html` is at the root). It still
+blocks secrets, databases, logs, `node_modules` and `.git`, so the safeguards
+hold — it only stops treating build-output *names* as forbidden. One build-dir
+exception stays blocked even with the flag: `.next/cache` is a build cache, not
+a shippable artifact, so it's always excluded — ship `.next` without it.
+
+Check the rules in the section "Building for moonbase: a project that deploys first time" first: root layout, `PORT`, start
+command (Node), or the app object (Python).
 
 ### Step 3. New mission, or new version?
 
@@ -247,8 +713,9 @@ script.
   `name_taken`.
 
 ```bash
-curl -s "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" | jq -r .id
+curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
+  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+  -H "User-Agent: my-agent/1.0" | jq -re .id || { echo "No mission at that address (check the name/key)." >&2; exit 1; }
 ```
 
 The id is also in the mission's page link in the app
@@ -257,53 +724,420 @@ last deploy (`project_id`).
 
 ### Step 4. Deploy and read the result
 
+**Read the result honestly.** The HTTP status is `200` even when the deploy
+later fails, so you must parse the stream — and a half-received stream must
+never read as success. Use the shipped parser, **`scripts/parse-deploy-result.sh`**
+— the same one tool the quickstart and the CI example in the section "The deploy API, CI and GitHub Actions" call,
+so no copy can drift. It exits `0` **only** on a complete, final `done` event
+carrying a usable https live URL (a real DNS host, optional port 1-65535, no
+userinfo; an internationalised `xn--` host is verified with `node`'s URL parser
+and is treated as unknown if node isn't installed) and a string project_id and the app is not reporting itself
+not-ready. It exits `3` when the deploy landed but the `done` event says
+`app_ready:false` (or `readiness.state` is `not_ready`): the files are deployed
+but the app needs configuration or is still warming up, so poll the status
+endpoint — do not re-upload. A refusal, an `error` event, or a
+truncated/malformed/unknown stream exits non-zero so you reconcile with the
+status endpoint instead of lying. Run the skill's own copy if it is on disk,
+otherwise save this exact script as `scripts/parse-deploy-result.sh` and commit
+it so CI runs the same tool:
+
+```bash
+#!/usr/bin/env bash
+# moonbase deploy-result parser — the one shipped tool that turns a deploy
+# response into an HONEST outcome. The deploy recipe, the quickstart and CI all
+# call this same script, so no copy can drift. It succeeds (exit 0) ONLY on a
+# transfer that completed AND a stream carrying EXACTLY ONE final `done` event
+# (one JSON object) with a usable https:// live URL (a real DNS hostname: 2+
+# labels, alphabetic TLD, so no IP / numeric / hex hosts; optional port 1-65535,
+# no userinfo; an xn-- (IDN) host must also pass Node's WHATWG URL parser, since
+# Punycode decoding alone is not IDNA validation) and a non-empty string
+# project_id, and its readiness is not an explicit not-ready. A failed
+# transfer, a refusal, an `error`, or a truncated / duplicate / malformed /
+# unknown outcome FAILS, so it is reconciled against the status endpoint rather
+# than reported as a success it wasn't.
+#
+# Events are parsed per the WHATWG SSE spec (field = text before the first
+# colon; at most one leading space stripped from the value; `data` lines
+# accumulate), so `data:x` and `data: x` are the same field and nothing is
+# silently dropped. Every printed server field is sanitised (control chars,
+# CR/LF/ESC and U+2028/U+2029 stripped) so it can't inject CI-log commands.
+#
+# Usage: bash parse-deploy-result.sh <body-file> <http-status> <content-type> <curl-exit>
+# Exit:  0 live   1 failed/refused   2 unknown/truncated (reconcile)
+#        3 deployed but NOT READY (app_ready:false / readiness not_ready): the
+#          upload landed; poll the status endpoint, do NOT re-upload.
+report_deploy_result() {
+  body="${1:-}"; http_status="${2:-}"; curl_rc="${4:-}"
+  mt="$(printf '%s' "${3:-}" | tr 'A-Z' 'a-z')"; mt="${mt%%;*}"
+  mt="${mt#"${mt%%[![:space:]]*}"}"; mt="${mt%"${mt##*[![:space:]]}"}"
+
+  # Fail CLOSED on a missing or non-numeric curl exit: only an explicit 0 is a
+  # clean transfer; anything else (an empty 4th arg from a caller bug included)
+  # is UNKNOWN, never a silent success.
+  case "$curl_rc" in
+    0) : ;;
+    '') echo "Deploy transfer status missing (no curl exit code) — reconcile with the status endpoint before trusting it." >&2; return 2 ;;
+    *[!0-9]*) echo "Deploy transfer status not understood (curl exit '$curl_rc') — reconcile with the status endpoint." >&2; return 2 ;;
+    *) echo "Deploy transfer failed (curl exit $curl_rc) — reconcile with the status endpoint before uploading again." >&2; return 2 ;;
+  esac
+
+  [ -n "$http_status" ] || { echo "Deploy failed: no HTTP status (transfer never completed) — reconcile with the status endpoint." >&2; return 2; }
+  [ -n "$mt" ]          || { echo "Deploy failed: no Content-Type (not a deploy stream) — reconcile with the status endpoint." >&2; return 2; }
+  # A pre-stream JSON refusal is a DEFINITE failure (1) only when transport and
+  # HTTP status are known AND the body is exactly one JSON object with a string
+  # `title` or `error`; a malformed / non-object / unrecognised body is UNKNOWN (2).
+  case "$mt" in
+    application/json)
+      rmsg="$(jq -se 'if length==1 and (.[0]|type=="object") and (((.[0].title // .[0].error)|type)=="string") then .[0] else error end' "$body" 2>/dev/null | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" ");
+             "Deploy refused: " + ((.title // .error // "error")|s)
+             + (if .nextStep then " — " + (.nextStep|s) else "" end)
+             + (if .retry_after_sec then " (retry after " + (.retry_after_sec|s) + "s)" else "" end)' 2>/dev/null)" && [ -n "$rmsg" ] || { echo "Deploy returned a JSON body that is not a recognised refusal — reconcile with the status endpoint before uploading again." >&2; return 2; }
+      printf '%s\n' "$rmsg" >&2
+      return 1 ;;
+  esac
+  case "$http_status" in 2[0-9][0-9]) : ;; *) echo "Deploy failed: HTTP $http_status before any stream." >&2; return 1 ;; esac
+  case "$mt" in text/event-stream) : ;; *) echo "Deploy failed: unexpected Content-Type '$mt' (not a deploy stream)." >&2; return 1 ;; esac
+
+  # WHATWG SSE line interpretation: split each field at the FIRST colon and strip
+  # at most one leading space, so fields are recognised regardless of spacing
+  # ('data: x' and 'data:x' are the same field). A line beginning ':' is a
+  # comment; a blank line dispatches the event. 'data' lines accumulate (joined
+  # by LF, one trailing LF removed at dispatch). Require EXACTLY ONE terminal
+  # (done|error) that is the FINAL semantic frame — after it, only comment/blank
+  # heartbeat framing may appear. A field still pending at EOF is a truncated tail.
+  final_event=""; final_data=""; ev=""; data=""; term_count=0; terminated=0; first=1
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    # Strip a leading UTF-8 BOM on the very first line.
+    [ "$first" -eq 1 ] && { line="${line#$'\xef\xbb\xbf'}"; first=0; }
+    # We parse only LF / CRLF line breaks. A lone or embedded CR (a stream
+    # using bare CR as a separator) is NOT interpreted per SSE, so fail CLOSED
+    # rather than silently hide a frame a spec client would see.
+    case "$line" in *$'\r'*) echo "The stream used bare CR line breaks (not parsed) — reconcile with the status endpoint before trusting it." >&2; return 2 ;; esac
+    if [ "$terminated" -eq 1 ]; then
+      case "$line" in
+        "") : ;;
+        :*) : ;;
+        *) echo "The stream carried a further frame after the final 'done'/'error' — reconcile with the status endpoint before trusting it." >&2; return 2 ;;
+      esac
+      continue
+    fi
+    case "$line" in
+      "")
+        data="${data%$'\n'}"
+        case "$ev" in
+          done|error) term_count=$((term_count + 1)); final_event="$ev"; final_data="$data"; terminated=1 ;;
+        esac
+        ev=""; data="" ;;
+      :*) : ;;
+      *)
+        case "$line" in
+          *:*) field="${line%%:*}"; rest="${line#*:}"; case "$rest" in " "*) rest="${rest# }" ;; esac ;;
+          *)   field="$line"; rest="" ;;
+        esac
+        case "$field" in
+          event) ev="$rest" ;;
+          data)  data="${data}${rest}"$'\n' ;;
+          *) : ;;
+        esac ;;
+    esac
+  done < "$body"
+  if [ -n "$ev" ] || [ -n "$data" ]; then
+    echo "The stream ended mid-event (truncated) — reconcile with the status endpoint before uploading again." >&2
+    return 2
+  fi
+  if [ "$term_count" -ne 1 ]; then
+    echo "The stream did not carry exactly one final 'done'/'error' ($term_count seen) — reconcile with the status endpoint before uploading again." >&2
+    return 2
+  fi
+
+  case "$final_event" in
+    done)
+      obj="$(printf '%s' "$final_data" | jq -se 'if length==1 and (.[0]|type=="object") then .[0] else error end' 2>/dev/null)" || { echo "Deploy 'done' did not carry exactly one JSON object — reconcile with the status endpoint." >&2; return 2; }
+      url="$(printf '%s' "$obj" | jq -re '
+        def host_ok($hp):
+          ($hp | ascii_downcase) as $h
+          | ($h | test("@") | not)
+          and ($h | test("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:[0-9]{1,5})?$"))
+          and ( if ($h | test(":")) then (($h | sub("^[^:]*:";"") | tonumber) as $p | $p >= 1 and $p <= 65535) else true end )
+          and ( ($h | sub(":[0-9]+$";"")) as $host
+                | ($host | split(".")) as $labels
+                | ($labels | last) as $tld
+                | ($host | length) <= 253
+                  and all($labels[]; length <= 63)
+                  and (($tld | test("^[a-z]{2,}$")) or ($tld | test("^xn--[a-z0-9-]*[a-z0-9]$"))) );
+        .url
+        | select(type=="string")
+        | select(test("[[:cntrl:][:space:]\u2028\u2029]") | not)
+        | select(test("^https://"))
+        | (sub("^https://";"") | sub("[/?#].*$";"")) as $hp
+        | select(host_ok($hp))' 2>/dev/null)" || { echo "Deploy ended with an incomplete 'done' (no usable https URL with a real host) — reconcile with the status endpoint before trusting it." >&2; return 2; }
+      # An IDN host (any xn-- label) is accepted only if a real URL/IDNA parser
+      # (Node's WHATWG URL) accepts it unchanged; without node it is UNKNOWN. A
+      # plain ASCII host (e.g. *.moonbase.host) never needs node.
+      hp="${url#https://}"; hp="${hp%%[/?#]*}"; hp="$(printf '%s' "$hp" | tr 'A-Z' 'a-z')"; hn="${hp%:*}"
+      case "$hp" in *:*) : ;; *) hn="$hp" ;; esac
+      case "$hn" in
+        xn--*|*.xn--*)
+          if ! command -v node >/dev/null 2>&1; then
+            echo "Deploy 'done' has an internationalised (xn--) host that needs node to verify and node is not installed — reconcile with the status endpoint before trusting it." >&2; return 2
+          fi
+          # The node call first proves ITS parser validates IDNA (some releases accept
+          # every xn-- host): known-bad names must throw and a known-good one must
+          # round-trip, else the check is meaningless and the host is UNKNOWN.
+          nout="$(node -e '
+            const bad = (h) => { try { new URL("https://" + h + "/"); return false; } catch (e) { return true; } };
+            let sane = false;
+            try { sane = bad("xn--a.example") && bad("xn--a-xbb.example") && new URL("https://xn--p1ai.xn--p1ai/").hostname === "xn--p1ai.xn--p1ai"; } catch (e) {}
+            if (!sane) process.exit(3);
+            try { const u = new URL(process.argv[1]); if (u.protocol === "https:" && u.hostname === process.argv[2]) { process.stdout.write("mb-idna-ok"); process.exit(0); } process.exit(1); } catch (e) { process.exit(1); }
+          ' "$url" "$hn" 2>/dev/null)"; nrc=$?
+          case "$nrc" in
+            0) [ "$nout" = "mb-idna-ok" ] || { echo "Deploy 'done' has an internationalised (xn--) host and the node check did not confirm it — reconcile with the status endpoint before trusting it." >&2; return 2; } ;;
+            3) echo "Deploy 'done' has an internationalised (xn--) host and this node's URL parser does not validate IDNA — reconcile with the status endpoint before trusting it." >&2; return 2 ;;
+            *) echo "Deploy 'done' host is not a valid internationalised hostname (rejected by the URL parser) — reconcile with the status endpoint before trusting it." >&2; return 2 ;;
+          esac ;;
+      esac
+      printf '%s' "$obj" | jq -re '.project_id | select(type=="string") | select(test("[^[:space:][:cntrl:]]")) | select(test("[[:space:][:cntrl:]]")|not)' >/dev/null 2>&1 || { echo "Deploy 'done' carried no usable project_id string (empty, whitespace, or control chars) to bind the mission to — reconcile with the status endpoint before trusting it." >&2; return 2; }
+      # app_ready is the app's own readiness: true -> live; false (or readiness
+      # state "not_ready") -> deployed but NOT ready (exit 3); null / missing ->
+      # not determined, which the API contract treats as live; any other type is
+      # not understood -> UNKNOWN.
+      ready="$(printf '%s' "$obj" | jq -r 'if (.app_ready == null or .app_ready == true or .app_ready == false) | not then "bad"
+        elif .app_ready == false then "no"
+        elif ((.readiness | type) == "object") and (.readiness.state == "not_ready") then "no"
+        else "yes" end' 2>/dev/null)" || ready="bad"
+      case "$ready" in yes|no) : ;; *) echo "Deploy 'done' carried an app_ready value that is not true/false/null — reconcile with the status endpoint before trusting it." >&2; return 2 ;; esac
+      if [ "$ready" = "no" ]; then
+        printf 'Deployed, NOT READY: %s\n' "$url"
+      else
+        printf 'Live: %s\n' "$url"
+      fi
+      printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" ");
+        "project_id: " + (.project_id|s),
+        (if (.self_repair_notice // "") != "" then "Self-repair: " + (.self_repair_notice|s) else empty end),
+        (if (.skipped_entries|type) == "array" and (.skipped_entries|length) > 0 then "Skipped entries: " + ([.skipped_entries[]|s]|join(", ")) else empty end)' 2>/dev/null
+      if [ "$ready" = "no" ]; then
+        printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" ");
+          (if (.readiness | type) == "object" then "Readiness: " + ((.readiness.state // "not_ready")|s) + " (path " + ((.readiness.path // "unknown")|s) + ", http " + ((.readiness.http_status // "unknown")|s) + ")" else empty end)' 2>/dev/null
+        echo "The files were uploaded and the mission is deployed, but the app reports it is not ready yet (needs configuration or still warming up). Do NOT re-upload: poll the status endpoint until status is 'live' (appReady true), and finish any configuration it needs." >&2
+        return 3
+      fi
+      return 0 ;;
+    error)
+      eobj="$(printf '%s' "$final_data" | jq -se 'if length==1 and (.[0]|type=="object") then .[0] else error end' 2>/dev/null)" || { echo "Deploy ended with a malformed 'error' event (not one JSON object) — reconcile with the status endpoint before trusting it." >&2; return 2; }
+      emsg="$(printf '%s' "$eobj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" ");
+        "Deploy failed: " + ((.friendly.title // "build error")|s)
+        + " [code " + ((.friendly.code // .code // "unknown")|s) + "]"
+        + (if .retry_after_sec then " (retry after " + (.retry_after_sec|s) + "s)" else "" end)
+        + (if (.consent_url // .friendly.consent_url) then " — approve in the browser: " + ((.consent_url // .friendly.consent_url)|s) else "" end)
+        + " (reference " + ((.trace_id // "no-TRK")|s) + ")"' 2>/dev/null)" || { echo "Deploy 'error' event could not be rendered (unexpected shape) — reconcile with the status endpoint before trusting it." >&2; return 2; }
+      printf '%s\n' "$emsg" >&2
+      return 1 ;;
+  esac
+}
+
+report_deploy_result "$@"
+```
+
+Run the deploy, capturing the body, HTTP status and Content-Type, then hand
+them to the shipped parser:
+
 ```bash
 API="https://app.moonbase.cloud"
-curl -sN "$API/api/projects/upload/stream" \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" \
-  -F "file=@mission.zip" \
-  -F "redeployProjectId=$MOONBASE_MISSION_ID" > deploy.log
-
-if grep -q '^event: done' deploy.log; then
-  grep -A1 '^event: done' deploy.log | sed -n 's/^data: //p' | jq -r '"Live: " + .url'
-elif grep -q '^event: error' deploy.log; then
-  grep -A1 '^event: error' deploy.log | sed -n 's/^data: //p' | jq -r '"Deploy failed: " + (.friendly.title // .message) + " (reference " + .trace_id + ")"'
-  exit 1
-elif jq -e .error deploy.log > /dev/null 2>&1; then
-  # No stream: a JSON error from before the stream opened.
-  jq -r '"Deploy failed: " + .error + " — " + (.message // "") + (if .retry_after_sec then " (retry in \(.retry_after_sec)s)" else "" end)' deploy.log
-  exit 1
-else
-  echo "The stream closed before done or error. Check the mission status before uploading again."
-  exit 1
+# For a REDEPLOY, record the current version FIRST, so an UNKNOWN outcome can be
+# reconciled by "did currentVersion go up?" (Step 5). Empty for a new mission.
+prev_version=""
+if [ -n "${MOONBASE_MISSION_ID:-}" ]; then
+  prev_version="$(curl -sS "$API/api/v1/sites/$MISSION_ADDRESS/status" \
+    -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
+    | jq -r '.currentVersion // empty')"
 fi
+# The stream can carry build output, so keep it in a private, short-lived file
+# (owner-only, deleted on exit) — never world-readable, committed, or uploaded
+# as a CI artifact.
+log="$(mktemp)"; chmod 600 "$log"; trap 'rm -f "$log" "$mission"' EXIT  # also remove the uploaded zip
+
+# Capture curl's OWN exit (don't rely on ambient `set -e`): a transfer that
+# fails AFTER a complete-looking `done` (e.g. timeout, exit 28) must be treated
+# as UNKNOWN, never a success.
+curl_rc=0
+meta="$(curl -sSN "$API/api/projects/upload/stream" \
+  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+  -H "User-Agent: my-agent/1.0" \
+  -F "file=@$mission" \
+  -F "redeployProjectId=$MOONBASE_MISSION_ID" \
+  -o "$log" -w '%{http_code} %{content_type}')" || curl_rc=$?
+
+bash scripts/parse-deploy-result.sh "$log" "${meta%% *}" "${meta#* }" "$curl_rc"
+case $? in
+  0) : ;;                                   # live — run the success check below
+  1) exit 1 ;;                              # a real failure the parser reported
+  3) echo "Deployed but NOT READY — poll the status endpoint (do not re-upload)." >&2
+     exit 3 ;;                              # app_ready:false — deployed, still configuring/warming
+  *) # UNKNOWN: reconcile against status instead of re-uploading blindly.
+     echo "Reconciling: was baseline version $prev_version — check status now." >&2
+     exit 2 ;;
+esac
 ```
+
+A non-zero return that asks you to reconcile is the "unknown outcome" branch
+below: check the mission status (Step 5) before uploading again — never re-POST
+blindly on an uncertain result.
 
 For a **new** mission, remove the `redeployProjectId` line (add
 `-F "name=my-idea"` if the user chose an address).
-
-What to tell the user:
-- **Success:** give them the live URL from `done.url`. If
-  `self_repair_notice` is set, tell them what moonbase fixed. If
-  `skipped_entries` isn't empty, say which files were left out.
-- **Failure:** show `friendly.title`, `friendly.explanation` and
-  `friendly.nextSteps` in plain words, plus the `trace_id` (`TRK-…`) for
-  support. Look up the `code` in the section "Troubleshooting".
-- **Wait-and-retry codes** (`deploy_in_progress`, `rate_limited`): wait
-  `retry_after_sec` seconds, then try **once** more. Never loop.
-- **Connection dropped** before `done` or `error`: don't upload again. Check
-  status (Step 5).
 
 Allow at least 10 minutes for a build before giving up on the stream. For a
 ZIP over about 90 MB, send the same request to
 `https://upload.moonbase.cloud/api/projects/upload/stream` (same key, same
 fields).
 
+#### How to react to the outcome (one classification + retry policy)
+
+This is the single state machine — the section "The deploy API, CI and GitHub Actions" states the same one for
+pipelines. **Branch on the stable machine signal, never on a title, the raw
+`message`, or `friendly.category`:** for a stream `error` event that's
+`friendly.code` alone (a missing or unrecognized code is UNKNOWN, below — never
+fall back to the category); for a JSON error before the stream it's the `error`
+code and its HTTP status. `friendly.category` tells the *user* whose fix it is;
+it is never a retry signal and never a substitute for the code. Take the FIRST
+branch that matches, in this order:
+
+- **`done`:** the source is deployed. If its `app_ready` is `false` (parser exit
+  `3`, "Deployed, NOT READY") the app is deployed but not serving yet: keep the
+  version receipt, tell the user it still needs configuration or warming up, and
+  poll the status endpoint until `status` is `live` — never re-upload and never
+  call it live. `app_ready:true`, or `null`/absent (readiness not determined),
+  is live. Run the success check below before you call it finished.
+- **Retryable — by explicit code only** (never inferred from a category). The
+  complete retryable set is:
+  - *Before the stream* (JSON error): `rate_limited` (429),
+    `deploy_in_progress` (409), `internal` (500), `service_draining` (503),
+    `scanner_unavailable` (503), `scan_incomplete` (503).
+  - *In the stream* (`error` event): `friendly.code` is one of `deploy_timeout`,
+    `moonserver_5xx`, `moonserver_unreachable`, `pypi_unreachable`, or
+    `deploy_in_progress` (which can arrive in-stream as well as pre-stream).
+    These are the only build/runtime codes a retry may clear. **Do not retry on
+    the `our_side` category** — it is attribution, not a retry signal:
+    `dependency_version_not_found`, `slug_length_out_of_range` and
+    `moonserver_not_configured` are also `our_side` but deterministic, so a
+    retry just fails again.
+- **Needs the owner** (`consent_required`): the one browser case — see below.
+  Never retried by a key.
+- **Change the request first** (not retryable): a **known deterministic**
+  `friendly.code` — one in the authoritative code list (the section "The deploy API, CI and GitHub Actions",
+  "Build logs and build failures") that isn't in the retryable set above
+  (including the deterministic `our_side` ones), or a recognized pre-stream
+  `error` code. Show `friendly.title` / `.explanation` / `.nextSteps`, the
+  `friendly.culprit` and the `trace_id` (`TRK-…`), look the fix up in
+  the section "Troubleshooting", fix the cause (or escalate with the `trace_id` if it's
+  moonbase's to fix), then deploy again. (NOT a catch-all: a code that isn't in
+  the list is UNKNOWN, next — never "change the request".)
+- **UNKNOWN — never retry blindly** (this is also where a **missing,
+  unrecognized or malformed** outcome lands, never the "change the request"
+  branch): `unknown_error`, a `friendly.category` of `unknown`,
+  `stream_ended_without_complete` (the stream closed with no final event —
+  UNKNOWN even though its category is `our_side`), a bare `docker_build_failed`
+  with no identified cause, a `friendly.code` not in the authoritative list
+  (the section "The deploy API, CI and GitHub Actions"), data that isn't valid JSON, **or** a stream that dropped
+  or timed out with neither `done` nor `error`. An unknown outcome is neither a
+  provider fault nor a user error until evidence says which — don't re-POST on a
+  guess. Check status (Step 5) first: if `deployInProgress` is still `true`,
+  wait; if `currentVersion` went up it actually succeeded; upload again only
+  once status shows it didn't land.
+
+**Retryability comes only from the named sets above — never from the
+`friendly.category`.** Branch on `friendly.code`: if it's in the retryable set,
+retry; `unknown_error` / `stream_ended_without_complete` / category `unknown` /
+a code you don't recognise / malformed data are UNKNOWN; only a known
+deterministic code means change the request. The category tells the *user*
+whose fault it is, not whether to retry.
+
+**The one retry policy** (same everywhere — the section "The deploy API, CI and GitHub Actions" repeats it). Only
+for a *retryable* branch, and **counting the first attempt**: wait at least the
+server's delay before each retry — `retry_after_sec` (also the `Retry-After`
+header) when it's given, otherwise a few seconds, growing each attempt — and
+**never retry sooner than the server asked**. Stop as soon as either bound is
+hit: **3 attempts in total** (the first one included), or the next required wait
+would push you past a **local deadline of a few minutes**. Then stop and report
+the `trace_id` — never loop. (There is no per-wait ceiling that would override a
+longer `Retry-After`; the bounds are the attempt count and the total deadline.)
+
+**Diagnose safely (one rule, capture bounded and sanitized).** Show the user
+`friendly.*`, never the raw `message`. Read the raw `message` yourself to work
+out the cause. To escalate, give support the `trace_id` (`TRK-…`); if you
+attach any log excerpt, **redact it first** — strip API keys (`mb_live_…`),
+`Authorization` headers, tokens, database URLs and any connection string that
+carries a credential, and any other private data — and keep it to the last ~20
+lines, never the whole stream. The same rule holds whether you're logging it or
+sharing it.
+
+**The one human-in-the-browser exception (`consent_required`).** moonbase
+proposes build changes it won't make under an API key alone. Don't try to
+automate it: give the owner the `consent_url`, have them deploy that project
+**once** from their browser and approve the changes. After that, your API
+deploys to that mission work again. (An API-key deploy already auto-accepts
+the ordinary Compatibility Engine fixes — empty-value env var, start script,
+port rewrite, Node version, lockfile regeneration — *before* it goes live;
+`consent_required` is only the rare case that still needs a person. See
+*What moonbase fixes for you* in the section "Building for moonbase: a project that deploys first time".)
+
+#### When is it actually done? (don't stop at `done`)
+
+A `done` event means the **source is live** — it does not prove the app
+*works*. "Infrastructure up" and "usable" are different things; check the real
+ones before you tell the user it's ready:
+
+1. **It responds on the route that matters.** Open `done.url` (and the
+   specific path the app is meant to serve) and confirm a real `2xx` with the
+   expected content — not a server-error or crash page. A dynamic app can
+   start and then crash on the first request (a missing dependency, a bad
+   import), still after a clean `done`.
+2. **Check whether it's protected — don't assume it is.** A mission *can* have
+   a password, but don't claim one is private until you've checked: a new
+   mission may have no password, leaving the link open to anyone. Request the
+   public URL and look at what comes back — moonbase's password gate (a `200`
+   that is the gate, not your app) means it's protected, so verify behind it;
+   your app's own content rendering straight away means it's open. The status
+   endpoint does not report protection, so this request is the check. Tell the
+   owner plainly whether the mission is currently password-protected or open,
+   and never report a locked gate as a working app.
+3. **Set the secrets over the env API — the deploy form can't.** The deploy
+   multipart form has **no env field**, and a shipped `.env` supplies only
+   non-secret values, so a fresh deploy is *live but unconfigured* until you set
+   the real ones. When you can run commands, finish this yourself instead of
+   handing it back: `PUT` the mission's secrets (database URL, API keys, auth
+   config) to the env API (`GET`/`PUT /api/v1/sites/<slug>/env`, same key and
+   scope — see the section "The deploy API, CI and GitHub Actions"). The `PUT`'s `set`/`count` receipt is your
+   confirmation the write landed; a follow-up `GET` confirms a **new** key's
+   name but can't confirm an **overwrite** (values are write-only, so the name
+   shows whether the old or new value is stored). Verify a changed value at the
+   app level after you redeploy so they apply. Only
+   point the owner at **Mission Control → Environment Variables** when you can't
+   reach the env API. Distinguish plainly: *source deployed* (done) vs
+   *configured and ready* (secrets set, redeployed).
+4. **Persistence is wired, if the app needs it.** Confirm data goes to an
+   external database or object store (reached directly with its connection
+   string — see *Data and storage*), not the container disk that's wiped each
+   deploy.
+5. **No public default account.** If the app has sign-in, don't leave a
+   default/admin login open to the world — enroll the owner privately and
+   confirm there's no public default credential.
+
+Report honestly which stage you reached: **first deploy** (new address live),
+**update** (new version of an existing mission), **locked** (deployed but
+behind a password / missing secrets), or **fully working** (verified on the
+real route with config and persistence in place). Also surface
+`self_repair_notice` (what moonbase fixed) and a non-empty `skipped_entries`
+(which files were left out).
+
 ### Step 5. Check a mission's status
 
 ```bash
-curl -s "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
-  -H "Authorization: Bearer $MOONBASE_API_KEY"
+curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
+  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+  -H "User-Agent: my-agent/1.0"
 ```
 
 Returns `id`, `slug`, `displayName`, `status`, `isPaused`, `isArchived`,
@@ -322,6 +1156,431 @@ After a successful deploy, say something like: "Done! Your mission is live
 at https://my-idea.moonbase.host. Anyone with this link can open it. Next
 time just say 'deploy this to moonbase' and I'll ship a new version to the
 same link."
+
+The `.moonbase.host` address is created automatically and is live with HTTPS
+the moment the deploy succeeds — don't wait on or set up a domain to go live.
+A custom domain is an optional, **later** step, added only after the mission
+exists (see the section "Custom domains"). So the order is: deploy → the mission is
+immediately live on its `.moonbase.host` address → optionally, later, add a
+custom domain.
+
+---
+
+## The deploy API, CI and GitHub Actions
+
+For developers, scripts, pipelines and platforms that deploy to moonbase.
+
+### The sources of truth (send developers here)
+
+- **OpenAPI 3.1 spec:** https://app.moonbase.cloud/api/v1/openapi.json. Every
+  endpoint, form field, stream event, response field and error code. Import
+  it into Postman or Insomnia, or generate a client.
+- **API Reference (human-readable):** https://moonbase.cloud/docs/api-reference
+- **Integration guide** with copy-paste curl, Node and Python:
+  https://moonbase.cloud/docs/integrate-moonbase
+- **GitHub Actions guide:** https://moonbase.cloud/docs/github-actions-ci-cd
+
+### The endpoints
+
+| | |
+|---|---|
+| `POST https://app.moonbase.cloud/api/projects/upload/stream` | Upload a ZIP (multipart), stream the deploy |
+| `GET https://app.moonbase.cloud/api/v1/sites/{address}/status` | Read a mission's state |
+| `GET https://app.moonbase.cloud/api/v1/sites/{address}/env` | List the env-var key names set on a mission |
+| `PUT https://app.moonbase.cloud/api/v1/sites/{address}/env` | Set one or more env vars (see "Setting environment variables") |
+
+Auth on **all four** — upload, status, and the env GET and PUT — is the same:
+`Authorization: Bearer mb_live_…` (an API key from **API Keys**), same deploy
+scope, scoped to the missions that key owns. Always use `app.moonbase.cloud`.
+The old `app.moonbase.host` only redirects.
+
+Passing the key with `-H "Authorization: Bearer $KEY"` puts it in the process's
+**argv**, which is visible in `ps`/`/proc` on a shared host and can land in
+shell traces. Where that matters, feed the header to `curl` out of band:
+`-H @file` (read the header line from a file) or `--config <file>` (a curl
+config file holding a `header = "Authorization: Bearer …"` line). **Not**
+`--netrc` — that supplies HTTP Basic `login:password` from a `.netrc`, not an
+arbitrary Bearer header, so it won't carry an API key. Such a file is the one
+narrow exception to "not in a file" (Step 1 of
+the section "Deploying for the user (when you can run commands)"): keep it `0600`, outside the repo and never committed —
+a secret manager or a stdin pipe is better still. (Keep secret **values** out of
+argv the same way: feed them from a file or stdin, as the env PUT below does,
+not as literal arguments.)
+
+Send a descriptive `User-Agent` header on every request (for example
+`User-Agent: my-tool/1.0`). moonbase is behind a filter that blocks requests
+with no client identity, so a missing or default `User-Agent` can be refused
+before it reaches the API.
+
+Form fields: `file` (required, the ZIP), `redeployProjectId` (an existing
+mission's id: ship a new version), `name` (address of a new mission),
+`displayName` (new missions only).
+
+### Reading the response
+
+1. Check `Content-Type`.
+   - `application/json`: refused before it started. Body:
+     `{"error": "<code>", "message", "title", "nextStep", "trkId"}` plus
+     extra fields for some codes (`retry_after_sec`, `consent_url`,
+     `reason`/`limit`/`current`). Take any number you show the user (a
+     plan-limit's `limit`/`current`, a `retry_after_sec`) from these
+     **structured fields**, never by quoting the raw `message` — the raw
+     `message` is for your own diagnosis only and is never shown.
+   - `text/event-stream`: running. HTTP status is 200 even if the deploy
+     later fails, so read to the end.
+2. Each event is an `event:` line, one `data:` line of JSON, a blank line.
+   - `stage`: progress (`subdomain.reservation`, `payload.upload`,
+     `ssl.provisioning`, `verification`; each `started` then `completed`).
+   - `build_stage`, `build_log`: build progress for Node apps.
+   - `step`: wording for moonbase's own console; ignore it.
+   - Ignore events you don't know.
+3. The stream ends with exactly one:
+   - `done`: `url` (live URL), `project_id` (send as `redeployProjectId`
+     next time), `slug`, `total_ms`, `mode` (`static` / `dynamic`),
+     `framework`, `self_repair_notice`, `skipped_entries`.
+   - `error`: `friendly.title` / `.explanation` / `.nextSteps` (show these),
+     `friendly.culprit` (the exact offending token — a package, a file, a
+     missing env-var name, a database host — already redacted; show it too),
+     `friendly.code` (stable machine code for the failure class — **branch on
+     this, never on the title or the raw text**), `friendly.category`
+     (`user_build_error` / `platform_limitation` / `our_side` / `unknown` —
+     whose fix it is), `message` (raw, don't show), `trace_id` (`TRK-…`, for
+     support), `stage`. The top-level `code` mirrors `friendly.code`.
+
+A full tested curl script is in the section "Deploying for the user (when you can run commands)" (Step 4).
+
+### Build logs and build failures (including Python)
+
+What you get while the stream is open:
+
+- `build_log` lines carry **Node** build output (npm install / build). Python
+  builds (pip install, container start) do **not** stream `build_log` lines;
+  for a Python failure, the diagnosis is in the final `error` event, not a log
+  feed.
+- When a build or a container start fails, moonbase classifies it and gives
+  you a **stable `friendly.code`** plus a `friendly.category`. **Branch on
+  `friendly.code`** — it won't change wording under you the way a title or the
+  raw `message` can. `friendly.culprit`, when set, is the exact token at fault
+  (a package spec, a file, a missing env var, a database host), already
+  redacted. Show the user `friendly.*`; read the raw `message` yourself. The
+  common codes — **this section is the authoritative code list and its retry
+  classification** (which codes are retryable); the user-facing fix per code is
+  in the section "Troubleshooting", which points back here for the list:
+  - Python deps — `python_requirement_not_found` (a bad/yanked pin),
+    `pip_version_conflict` (two pins clash), `pip_requirements_file_missing`
+    (a `-r`/`-c` file didn't ship), `pip_hash_mismatch`, `pip_wheel_incompatible`
+    (no Linux wheel), `python_module_not_found` (not in requirements.txt),
+    `python_native_compilation_unsupported` (needs a compiler). See the Python
+    contract in the section "Building for moonbase: a project that deploys first time".
+  - Node deps — `missing_dependency`, `npm_install_failed` (ERESOLVE / peer
+    conflict), `npm_start_script_missing`, `node_version_unsupported`,
+    `native_compilation_unsupported`. Fix locally (`npm install && npm run build`)
+    and redeploy.
+  - Runtime & config — `app_crashed_on_boot` (threw at start),
+    `health_check_timeout` (never bound `PORT`), `port_in_use`,
+    `missing_env_var` (set it in Mission Control → Environment Variables),
+    `database_unreachable` (your app's own DB host/port/credentials —
+    missions can reach a database directly now).
+  - Setup, not a build crash — `python_entrypoint_not_detected`,
+    `framework_unsupported:<framework>`, `astro_ssr_not_supported`,
+    `sveltekit_adapter_node_required`.
+  - Genuinely moonbase's side — `deploy_timeout`, `moonserver_5xx`,
+    `moonserver_unreachable`, `pypi_unreachable`. These four are retryable **by
+    name** (they are the exact codes listed as retryable in the state machine
+    below). Retry is keyed off those codes, never off `friendly.category` —
+    `our_side` is attribution, and other `our_side` codes are deterministic and
+    must NOT be retried (see the state machine). **The code wins:** when a
+    recognized `friendly.code` and the `friendly.category` disagree, route on
+    the code — the category never overrides a code in the authoritative list.
+    With a missing or unrecognized code, route UNKNOWN regardless of category;
+    the category may describe attribution only.
+    `unknown_error`, or a `friendly.category` of `unknown` **with no recognized
+    code present**, is unclassified — treat it as UNKNOWN (below), never as a
+    user error by default.
+  A bare `docker_build_failed` with no pinpointed cause is **UNKNOWN**, not a
+  verdict. It usually means the uploaded app's own build failed, but don't
+  assert whose fault it is — read the tail for evidence and keep it UNKNOWN
+  until something identifies the cause.
+
+There is **no API to fetch a build log after the stream closes** today — once
+the connection is gone, keep the `trace_id` (`TRK-…`) you already captured.
+That `TRK-…` is how you escalate: it ties your deploy to the full server-side
+build log, which support can read. So always record the `trace_id` from the
+`error` event before giving up, and give the user **that** for support. If you
+also attach a log excerpt, **redact and bound it first**: strip API keys
+(`mb_live_…`), `Authorization` headers, tokens, database URLs and any
+credentialed connection string, and any other private data, and keep it to the
+last ~20 lines — never paste the whole stream into a chat, a log or an artifact. (A self-service, authenticated "fetch
+my build log by `TRK-…`" endpoint is a known gap, not something that exists now
+— don't promise it.)
+
+### Retries and approval: one state machine
+
+The same policy as the section "Deploying for the user (when you can run commands)". Branch on `friendly.code` in the
+stream, or the `error` code + HTTP status before it — never on a title, the raw
+`message`, or the `friendly.category` (that is attribution, not a retry signal).
+Exactly one branch per attempt:
+
+- **Retryable — by explicit code only.** Before the stream: `429 rate_limited`,
+  `409 deploy_in_progress`, `500 internal`, `503 service_draining`,
+  `scanner_unavailable`, `scan_incomplete`. In the stream: `friendly.code` is
+  one of `deploy_timeout`, `moonserver_5xx`, `moonserver_unreachable`,
+  `pypi_unreachable`, or `deploy_in_progress` (it can arrive in-stream too) —
+  the only build/runtime codes a retry may clear. The `our_side` category is
+  **not** a retry signal: `dependency_version_not_found`,
+  `slug_length_out_of_range` and `moonserver_not_configured` are `our_side` but
+  deterministic, so retrying them just fails again.
+- `consent_required`: **not retryable by a key** — a human must approve once in
+  the browser (see below).
+- **Change the request first — known deterministic code only:** a `friendly.code`
+  that IS in the authoritative list above (or a recognized pre-stream code) and
+  is not retryable — e.g. `missing_dependency`, `npm_install_failed`,
+  `app_crashed_on_boot`, the deterministic `our_side` ones. Show `friendly.*`
+  and `nextStep` (not the raw `message`); fix the cause, or escalate with the
+  `trace_id` if it's moonbase's to fix. (This is NOT a catch-all: a code that
+  isn't in the list is UNKNOWN, next, not "change the request".)
+- **UNKNOWN — don't retry blindly (this is where a missing, unrecognized or
+  malformed outcome lands, never the branch above):** `unknown_error`, a
+  `friendly.category` of `unknown` (with no recognized `friendly.code`),
+  `stream_ended_without_complete` (UNKNOWN
+  even though its category is `our_side` — the stream closed with no final
+  event), a bare `docker_build_failed` with no pinpointed cause, a `friendly.code`
+  not in the list above, data that isn't valid JSON, or a stream that ended with
+  neither `done` nor `error`. Call the status endpoint before any re-POST
+  (below). Retryability is only ever the named set above.
+
+**The one retry policy.** Only for a retryable branch, and **counting the first
+attempt**: before each retry **wait at least the server's delay** —
+`retry_after_sec` (also the `Retry-After` header) when it's given, otherwise a
+few seconds, growing each attempt. **Never retry sooner than the server asked.**
+Stop as soon as either bound is hit: **3 attempts in total** (the first
+included), or the next required wait would pass a **local deadline of a few
+minutes** — then report the `trkId`/`trace_id`. There is no fixed per-wait
+ceiling that would override a longer `Retry-After`; the bounds are the attempt
+count and the total deadline. Never loop unboundedly.
+
+**After an unknown outcome** — the stream dropped, timed out, or closed with
+neither `done` nor `error` — do **not** re-POST the upload. Call the status
+endpoint first: if `deployInProgress` is `true`, wait; if `currentVersion`
+advanced, the deploy already succeeded. Only upload again once status shows it
+didn't land.
+
+**The approval exception to "API only".** `consent_required` is the single
+case where the owner uses the browser: moonbase proposes build changes a key
+can't auto-accept, so the owner opens `consent_url`, deploys that mission once
+from the browser and approves. Afterwards key deploys work again. Everything a
+key *does* auto-accept before the first production deploy — empty-value env
+var, start script, port rewrite, Node version, lockfile regeneration — is the
+ordinary Compatibility Engine set; only the rare leftover needs the person.
+
+Limits: a few deploys per 5 minutes and up to 100 per hour per account (plus
+a per-IP limit), one build at a time per mission, and the plan's mission,
+storage and per-deploy size limits. Allow at least 10 minutes for a stream.
+If the connection drops, check the status endpoint before uploading again.
+
+**Deployed is not always ready.** The final `done` event carries `app_ready`:
+`true` = the app's own readiness check (`/readyz` by default, or
+`MOONBASE_READINESS_PATH`) answered, so it is live; `false` = deployed and
+reachable but the app reported **not ready** (it needs configuration or is still
+warming up; `readiness.state` is `not_ready`, with the `path` and `http_status`
+probed); `null` or missing = readiness was not determined (no endpoint, a static-file
+mission, an inconclusive probe), which is treated as live. The status endpoint shows
+the same thing: `status` is `"deployed_not_ready"` (distinct from `failed`) and
+`appReady` is `false`; it is re-checked on read and flips to `live` once the
+app answers ready. `scripts/parse-deploy-result.sh` exits `3` for this case — the
+upload landed, so poll status instead of re-uploading.
+
+An internationalised (`xn--`) live host is checked with `node`'s URL parser; a runner without node, or whose node build does not validate IDNA (the parser self-tests it first), treats such a host as unknown (exit 2) and you reconcile via status. Plain ASCII hosts (the `*.moonbase.host` default) never need node.
+
+### GitHub Actions in five steps
+
+1. Create a key on **API Keys** (it starts with `mb_live_`).
+2. In the GitHub repo: **Settings → Secrets and variables → Actions → New
+   repository secret**. Name `MOONBASE_API_KEY`, value the key.
+3. Find the mission id in the mission's link
+   (`https://app.moonbase.cloud/missions/<id>`) or from the status endpoint,
+   and add it as `MOONBASE_MISSION_ID`.
+4. **Vendor BOTH helper scripts.** Copy `scripts/package-mission.sh` **and**
+   `scripts/parse-deploy-result.sh` from the skill into your repo (same paths)
+   and commit them. CI runs those identical files — the quickstart, the deploy
+   recipe and this job all use the same two tools, with no inline packaging or
+   result-parsing to drift. The job also needs `bash`, `jq`, `zip` and `unzip`
+   on the runner (`ubuntu-latest` has them); the preflight step below fails fast
+   if a helper file or tool is missing, **before** any upload.
+5. Add `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy to moonbase
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preflight — helpers and tools present
+        # Fail BEFORE any upload if a helper file or tool is missing. Otherwise a
+        # missing scripts/parse-deploy-result.sh surfaces as `exit 127` AFTER the
+        # deploy already landed — the mission is live but the job reports failure,
+        # inviting a duplicate retry. Check everything the job needs up front.
+        run: |
+          set -euo pipefail
+          for f in scripts/package-mission.sh scripts/parse-deploy-result.sh; do
+            test -f "$f" || { echo "missing helper: $f (vendor it from the skill)" >&2; exit 1; }
+          done
+          for t in bash jq zip unzip curl; do
+            command -v "$t" >/dev/null || { echo "missing tool: $t" >&2; exit 1; }
+          done
+      - name: Package for moonbase
+        # The one packaging tool, committed at scripts/package-mission.sh:
+        # a fresh, source-only, fail-closed archive. Capture its output with
+        # `|| exit 1` — `echo "$(...)" >> $GITHUB_ENV` would MASK a non-zero
+        # exit (echo still succeeds) and leave MISSION_ZIP empty. Verify the
+        # archive is a real non-empty file before using it.
+        run: |
+          set -euo pipefail
+          mission="$(bash scripts/package-mission.sh)" || exit 1
+          test -n "$mission" && test -f "$mission" || { echo "packager produced no archive" >&2; exit 1; }
+          echo "MISSION_ZIP=$mission" >> "$GITHUB_ENV"
+      - name: Deploy to moonbase
+        # Keep the stream in a private, short-lived file (owner-only, deleted on
+        # exit); print only sanitised, structured fields. Never `tee` the raw
+        # stream into the job log or upload the log as an artifact. This calls
+        # the SAME shipped script the deploy recipe uses
+        # (`scripts/parse-deploy-result.sh`, deploy-for-the-user.md Step 4): it
+        # passes ONLY on a complete, final `done` with a usable live URL, so a
+        # truncated or unknown stream fails the job instead of going green.
+        run: |
+          set -euo pipefail
+          log="$(mktemp)"; chmod 600 "$log"; trap 'rm -f "$log"' EXIT
+          # Capture curl's own exit (don't rely on set -e): a transfer that fails
+          # after a complete-looking `done` must be UNKNOWN, not a success.
+          curl_rc=0
+          meta="$(curl -sSN -X POST https://app.moonbase.cloud/api/projects/upload/stream \
+            -H "Authorization: Bearer ${{ secrets.MOONBASE_API_KEY }}" \
+            -H "User-Agent: github-actions-moonbase/1.0" \
+            -F "file=@${{ env.MISSION_ZIP }}" \
+            -F "redeployProjectId=${{ secrets.MOONBASE_MISSION_ID }}" \
+            -o "$log" -w '%{http_code} %{content_type}')" || curl_rc=$?
+          # The SAME shipped parser the deploy recipe uses — one script, no drift.
+          # Exit 3 = deployed but the app is NOT READY (app_ready:false): the job
+          # fails on purpose, but do not re-run the upload — poll status instead.
+          bash scripts/parse-deploy-result.sh "$log" "${meta%% *}" "${meta#* }" "$curl_rc"
+```
+
+6. Push to `main`. The job passes only when the stream ends with a complete,
+   valid `done` — a truncated, malformed or unknown stream fails it.
+
+### Building moonbase into another product
+
+Each of your users who has their own moonbase account gives you their own
+key; keep keys on your server only (never in browser or mobile code, a repo
+or logs). Store the `project_id` from the first `done` and send it as
+`redeployProjectId` afterwards. Rotate keys by creating a new one, switching,
+then deleting the old one. Full walkthrough:
+https://moonbase.cloud/docs/integrate-moonbase.
+
+### Setting environment variables over the API
+
+An agent can finish configuring a mission — its database URL, API keys and
+other secrets — without a human or a browser. Two calls, the same Bearer key
+and scope as a deploy, scoped to the missions that key owns.
+
+**List the keys that are set** (never the values — they are write-only):
+
+```bash
+curl https://app.moonbase.cloud/api/v1/sites/<slug>/env \
+  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+  -H "User-Agent: my-agent/1.0"
+```
+
+The reply names the keys already set and the keys your build referenced but
+left unset.
+
+**Set one or more** with a `PUT`. The keys are yours to choose — whatever your
+app reads at run time, not only what the build referenced — so an app that
+reads its config dynamically is still fully configurable.
+
+Build the JSON **in memory** and send it on **stdin**; never put a secret on
+the command line (`curl -d '{…secret…}'` leaks it into `ps`/`/proc` and your
+shell history). Keep shell tracing off and don't echo the request body or the
+raw response:
+
+```bash
+# DATABASE_URL / STRIPE_SECRET come from your own secret store, already in the
+# environment. jq reads them with its `env.NAME` builtin INSIDE the program, so
+# no value is passed as an argument (not even via `jq --arg`, which would put it
+# in argv / `ps`). `--data-binary @-` sends the body on stdin, so no value ever
+# appears in argv or shell history.
+set +x
+jq -n '{env: {DATABASE_URL: env.DATABASE_URL, STRIPE_SECRET: env.STRIPE_SECRET}}' \
+  | curl -sS -X PUT https://app.moonbase.cloud/api/v1/sites/<slug>/env \
+      -H "Authorization: Bearer $MOONBASE_API_KEY" \
+      -H "User-Agent: my-agent/1.0" \
+      -H "Content-Type: application/json" \
+      --data-binary @- \
+  | jq -r '"set: " + (.set | join(", "))'   # keys only; values are never echoed
+```
+
+Send an `env` object for a batch, or a single `key`/`value` pair. The write is
+**all-or-nothing**: every entry is validated before any is written, so one bad
+entry fails the whole call with a `400` that names the offending `key` and why
+— an invalid name, an empty value, an over-long value, or a moonbase-managed
+name — and nothing is stored. A value is stored encrypted and is **never
+returned or logged**; a success names only the keys it set (`set`, `count`).
+moonbase-managed names (the MOONBASE_ and MOONSERVER_ prefixes, and a
+\*_LIVE_URL) are refused — moonbase sets those itself.
+
+**What a success proves — and what `GET` can and can't confirm.** A `2xx` with
+`set`/`count` is the write's acknowledged receipt: those keys were accepted and
+stored (the write is atomic — see below). Treat THAT as your confirmation, not a
+follow-up `GET`. A `GET` lists key **names** only; values are write-only and
+never read back, so a `GET`:
+
+- confirms a **new** key now exists (its name appears), but
+- **cannot confirm an overwrite**. Re-setting an existing key returns the same
+  name whether the OLD or the NEW value is stored, so a `GET` can't tell you the
+  value actually changed. Don't claim it does.
+
+To be sure a changed value took effect, rely on the write receipt, then verify
+at the **app level** — redeploy (values apply on the next deploy) and have the
+app read the variable, or hit a health/debug route that reflects it. Set
+variables before you deploy, or set them and redeploy.
+
+The whole set is written in **one transaction**, so a mid-write fault stores
+nothing and comes back as `503 env_write_failed` (not a partial write) — safe to
+retry. A full mission returns `409 env_vars_limit` (with `max`); a cap that
+can't be read returns `503 mission_cap_unavailable`. In every failure case
+nothing is stored.
+
+**On an unknown outcome** (the connection dropped, or a `5xx` such as
+`env_write_failed`), don't assume it failed *or* succeeded. For a **new** key,
+`GET` and see whether its name appeared. For an **overwrite**, `GET` can't tell
+you which value is stored (the name is there either way) — the write is atomic,
+so resending the same batch is safe **only when you are the single coordinated
+writer** for that mission (plain last-write-wins). If another authorized writer
+may also be setting env on it (a second pipeline, a teammate, a rotation job), a
+blind resend can clobber a newer value written between your first attempt and
+the retry; then don't blind-retry — coordinate with the other writer. (A
+receipt/revision + conditional write, e.g. an `If-Match` precondition, is the
+robust fix, but the env API does **not** document one today — treat it as a
+future-API option, not something you can rely on now; today's supported path is
+writer coordination.) Never reconcile by reading a value back (values stay
+write-only); confirm at the app level — a check that shows **readiness only,
+never the value** (a dependent operation that works, not the secret echoed
+back). Setting a mission's
+secrets this way, rather than leaving them for the owner in the browser, is what
+keeps an automated deploy from going *live but not yet configured*.
+
+### Not available in the API today
+
+Keys limited to one mission or read-only keys (there's only the deploy
+scope); redeploying by address in one call (look up the `id` first); listing
+all missions; and reading why a build failed after the stream is gone. A
+shipped `.env` still supplies only its non-secret values at build time — real
+secrets go in with the env API above, or in **Mission Control → Environment
+Variables**.
 
 ---
 
@@ -396,7 +1655,10 @@ Steps:
 6. *You'll see "Your mission is live" (or "<name> is online").* Click
    **Open project** to see it, or **Go to mission control** to manage it.
 
-That link works for anyone, right now. Tell the user to share it.
+That link works for anyone, right now. Tell the user to share it. This
+`<address>.moonbase.host` link is automatic — the mission is live on it with
+HTTPS the moment it deploys. A custom domain is an optional, later step
+(the section "Custom domains"), set up only after the mission already exists.
 
 #### If moonbase asks a question during the launch
 
@@ -411,8 +1673,11 @@ Sometimes moonbase finds something it wants to fix that needs the user's OK
 #### If it fails
 
 The console shows the first problem and an **Error ID** (`TRK-…`). Click
-**Copy Error ID** and keep it. Then open the section "Troubleshooting". A failed deploy
-never takes a mission offline: the previous version keeps working.
+**Copy Error ID** and keep it. Then open the section "Troubleshooting". This is a first
+deploy, so nothing is live yet — fixing the error and uploading again is all
+that's needed; you're not taking anything down. (Once a mission has a working
+version, a later failed deploy never replaces it — the live version keeps
+serving.)
 
 ### What the user has now
 
@@ -437,6 +1702,31 @@ mission instead, delete a mission you don't need, or upgrade (the section "Plans
 Use this while the project is being built or right before it's zipped. Most
 failed uploads are layout or settings mistakes that are free to avoid now.
 
+### Assess fit first — before you package or deploy
+
+Take a few seconds to see what the project actually is, and tell the user
+honestly **up front** whether moonbase is a fit — don't shoehorn a poor fit
+into a broken deploy. (This is the honest-errors principle applied *before* the
+deploy, not after.)
+
+- **Good fit, proceed normally:** a static project, or a web app in a supported
+  framework (Next.js, Vite/React/Vue, Astro, SvelteKit, Nuxt, plain
+  Node/Express, or Python Flask/Django/FastAPI — see below).
+- **Poor fit — say so before uploading, and why.** Signals:
+  - a **desktop / GUI app**, anything that needs the user's own machine, or a
+    server that **can't be made to read the `PORT` env var** (moonbase binds the
+    app to `PORT`; a hardcoded port it won't give up won't be reachable);
+  - a backend language moonbase doesn't run (**Ruby, Go, Rust, PHP, Java**);
+  - something that needs **WebSockets or other real-time / persistent
+    connections**;
+  - **heavy or GPU compute**;
+  - a required **persistent local disk or database** — moonbase's filesystem is
+    **ephemeral**, so data must live in an external DB.
+
+  A static export is often the way around a near-miss. Keep it short and
+  natural: a quick "here's what I see, and whether moonbase fits," then proceed
+  or explain the mismatch.
+
 ### Static or dynamic? moonbase decides
 
 - **Static:** a ready-to-serve `index.html` at the root, no build step, and
@@ -448,12 +1738,103 @@ failed uploads are layout or settings mistakes that are free to avoid now.
 
 Supported and auto-detected, with no build config to write: static
 HTML/CSS/JS, Next.js, Vite, Create React App, plain React, plain
-Node/Express (a valid `package.json` with a `start` script).
+Node/Express (a valid `package.json` with a `start` script), and Python web
+apps.
 
-Recognised but **not deployable yet**: Astro, SvelteKit, Vue, Nuxt. **Not
-supported:** Python (Django, Flask…) and other backend languages. In those
+Python (v1): Flask, Django and FastAPI deploy when the project exposes a
+standard app object. moonbase picks gunicorn (WSGI) or uvicorn (ASGI)
+automatically and binds it to `PORT` — you do **not** write a start command.
+List dependencies in `requirements.txt`. The full contract (entry points,
+dependencies, the app-factory rule, what to verify) is in **Python web apps:
+the full contract** below; read it before you deploy a Python project. If
+moonbase can't find a startable app it says so
+(`python_entrypoint_not_detected`) instead of producing a broken deploy.
+
+Also supported: **Vue** (Vite — static build), **Astro** (static output,
+`astro build` → `dist/`), **SvelteKit** (with `@sveltejs/adapter-node`), and
+**Nuxt** (default `nuxt build` → Nitro node server). v1 limits: Astro **SSR**
+(an SSR adapter or `output: 'server'/'hybrid'`) isn't deployable yet — build
+static instead; SvelteKit needs the **Node adapter** specifically
+(`@sveltejs/adapter-node`), not adapter-static/auto. Each needs a `build`
+script in `package.json`. moonbase tells you honestly when a project is a
+deferred sub-case instead of producing a broken deploy.
+
+**Not supported:** other backend languages (Ruby, Go, PHP, Java…). In those
 cases moonbase says so instead of producing a broken deploy; a static export
 is the way around it.
+
+### Python web apps: the full contract
+
+Read this whole section before deploying a Python project; the checklist at
+the end assumes it.
+
+**Runtime.** The app runs on `python:3.12-slim-bookworm` (Python 3.12, Debian
+bookworm). gunicorn and uvicorn are both installed; moonbase detects which to
+use and starts the app bound to `0.0.0.0:$PORT` with a sixty-second request
+timeout. There is **no Procfile and no custom start command** for Python
+(unlike Node, you do not write a `start` script) — moonbase derives the start
+command itself from the app object it finds. The only lever you have is
+*where you put that app object*.
+
+**The entry point (first match wins).** moonbase looks, in order, for:
+
+1. **Django** — a root `manage.py` plus a `<project>/wsgi.py` that exposes
+   `application` → started with gunicorn.
+2. **FastAPI / Starlette (ASGI)** — a root module (`app.py`, `main.py`,
+   `server.py`, `wsgi.py`, `asgi.py` or `application.py`) with a **top-level**
+   `app = FastAPI()` (or `Starlette(...)`) → started with uvicorn.
+3. **Flask (WSGI)** — the same root modules, with a top-level
+   `app = Flask(__name__)` → started with gunicorn.
+4. **Generic WSGI** — a root `wsgi.py` whose top level exposes `application`
+   (or `app`) → gunicorn.
+5. **Generic ASGI** — a root `asgi.py` whose top level exposes `app` (or
+   `application`) → uvicorn.
+
+**The app object must be created at module top level** (column 0), because
+moonbase imports it as `module:name`. An app built **inside** a function —
+the app-factory pattern, `def create_app(): ...` — is not importable and will
+fail detection. If you use a factory, call it at module top level in a root
+`wsgi.py` or `asgi.py` and assign the result to `app` or `application`:
+
+```python
+# wsgi.py at the project root — the module-level-via-factory case that works
+from myapp import create_app
+application = create_app()   # top-level name moonbase can import: wsgi:application
+```
+
+A direct constructor also works, e.g. an `app.py` at the root:
+
+```python
+# app.py at the project root
+from flask import Flask
+app = Flask(__name__)        # moonbase starts: gunicorn app:app
+```
+
+**Dependencies.** List them in `requirements.txt` at the project root.
+
+- Install happens on the slim image with **no C/C++ build toolchain**, so each
+  dependency must provide a prebuilt Linux wheel (manylinux) or be pure
+  Python. A package that only ships an sdist needing compilation will fail the
+  build — pin a version that publishes wheels.
+- A `requirements.txt` that **references a sibling file at the project root**
+  works: `-r requirements.lock` and `-c constraints.txt` both install (those
+  root-level files are packaged with the app). A **subdirectory** include such
+  as `-r requirements/base.txt` does **not** work yet — keep the referenced
+  file at the root.
+- A hash-pinned `requirements.txt` installs (pip enforces `--require-hashes`:
+  once any line has a hash, every dependency needs one).
+- Lockfiles from **poetry, pipenv or uv are not read**. Export to
+  `requirements.txt` (for example `pip freeze > requirements.txt`).
+
+**Not in v1 for Python:** background workers / Celery, non-HTTP apps,
+WebSockets (see *Limits and runtime*), and anything that needs a native build
+toolchain to install.
+
+**Verify a Python deploy really works** (not just that it went live): open the
+mission's intended route and confirm the app answers with real content, not a
+server-error page. A missing dependency or an import error lets the container
+start and then crash on the first request, so a deploy that reports `done`
+still needs this check. See *Before you call it done*.
 
 ### The ZIP: what goes in, what stays out
 
@@ -476,15 +1857,33 @@ my-app.zip
   package-lock.json
 ```
 
-**Include:** source files, `package.json`, and the lockfile
-(`package-lock.json`, `pnpm-lock.yaml` or `yarn.lock`) if there is one.
+**Include:** source files; for Node, `package.json` and the lockfile
+(`package-lock.json`, `pnpm-lock.yaml` or `yarn.lock`) if there is one; for
+Python, `requirements.txt` (and any root-level lockfile/constraints it
+references). A `.env.example` with placeholder, non-secret values is good to
+include — it's the one env file that's safe to ship.
 
-**Leave out:**
+**Leave out** (the skill's one packaging tool, `scripts/package-mission.sh` in
+the section "Deploying for the user (when you can run commands)", keeps all of these out for you; use it):
 - `node_modules` (moonbase installs dependencies itself),
+- Python virtualenvs and caches (`.venv/`, `venv/`, `__pycache__/`, `*.pyc`),
 - build output (`.next/`, `dist/`, `build/`; moonbase builds fresh),
 - `.git`,
-- any `.env` with real secrets (see below),
+- **every real `.env`** — `.env`, `.env.local`, `.env.production` and the like
+  (secrets; see below). Keep only `.env.example`.
+- runtime data the app wrote while running: SQLite/other DB files and their
+  sidecars (`*.sqlite*`, `*.db`, `*-wal`, `*-shm`, `*-journal`), uploaded files,
+  and logs (`*.log`). These don't belong in source and are wiped on each deploy
+  anyway (see *Data and storage*).
+- the same things in **nested** folders, not just the root — a `*/node_modules`,
+  a `*/.venv`, a buried `*/.env` all have to go too.
 - OS junk (`.DS_Store`, `__MACOSX`); moonbase skips these anyway.
+
+Two things make this reliable, and the one packaging tool does both: it builds
+a **fresh, uniquely-named** archive (never reusing one that could still hold an
+old `.env`), and it runs an **automated gate** that *fails* the upload if
+anything forbidden is in the archive — rather than trusting a human to eye a
+`unzip -l`. Use the tool; don't hand-roll a shorter exclude list.
 
 Size: every plan has a per-upload limit, and nothing over 1 GB is accepted
 on any plan. Leaving out `node_modules` and build output keeps a normal app
@@ -520,12 +1919,174 @@ before uploading.
 - An upload containing what looks like a hardcoded credential is stopped
   (`hardcoded_secret_detected`) so it never goes public.
 - Real values go in **Mission Control → Environment Variables**
-  (the section "Mission Control: status, sleep, pause, password, environment variables, analytics"). Values set there always win over the `.env` file.
+  (the section "Mission Control: status, sleep, pause, password, environment variables, analytics"), or, when you deploy over the API, straight through
+  the env API (the section "The deploy API, CI and GitHub Actions") — any key your app reads, even one the build
+  never referenced. Values set either way always win over the `.env` file.
 - Reserved names: never ask the user for a variable starting with
   `MOONBASE_` or `MOONSERVER_`, or ending in `_LIVE_URL`. moonbase sets those
   itself. Rename your own variable if it collides.
 - Next.js: `NEXT_PUBLIC_*` values end up in the browser. Never put a secret
   in one.
+
+### Data and storage (where your data lives)
+
+moonbase **runs** the app; it does not store the app's data. There is **no
+built-in database** and **no permanent disk**. Every deploy builds a fresh
+container, and for static-style apps the filesystem is read-only, so anything
+the app writes to local disk while it runs — an SQLite file, uploaded images,
+a `data/` folder — is **gone on the next deploy**. Treat the filesystem as
+temporary scratch space, never as the place the real data lives.
+
+To keep data between deploys, the app connects to an **external service** and
+gets its address from an environment variable (see *Environment variables*
+above — the connection string goes in Mission Control, never hardcoded):
+
+- **A database:** any hosted Postgres / MySQL / Mongo (for example Supabase,
+  Neon, Railway, PlanetScale, MongoDB Atlas). Put its connection string in a
+  variable like `DATABASE_URL`. A running mission can **open a normal outbound
+  connection straight to the database on its own port** — Postgres 5432 or a
+  6543 pooler, MySQL 3306, Mongo 27017 — so a standard driver works; you do
+  **not** need an HTTPS/REST data API (see *Limits and runtime* below for the
+  few blocked destinations). Use the provider's pooled endpoint where it offers
+  one — it's about connection limits, not reachability. A working example is in
+  *Connecting to a database* below.
+- **Uploaded files or media:** external object storage (for example Amazon S3,
+  Cloudflare R2, Supabase Storage) — credentials via environment variables.
+
+So when the user asks "will my data survive a redeploy?", the answer is always
+the same: data in an external database or object store survives; the
+container's own filesystem does not. You do **not** need to ask the user about
+this — it is always true. Wire the app to an external store and tell the user
+which environment variable to fill. If the project has no external store and
+genuinely needs to keep data, that is the one thing to raise — point them at an
+external database, don't ask them whether moonbase has a disk.
+
+#### Connecting to a database (a working example)
+
+Use a standard driver with a **small connection pool** — a mission has little
+memory, and the pool is shared across requests, so open it **once** at startup,
+not per request. Read the connection string from the environment; never
+hardcode it. Node, with the `postgres` client (built-in pool and transactions):
+
+```js
+// db.js — create the pooled client once for the whole app.
+import fs from "node:fs";
+import postgres from "postgres";
+
+export const sql = postgres(process.env.DATABASE_URL, {
+  max: 5,                 // keep the pool small: little memory per mission
+  idle_timeout: 20,
+  // Encrypt AND verify the server's identity. rejectUnauthorized:true fails
+  // the connection on a bad or unknown certificate — there is no silent
+  // downgrade. Supply the provider's CA bundle via DATABASE_CA_CERT when it
+  // isn't a public CA; omit `ca` to trust the system roots.
+  ssl: process.env.DATABASE_CA_CERT
+    ? { rejectUnauthorized: true, ca: fs.readFileSync(process.env.DATABASE_CA_CERT).toString() }
+    : { rejectUnauthorized: true },
+});
+```
+
+```js
+// Parameterised query (values are bound, never string-concatenated into SQL):
+const users = await sql`select id, email from users where id = ${userId}`;
+
+// A transaction — commits if the callback resolves, rolls back if it throws:
+await sql.begin(async (tx) => {
+  await tx`update accounts set balance = balance - ${amount} where id = ${fromId}`;
+  await tx`update accounts set balance = balance + ${amount} where id = ${toId}`;
+});
+```
+
+Python is the same shape, with psycopg (v3) and psycopg_pool:
+
+```python
+# db.py — one pool for the app, created once.
+import os
+from psycopg_pool import ConnectionPool
+
+# sslmode=verify-full encrypts AND proves the server's identity (CA chain +
+# hostname) — no fallback to a weaker mode. sslrootcert points at the
+# provider's CA bundle (or the system bundle). 6543 is Supabase's tx pooler.
+pool = ConnectionPool(
+    os.environ["DATABASE_URL"],
+    max_size=5,                                  # small: little memory per mission
+    kwargs={
+        "sslmode": "verify-full",
+        "sslrootcert": os.environ.get("DATABASE_CA_CERT", "/etc/ssl/certs/ca-certificates.crt"),
+    },
+)
+```
+
+```python
+# A query, then a transaction (commits on exit, rolls back on exception):
+with pool.connection() as conn:
+    rows = conn.execute("select id, email from users where id = %s", (user_id,)).fetchall()
+    with conn.transaction():
+        conn.execute("update accounts set balance = balance - %s where id = %s", (amount, from_id))
+        conn.execute("update accounts set balance = balance + %s where id = %s", (amount, to_id))
+```
+
+**TLS — and the server's identity — are the app's responsibility.** moonbase
+doesn't terminate or add TLS on outbound connections, so the driver must both
+encrypt *and verify the peer*: `sslmode=verify-full` (psycopg) or a Node `ssl`
+object with `rejectUnauthorized: true` (porsager `postgres`, or `pg`), pointed
+at the provider's CA when it isn't a public one. verify-full checks the CA chain
+and the hostname; plain `require` (or `ssl: "require"`) encrypts but does **not**
+verify identity, so it can't catch a man-in-the-middle. Use verify-full and
+**never** fall back to `prefer`/`disable` or `rejectUnauthorized: false` when
+validation fails — fix the CA or hostname instead. (libpq SSL modes:
+https://www.postgresql.org/docs/current/libpq-ssl.html.)
+
+Two tips that matter on a small container: keep the pool small (a handful of
+connections), and if the provider offers a **transaction pooler** (Supabase's
+6543, a PgBouncer endpoint), prefer it — it multiplexes many short-lived app
+connections onto few database ones, which suits a mission that sleeps and wakes.
+
+### Limits and runtime (know these before you build)
+
+A running mission is one small web container. These limits are always true;
+build within them instead of shipping something that fails for the user and
+then asking moonbase about it.
+
+- **Outbound network reaches public services on any port** (the live policy as
+  of 2026-10-30; verified in production). The app can make normal outbound
+  connections to the public internet — a database on its own port (Postgres
+  5432 / 6543, MySQL 3306, Mongo 27017, Redis 6379), an HTTPS API on 443,
+  anything public — plus DNS. A plain SQL driver works; you do not need an
+  HTTPS/REST data proxy. Only two kinds of destination are blocked, and always
+  will be: **private, internal and cloud-metadata addresses** (RFC1918
+  `10/172.16/192.168`, loopback, and the `169.254.x` metadata range — this
+  protects moonbase and other missions), and **direct SMTP on port 25**
+  (anti-spam). Authenticated mail submission on **465 and 587 is allowed**, so
+  send through your email provider's submission port or its HTTPS API, not a
+  raw port-25 mail server.
+- **No WebSockets.** The server does not upgrade connections, so a WebSocket
+  app (live chat, collaborative editing, `socket.io`) will not connect. Plain
+  request/response works; long-polling and server-sent events are bounded by
+  the request timeout below.
+- **A request is cut off after about sixty seconds.** For slow work (heavy
+  processing, a slow model call), return a response quickly and continue the
+  work elsewhere, or stream partial output within the window — don't hold one
+  request open for minutes.
+- **Request and upload size is modest** — a request body, including a file
+  upload, above roughly sixteen megabytes is rejected. For large files, upload
+  straight from the browser to external object storage instead of through the
+  app.
+- **Resources per mission are small and fixed** — about half a gigabyte of
+  memory, a fraction of a CPU core, and a capped number of processes. A
+  memory-hungry app (large in-memory datasets, heavy image or video
+  processing) can be killed; keep the working set small.
+- **One web process, no background runtime.** There is no separate worker,
+  cron, or job-queue service, and a free mission sleeps when idle (below), so
+  in-process timers and schedulers stop. For scheduled or background work,
+  trigger it from an outside scheduler that calls an HTTPS endpoint on the
+  mission.
+- **Free missions sleep when idle.** A dynamic mission on the free plan stops
+  after about thirty minutes with no traffic and wakes automatically on the
+  next request, so the first request after it slept is slow (a cold start of a
+  few seconds); after that it is fast again. Paid missions stay running. That
+  is the answer to "why was the first load slow?" and "does my app stay up?" —
+  free sleeps and cold-starts, paid stays warm.
 
 ### What moonbase fixes for you (self-repair)
 
@@ -549,15 +2110,35 @@ The **Compatibility Engine** checks the project and repairs it on a copy.
 
 ### Before you call it done (checklist)
 
-- [ ] `package.json` or `index.html` is at the ZIP's root (or one folder in).
-- [ ] No `node_modules`, no build output, no `.git`.
-- [ ] Lockfile included if there is one.
-- [ ] The app listens on `PORT` and has a production `start` script.
+**Every project:**
+- [ ] The entry point is at the ZIP's root (or one folder in): `index.html`
+      (static), `package.json` (Node), or a Python app object (below).
+- [ ] No `node_modules`, no virtualenv, no build output, no `.git`, no
+      database/log files. The packaging tool's gate confirmed this and would
+      have failed the upload otherwise.
+- [ ] No real secrets in the ZIP; every variable is listed in `.env.example`.
 - [ ] No `localhost` URLs in the app's own code.
-- [ ] Every environment variable is listed in `.env.example`; no real
-      secrets in the ZIP.
+- [ ] Any database or stored file is reached with its connection string in a
+      variable set in Mission Control (a direct DB port is fine — see
+      *Connecting to a database*), not hardcoded.
+
+**Node / JS projects:**
+- [ ] The lockfile is included if there is one.
+- [ ] The app listens on `PORT` and `package.json` has a production `start`
+      script.
 - [ ] It builds on your machine: `npm install && npm run build && npm start`.
       If it fails locally, it will fail on moonbase too.
+
+**Python projects** (no `start` script — moonbase derives the command):
+- [ ] A startable app object is at module top level in a root file (see
+      *Python web apps: the full contract*).
+- [ ] `requirements.txt` lists every dependency; referenced lockfiles /
+      constraints are at the root, and the deps install as Linux wheels.
+- [ ] It runs locally the same way moonbase will start it, e.g.
+      `pip install -r requirements.txt` then `gunicorn app:app` (WSGI) or
+      `uvicorn main:app` (ASGI).
+- [ ] After deploy, you opened the live route and saw real content, not a
+      crash page.
 
 ---
 
@@ -599,7 +2180,7 @@ Be honest about two things:
 | Lovable | Vite / React | Detected automatically; usually live within a minute or two. |
 | Bolt | Usually Vite-based | If an unusual setup fails, the deploy console shows the exact step. |
 | v0 | Next.js | Deployed as a dynamic (server-rendered) mission. Set its API keys as environment variables. A monorepo layout or unusual build script may need fixing. |
-| Replit | Depends on the project | Node and static projects can deploy. Python projects (common on Replit) aren't supported (`python_runtime_not_supported`). |
+| Replit | Depends on the project | Node and static projects deploy. Python web apps (Flask/Django/FastAPI) deploy too when they expose a standard WSGI/ASGI app object and a `requirements.txt`; one with no startable app is rejected (`python_entrypoint_not_detected`). |
 
 ### Updating later
 
@@ -641,12 +2222,16 @@ Recipe**). Details: the section "Building for moonbase: a project that deploys f
 - **Static missions:** plain HTML, CSS and JavaScript, or any framework's
   static export. A single `index.html` is enough.
 - **Dynamic missions** that moonbase builds and runs: Next.js, Vite, plain
-  React, Create React App, Express and plain Node.
-- **Not yet:** Astro, SvelteKit, Vue and Nuxt are recognised but not
-  deployable yet (moonbase says so instead of failing). Python and other
-  backend languages (Ruby, Go, Rust, PHP, Java) aren't supported. moonbase
-  doesn't provide a database; an app that needs one connects to an external
-  provider (for example Supabase) through an environment variable.
+  React, Create React App, Express, plain Node, Vue, Astro, SvelteKit, Nuxt,
+  and Python web apps (Flask / Django / FastAPI that expose a standard
+  WSGI/ASGI app object, with a `requirements.txt`).
+- **v1 limits on the newer frameworks:** Astro deploys its static output
+  (SSR mode is deferred); SvelteKit needs `@sveltejs/adapter-node`. moonbase
+  says so honestly for a deferred sub-case instead of failing.
+- **Not yet:** other backend languages (Ruby, Go, Rust, PHP, Java) aren't
+  supported. moonbase doesn't provide a database; an app that needs one
+  connects to an external provider (for example Supabase) through an
+  environment variable.
 
 ### Plans
 
@@ -677,130 +2262,13 @@ AI-generated app. Also developers and platforms who want to deploy from code
 
 ### When it's not the right fit (say so honestly)
 
-- The app needs Python or another unsupported language.
+- The app needs a backend language moonbase doesn't run (Ruby, Go, Rust, PHP,
+  Java). Python web apps (Flask/Django/FastAPI) do deploy — see
+  the section "Building for moonbase: a project that deploys first time" for the v1 scope and limits.
 - It needs a managed database, background workers or heavy backend
   infrastructure from the host.
 - It must be a native mobile app in an app store.
 - The user is happy with another host. Respect that.
-
----
-
-## The deploy API, CI and GitHub Actions
-
-For developers, scripts, pipelines and platforms that deploy to moonbase.
-
-### The sources of truth (send developers here)
-
-- **OpenAPI 3.1 spec:** https://app.moonbase.cloud/api/v1/openapi.json. Every
-  endpoint, form field, stream event, response field and error code. Import
-  it into Postman or Insomnia, or generate a client.
-- **API Reference (human-readable):** https://moonbase.cloud/docs/api-reference
-- **Integration guide** with copy-paste curl, Node and Python:
-  https://moonbase.cloud/docs/integrate-moonbase
-- **GitHub Actions guide:** https://moonbase.cloud/docs/github-actions-ci-cd
-
-### The two endpoints
-
-| | |
-|---|---|
-| `POST https://app.moonbase.cloud/api/projects/upload/stream` | Upload a ZIP (multipart), stream the deploy |
-| `GET https://app.moonbase.cloud/api/v1/sites/{address}/status` | Read a mission's state |
-
-Auth on both: `Authorization: Bearer mb_live_…` (an API key from
-**API Keys**). Always use `app.moonbase.cloud`. The old `app.moonbase.host`
-only redirects.
-
-Form fields: `file` (required, the ZIP), `redeployProjectId` (an existing
-mission's id: ship a new version), `name` (address of a new mission),
-`displayName` (new missions only).
-
-### Reading the response
-
-1. Check `Content-Type`.
-   - `application/json`: refused before it started. Body:
-     `{"error": "<code>", "message", "title", "nextStep", "trkId"}` plus
-     extra fields for some codes (`retry_after_sec`, `consent_url`,
-     `reason`/`limit`/`current`).
-   - `text/event-stream`: running. HTTP status is 200 even if the deploy
-     later fails, so read to the end.
-2. Each event is an `event:` line, one `data:` line of JSON, a blank line.
-   - `stage`: progress (`subdomain.reservation`, `payload.upload`,
-     `ssl.provisioning`, `verification`; each `started` then `completed`).
-   - `build_stage`, `build_log`: build progress for Node apps.
-   - `step`: wording for moonbase's own console; ignore it.
-   - Ignore events you don't know.
-3. The stream ends with exactly one:
-   - `done`: `url` (live URL), `project_id` (send as `redeployProjectId`
-     next time), `slug`, `total_ms`, `mode` (`static` / `dynamic`),
-     `framework`, `self_repair_notice`, `skipped_entries`.
-   - `error`: `friendly.title` / `.explanation` / `.nextSteps` (show these),
-     `code` (stable, branch on it), `message` (raw, don't show), `trace_id`
-     (`TRK-…`, for support), `stage`.
-
-A full tested curl script is in the section "Deploying for the user (when you can run commands)" (Step 4).
-
-### Retries: only these
-
-- `429 rate_limited` and `409 deploy_in_progress`: wait `retry_after_sec`
-  seconds (also the `Retry-After` header), then retry.
-- `500 internal`, `503 service_draining`, `scanner_unavailable`,
-  `scan_incomplete`: moonbase's side. Retry with a growing delay.
-- Everything else means the request must change first. Show the `message`
-  and `nextStep`.
-
-Limits: a few deploys per 5 minutes and up to 100 per hour per account (plus
-a per-IP limit), one build at a time per mission, and the plan's mission,
-storage and per-deploy size limits. Allow at least 10 minutes for a stream.
-If the connection drops, check the status endpoint before uploading again.
-
-### GitHub Actions in five steps
-
-1. Create a key on **API Keys** (it starts with `mb_live_`).
-2. In the GitHub repo: **Settings → Secrets and variables → Actions → New
-   repository secret**. Name `MOONBASE_API_KEY`, value the key.
-3. Find the mission id in the mission's link
-   (`https://app.moonbase.cloud/missions/<id>`) or from the status endpoint,
-   and add it as `MOONBASE_MISSION_ID`.
-4. Add `.github/workflows/deploy.yml`:
-
-```yaml
-name: Deploy to moonbase
-on:
-  push:
-    branches: [main]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Package for moonbase
-        run: zip -r deploy.zip . --exclude "node_modules/*" ".git/*" ".next/*"
-      - name: Deploy to moonbase
-        run: |
-          curl -sN -X POST https://app.moonbase.cloud/api/projects/upload/stream \
-            -H "Authorization: Bearer ${{ secrets.MOONBASE_API_KEY }}" \
-            -F "file=@deploy.zip" \
-            -F "redeployProjectId=${{ secrets.MOONBASE_MISSION_ID }}" \
-            | tee deploy.log
-          grep -q "^event: done" deploy.log
-```
-
-5. Push to `main`. The job passes only when the stream ends with `done`.
-
-### Building moonbase into another product
-
-Each of your users who has their own moonbase account gives you their own
-key; keep keys on your server only (never in browser or mobile code, a repo
-or logs). Store the `project_id` from the first `done` and send it as
-`redeployProjectId` afterwards. Rotate keys by creating a new one, switching,
-then deleting the old one. Full walkthrough:
-https://moonbase.cloud/docs/integrate-moonbase.
-
-### Not available in the API today
-
-Keys limited to one mission or read-only keys (there's only the deploy
-scope); redeploying by address in one call (look up the `id` first); listing
-all missions; reading why a build failed after the stream is gone.
 
 ---
 
@@ -861,7 +2329,11 @@ build later, they should keep that ZIP themselves.
 
 While a deploy runs, the console streams every step. If it fails, it shows
 the first error and the deploy's **TRK-ID**. The full build log isn't shown
-in the app today: support can look it up from the TRK-ID.
+in the app (or fetchable through the API) after the deploy ends today: keep
+the **TRK-ID** — support can look the full log up from it. For reading a
+failure from the API stream (Node build output, Python failure messages such
+as a `docker_build_failed:exit=1` tail, and how to escalate with the TRK-ID),
+see the section "The deploy API, CI and GitHub Actions", "Build logs and build failures".
 
 Guide: https://moonbase.cloud/docs/export-your-mission
 
@@ -869,9 +2341,11 @@ Guide: https://moonbase.cloud/docs/export-your-mission
 
 ## Custom domains
 
-Every mission already has its own address, `<mission>.moonbase.host`, with
-HTTPS. A custom domain (like `example.com` or `app.example.com`) is optional
-and needs a **paid plan**.
+Every mission is **automatically** live at `<mission>.moonbase.host` with HTTPS
+the moment it deploys — that is its shareable address right away, so you never
+need a custom domain to go live. A custom domain (like `example.com` or
+`app.example.com`) is an **optional, later** step: add it only **after** the
+mission already exists and is live, and it needs a **paid plan**.
 
 Explain DNS simply: "DNS is the internet's address book. You'll add one line
 to your domain's address book that says 'send visitors to moonbase'."
@@ -1274,8 +2748,12 @@ If a payment fails, moonbase notifies the user: check the payment method in
 
 ## Troubleshooting
 
-First rule: **a failed deploy never takes a mission offline.** The previous
-version keeps serving. Stay calm, and tell the user that.
+First rule: **a failed deploy never takes a working mission offline.** If the
+mission already had a live version, that version keeps serving while you fix
+the new one — stay calm and tell the user that. On a **first** deploy it's
+different: there's no earlier version to fall back to, so a failed first deploy
+means the mission isn't up yet. Don't reassure the user that "the old version
+is still live" when there isn't one.
 
 Second rule: read moonbase's own message first. Every failure shows a plain
 title, an explanation, a next step and a **TRK-ID** (`TRK-…`, also called
@@ -1287,17 +2765,55 @@ delete a mission to "start fresh".
 1. Read the first red line in the deploy console, and copy the **Error ID**
    (**Copy Error ID**).
 2. Find its title or code in the table below and do what it says.
-3. If it's a build problem, check on your own computer:
-   `npm install && npm run build && npm start`. If it fails there, fix it
-   there first.
-4. Check the usual suspects: the app listens on `PORT`, `package.json` has a
-   production `start` script, every environment variable it needs is set.
-   (See the section "Building for moonbase: a project that deploys first time".)
+3. If it's a build problem, reproduce it on your own computer **the way your
+   app is built** — if it fails there, fix it there first:
+   - **Node / JS:** `npm install && npm run build && npm start`.
+   - **Python:** `pip install -r requirements.txt`, then start it the way
+     moonbase will — `gunicorn app:app` (WSGI) or `uvicorn main:app` (ASGI).
+4. Check the usual suspects **for your stack**: the app listens on `PORT`;
+   **Node** has a production `start` script in `package.json`; **Python**
+   exposes a top-level app object and lists every dependency in
+   `requirements.txt`; every environment variable it needs is set. (See
+   the section "Building for moonbase: a project that deploys first time".)
 5. Deploy a new version. Still stuck? Send the TRK-ID to support.
 
 Common console lines: "npm install failed" (a dependency problem), "npm run
 build failed" (a build error in the code), "Port not bound" (the app isn't
 listening on `PORT`), "Container exited" (the app crashed when starting).
+
+#### When the build itself fails (the raw message)
+
+A build crash comes back as an `error` event whose raw `message` starts with
+`docker_build_failed:exit=1`, followed by the real cause. The code is a plain
+build failure (not a setup code from the table below); read the tail:
+
+Every build or container-start failure carries a **stable `friendly.code`**
+(branch on it, not on the wording) and often a `friendly.culprit` naming the
+exact token at fault. The full code list and its retry classification live in
+the section "The deploy API, CI and GitHub Actions" ("Build logs and build failures") — the single source of truth
+for which codes exist and which are retryable; the fix per code is in the
+tables on this page. The common tails:
+
+| Tail of the message | What it is → fix |
+|---|---|
+| `npm error` / `ETARGET` / `ERESOLVE` | Node dependency or version clash. Run `npm install` locally, fix the pin, redeploy. |
+| `npm run build` error | A real build error in the code. Reproduce with `npm run build` locally and fix it. |
+| "Unsupported engine" / "EBADENGINE" | The project pins a Node version moonbase's image doesn't provide. Widen `engines.node` in `package.json` to a current LTS. |
+| `Missing script: "start"` | No production `start` script. Add one to `package.json` (e.g. `node server.js`). |
+| `pip` / "Could not find a version" / "No matching distribution" | Python dependency: a package with no Linux wheel, a bad pin, or a `-r`/`-c` reference that isn't at the project root. See the Python contract in the section "Building for moonbase: a project that deploys first time". |
+| "ResolutionImpossible" / "conflicting dependencies" | Two Python pins demand incompatible versions. Align the pins in `requirements.txt`. |
+| "Could not open requirements file" | A `-r`/`-c` file referenced from `requirements.txt` wasn't included. Ship it, or drop the line. |
+| "ModuleNotFoundError" at start | A dependency the app imports is missing from `requirements.txt` (or `package.json`). Add it and redeploy. |
+| "could not connect to server" / "Connection refused" to a DB port | The app couldn't reach its database (missions can reach a database directly now). Check the host, port and credentials; set the connection string in Mission Control → Environment Variables. |
+| "KeyError" / "environment variable … not set" | A required environment variable isn't set. Set it in Mission Control → Environment Variables, then deploy a new version. |
+
+Node build steps stream as `build_log` lines while they run; Python build
+output isn't streamed, so for a Python failure the `message` on the `error`
+event is the diagnosis. Read it yourself; show the user `friendly.*`, and if
+you share a log excerpt, redact and bound it first (the section "The deploy API, CI and GitHub Actions"). There's
+no way to fetch the full build log once the stream closes — keep the **TRK-ID**
+and give it to support to read the full log. (the section "The deploy API, CI and GitHub Actions", "Build logs and
+build failures", has the detail.)
 
 ### "It deployed but the page is blank or broken"
 
@@ -1306,6 +2822,20 @@ Usually inside the app, not the deploy:
   address, upload a new version;
 - a needed environment variable is empty: set it in Mission Control →
   Environment Variables, then **Deploy new version**.
+
+### "It says deployed, but not ready"
+
+The deploy landed and the app answered its readiness check with "not ready" (the
+deploy result shows `app_ready: false`; the status endpoint shows
+`"deployed_not_ready"` and `appReady: false`). It is **not** a failed deploy and
+you should **not** upload again. It usually means the app still needs
+configuration (a missing environment variable or secret) or is warming up:
+- set what it needs in Mission Control → Environment Variables, then **Deploy new
+  version** only if the app needs a restart to read it;
+- check the app's readiness endpoint (`/readyz` by default, or the path in
+  `MOONBASE_READINESS_PATH`) returns 2xx once it is configured;
+- poll the status endpoint: it re-checks readiness and flips to `live` when the
+  app answers ready.
 
 ### "My mission is offline"
 
@@ -1372,8 +2902,11 @@ safe to try again after waiting.
 | `no_html_or_package_json_found` | We couldn't find anything to launch | No `index.html` or `package.json` anywhere. Add one. |
 | `no_html_found` | No HTML found | Looks static but has no `.html` file. Include one. |
 | `classification_error` | We couldn't read this upload | moonbase couldn't work out how to deploy it. Contact support with the TRK-ID. |
-| `python_runtime_not_supported` | Python isn't supported yet | Python isn't supported. Deploy a static export instead. |
-| `framework_unsupported:<framework>` | Framework not supported yet | Recognised framework moonbase can't build yet (e.g. Astro, SvelteKit, Vue, Nuxt). Deploy a static build. |
+| `python_entrypoint_not_detected` | We couldn't find your Python app's entry point | Python web apps deploy now, but moonbase needs a standard app object — a top-level `app = Flask(__name__)`, `app = FastAPI()`, or a Django `manage.py` + `wsgi.py`. Add one and re-upload. |
+| `python_runtime_not_supported` | Python isn't supported yet | Legacy code — Python web apps now deploy (see `python_entrypoint_not_detected` above and the section "Building for moonbase: a project that deploys first time"). A current upload won't return this. |
+| `framework_unsupported:<framework>` | Framework not supported yet | A recognised framework moonbase can't build yet (a backend language, or a framework not on the supported list). Deploy a static build. |
+| `astro_ssr_not_supported` | Astro SSR isn't supported yet | Astro deploys its **static** output in v1. Remove the SSR adapter / set `output: 'static'` so `astro build` produces `dist/`, then re-upload. |
+| `sveltekit_adapter_node_required` | SvelteKit needs the Node adapter | moonbase runs SvelteKit with `@sveltejs/adapter-node`. Switch `svelte.config.js` to that adapter and re-upload. |
 | `hardcoded_secret_detected` | Possible secret found in your upload | A key or password is in the files. Remove it, use environment variables, upload again. |
 | `malware_detected` | Upload blocked — malware detected | Something harmful was found. Remove it; false positive? Contact support with the TRK-ID. |
 | `scanner_unavailable` | Upload paused — scanner temporarily unavailable | Retry ✓ in a few minutes. |
@@ -1401,7 +2934,9 @@ safe to try again after waiting.
 | `weight_overage` | Storage upgrade needed | Would pass the free storage. Upgrade or free up storage. |
 | `upgrade_required` | Upgrade required | This needs a paid plan. Upgrade. |
 
-The `message` always states the exact limit; pass it on.
+Show the exact limit from the **structured fields** (`reason`, and
+`limit`/`current`/`max` where present), not by quoting the raw `message` (see
+the section "The deploy API, CI and GitHub Actions", "Build logs and build failures").
 
 #### Timing and approvals
 
@@ -1426,8 +2961,8 @@ it in Mission Control → **Password protection** (the section "Mission Control:
 
 | Code | Title | What it means → what to do |
 |---|---|---|
-| `internal` | Something went wrong | Retry ✓ once. Keeps happening? Support with the TRK-ID. |
-| `service_draining` | | moonbase is restarting. Retry ✓ in a few seconds. |
+| `internal` | Something went wrong | Retry ✓ under the one retry policy (the section "The deploy API, CI and GitHub Actions"): bounded attempts, honour any `Retry-After`. Keeps happening? Support with the TRK-ID. |
+| `service_draining` | | moonbase is restarting. Retry ✓ under the same bounded policy (wait the server's delay first). |
 
 ### When nothing here fits
 
@@ -1446,9 +2981,12 @@ support".
   chat.** If they do it anyway, tell them gently to delete that key on **API
   Keys** (https://app.moonbase.cloud/api-keys) and create a new one, because
   chat text can be stored.
-- Never write a key into a file, the repository or a commit. Never print or
-  echo it. Use the `MOONBASE_API_KEY` environment variable, or the CI's
-  secret store (GitHub: Actions secrets).
+- Never commit a key to the repository, and never print or echo it. Use the
+  `MOONBASE_API_KEY` environment variable, or the CI's secret store (GitHub:
+  Actions secrets). The one narrow exception to "not in a file" is a deliberate
+  `0600` secrets file kept **outside** the repo and never committed — e.g. a
+  curl `--config`/`-H @file` header file (see the section "The deploy API, CI and GitHub Actions"); a secret
+  manager or a stdin pipe is better still.
 - A moonbase key works for **every mission on its account**. A leaked key is
   serious: delete it and make a new one.
 - The full key is shown **once** when created. After that only a masked form
@@ -1459,8 +2997,16 @@ support".
 
 ### .env files and secrets in uploads
 
-- Don't put a `.env` with real secrets in the ZIP. The agent's packaging
-  command should exclude `.env` files.
+- Don't put a `.env` with real secrets in the ZIP. The skill's packaging tool
+  (`scripts/package-mission.sh`) excludes `.env` / `.env.*` (a tracked one makes
+  it **fail closed**), plus dependency, build-output, virtualenv, cache,
+  database and log files. It is a **filename filter on a fixed list, not a
+  secrets scanner**: it does **not** recognize other secret-named files — a
+  tracked `.npmrc`, a `*.pem` or SSH private key, a `credentials.json` or a
+  `prod.env` (no leading dot) **will** ship. And it can't catch a secret pasted *inside* a
+  source file. Keep those out yourself (moonbase also blocks
+  `hardcoded_secret_detected` server-side). The gate guarantees only that it
+  won't ship a `.env`, not that your upload is secret-free.
 - If a shipped `.env` is there anyway, moonbase applies only its
   non-secret values; anything shaped like a credential is never applied from
   the file. Set real secrets in **Mission Control → Environment Variables**

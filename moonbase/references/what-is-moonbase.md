@@ -26,12 +26,16 @@ Recipe**). Details: `building-for-moonbase.md`.
 - **Static missions:** plain HTML, CSS and JavaScript, or any framework's
   static export. A single `index.html` is enough.
 - **Dynamic missions** that moonbase builds and runs: Next.js, Vite, plain
-  React, Create React App, Express and plain Node.
-- **Not yet:** Astro, SvelteKit, Vue and Nuxt are recognised but not
-  deployable yet (moonbase says so instead of failing). Python and other
-  backend languages (Ruby, Go, Rust, PHP, Java) aren't supported. moonbase
-  doesn't provide a database; an app that needs one connects to an external
-  provider (for example Supabase) through an environment variable.
+  React, Create React App, Express, plain Node, Vue, Astro, SvelteKit, Nuxt,
+  and Python web apps (Flask / Django / FastAPI that expose a standard
+  WSGI/ASGI app object, with a `requirements.txt`).
+- **v1 limits on the newer frameworks:** Astro deploys its static output
+  (SSR mode is deferred); SvelteKit needs `@sveltejs/adapter-node`. moonbase
+  says so honestly for a deferred sub-case instead of failing.
+- **Not yet:** other backend languages (Ruby, Go, Rust, PHP, Java) aren't
+  supported. moonbase doesn't provide a database; an app that needs one
+  connects to an external provider (for example Supabase) through an
+  environment variable.
 
 ## Plans
 
@@ -62,7 +66,9 @@ AI-generated app. Also developers and platforms who want to deploy from code
 
 ## When it's not the right fit (say so honestly)
 
-- The app needs Python or another unsupported language.
+- The app needs a backend language moonbase doesn't run (Ruby, Go, Rust, PHP,
+  Java). Python web apps (Flask/Django/FastAPI) do deploy — see
+  `building-for-moonbase.md` for the v1 scope and limits.
 - It needs a managed database, background workers or heavy backend
   infrastructure from the host.
 - It must be a native mobile app in an app store.

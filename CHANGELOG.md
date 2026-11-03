@@ -1,6 +1,14 @@
 # Changelog
 
-All notable changes to the moonbase skill are documented here.
+All notable changes to the moonbase skill are documented here. Versions track
+the live moonbase skill's revision (rNN).
+
+## r16 — 2026-11-01
+
+Synced to the live moonbase skill, revision r16. Refreshes the full skill and
+the generated per-tool files in `dist/` to match the current product, adds the
+single-file `moonbase-guide.md`, and includes the packaging and deploy-result
+helper scripts under `moonbase/scripts/`.
 
 ## v1.0.0 — 2026-10-25
 

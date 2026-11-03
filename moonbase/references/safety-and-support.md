@@ -6,9 +6,12 @@
   chat.** If they do it anyway, tell them gently to delete that key on **API
   Keys** (https://app.moonbase.cloud/api-keys) and create a new one, because
   chat text can be stored.
-- Never write a key into a file, the repository or a commit. Never print or
-  echo it. Use the `MOONBASE_API_KEY` environment variable, or the CI's
-  secret store (GitHub: Actions secrets).
+- Never commit a key to the repository, and never print or echo it. Use the
+  `MOONBASE_API_KEY` environment variable, or the CI's secret store (GitHub:
+  Actions secrets). The one narrow exception to "not in a file" is a deliberate
+  `0600` secrets file kept **outside** the repo and never committed — e.g. a
+  curl `--config`/`-H @file` header file (see `api-and-ci.md`); a secret
+  manager or a stdin pipe is better still.
 - A moonbase key works for **every mission on its account**. A leaked key is
   serious: delete it and make a new one.
 - The full key is shown **once** when created. After that only a masked form
@@ -19,8 +22,16 @@
 
 ## .env files and secrets in uploads
 
-- Don't put a `.env` with real secrets in the ZIP. The agent's packaging
-  command should exclude `.env` files.
+- Don't put a `.env` with real secrets in the ZIP. The skill's packaging tool
+  (`scripts/package-mission.sh`) excludes `.env` / `.env.*` (a tracked one makes
+  it **fail closed**), plus dependency, build-output, virtualenv, cache,
+  database and log files. It is a **filename filter on a fixed list, not a
+  secrets scanner**: it does **not** recognize other secret-named files — a
+  tracked `.npmrc`, a `*.pem` or SSH private key, a `credentials.json` or a
+  `prod.env` (no leading dot) **will** ship. And it can't catch a secret pasted *inside* a
+  source file. Keep those out yourself (moonbase also blocks
+  `hardcoded_secret_detected` server-side). The gate guarantees only that it
+  won't ship a `.env`, not that your upload is secret-free.
 - If a shipped `.env` is there anyway, moonbase applies only its
   non-secret values; anything shaped like a credential is never applied from
   the file. Set real secrets in **Mission Control → Environment Variables**
