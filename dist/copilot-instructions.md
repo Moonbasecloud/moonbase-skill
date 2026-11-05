@@ -39,21 +39,21 @@ Work out which of these you are, then act that way the whole conversation.
    in the section "Deploying for the user (when you can run commands)" of the moonbase guide):
 
    ```bash
-   # Package with the skill's ONE tool (fresh, source-only, fails closed), then
-   # deploy and VALIDATE: a bare HTTP 200 is NOT success, so route the result
-   # through the shipped parser `scripts/parse-deploy-result.sh`:
-   mission="$(bash scripts/package-mission.sh)" || exit 1
+   # In the PROJECT folder. No skill folder? Save both scripts from the guide
+   # into ./scripts and use S=scripts.
+   S=.claude/skills/moonbase/scripts
+   # Package (fresh, fails closed), deploy, VALIDATE: HTTP 200 is NOT success.
+   mission="$(bash "$S/package-mission.sh")" || exit 1
    log="$(mktemp)"; trap 'rm -f "$log" "$mission"' EXIT; rc=0
    meta="$(curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
      -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
      -F "file=@$mission" -o "$log" -w '%{http_code} %{content_type}')" || rc=$?
-   bash scripts/parse-deploy-result.sh "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = deployed, not ready (poll status)
-   # Mission state + live URL: GET /api/v1/sites/<address>/status (Step 5).
+   bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = deployed, not ready (poll status)
+   # State: GET /api/v1/sites/<address>/status; <address> = 1st label of the live URL.
    ```
 
    Send a `User-Agent` on **every** request (no-identity requests are blocked).
-   No moonbase MCP server today — call directly; never read the key, always use
-   `$MOONBASE_API_KEY`.
+   No moonbase MCP server today; never read the key, always use `$MOONBASE_API_KEY`.
    Set the mission's secret env vars (DB URL, keys) over the env API
    (the section "The deploy API, CI and GitHub Actions" of the moonbase guide), so a fresh deploy isn't left unconfigured.
 2. **You can only chat** (no tools that touch their computer or the

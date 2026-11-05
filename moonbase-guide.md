@@ -54,21 +54,21 @@ Work out which of these you are, then act that way the whole conversation.
    in the section "Deploying for the user (when you can run commands)" below):
 
    ```bash
-   # Package with the skill's ONE tool (fresh, source-only, fails closed), then
-   # deploy and VALIDATE: a bare HTTP 200 is NOT success, so route the result
-   # through the shipped parser `scripts/parse-deploy-result.sh`:
-   mission="$(bash scripts/package-mission.sh)" || exit 1
+   # In the PROJECT folder. No skill folder? Save both scripts from the guide
+   # into ./scripts and use S=scripts.
+   S=.claude/skills/moonbase/scripts
+   # Package (fresh, fails closed), deploy, VALIDATE: HTTP 200 is NOT success.
+   mission="$(bash "$S/package-mission.sh")" || exit 1
    log="$(mktemp)"; trap 'rm -f "$log" "$mission"' EXIT; rc=0
    meta="$(curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
      -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
      -F "file=@$mission" -o "$log" -w '%{http_code} %{content_type}')" || rc=$?
-   bash scripts/parse-deploy-result.sh "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = deployed, not ready (poll status)
-   # Mission state + live URL: GET /api/v1/sites/<address>/status (Step 5).
+   bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = deployed, not ready (poll status)
+   # State: GET /api/v1/sites/<address>/status; <address> = 1st label of the live URL.
    ```
 
    Send a `User-Agent` on **every** request (no-identity requests are blocked).
-   No moonbase MCP server today — call directly; never read the key, always use
-   `$MOONBASE_API_KEY`.
+   No moonbase MCP server today; never read the key, always use `$MOONBASE_API_KEY`.
    Set the mission's secret env vars (DB URL, keys) over the env API
    (the section "The deploy API, CI and GitHub Actions" below), so a fresh deploy isn't left unconfigured.
 2. **You can only chat** (no tools that touch their computer or the
@@ -234,9 +234,9 @@ inside a builder like Lovable or Bolt, start with the section "Bringing a projec
 
 ## Skill version
 
-**moonbase skill — revision r17, 2026-11-05.** This version and date are the
+**moonbase skill — revision r18, 2026-11-05.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r17 adds `go_not_supported` and corrects what a downloaded archive holds. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
+filename. r18 makes the quickstart run the two helper scripts from the skill's own folder (`.claude/skills/moonbase/scripts`, or `./scripts` if you only have the short file) and says the mission address is the first label of the live URL, never the name you asked for. r17 adds `go_not_supported` and corrects what a downloaded archive holds. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
 IP-literal host is treated as unknown) and treats a non-object `done`/`error`
 frame as unknown. r13 closed the revision-12 review: a CI job now vendors BOTH helper
 scripts and runs a preflight (so a missing file or tool fails before the upload,
@@ -377,7 +377,10 @@ server-side). A printed `unzip -l` listing is **not** a gate.
 If your tool has the skill installed, run the shipped file directly
 (`.claude/skills/moonbase/scripts/package-mission.sh`). Otherwise save this
 exact script as `scripts/package-mission.sh` in the project (commit it, so CI
-runs the identical tool — see the section "The deploy API, CI and GitHub Actions"):
+runs the identical tool — see the section "The deploy API, CI and GitHub Actions"). The commands below use
+`S` for the folder that holds the two scripts: run them from the project
+folder and set `S=.claude/skills/moonbase/scripts` (skill installed) or
+`S=scripts` (saved into the project).
 
 ```bash
 #!/usr/bin/env bash
@@ -693,7 +696,7 @@ Run it and capture the archive name it prints — that's what you upload (in a
 non-git project, pass `--manifest files.txt` listing your source paths):
 
 ```bash
-mission="$(bash scripts/package-mission.sh)" || exit 1   # fails closed; nothing to upload on error
+mission="$(bash "$S/package-mission.sh")" || exit 1   # fails closed; nothing to upload on error
 ```
 
 Shipping a **static build on purpose** (a prebuilt `dist/`, `build/` or `out/`
@@ -713,12 +716,17 @@ command (Node), or the app object (Python).
 - **New mission:** don't send `redeployProjectId`. Optionally send `name` (the
   address: 3 to 32 lowercase letters, numbers, single hyphens, starting with a
   letter; random if left out) and `displayName`.
+- **The address** is the first label of the live URL the parser prints
+  (`https://<address>.moonbase.host`). Use that for every status call, not
+  the `name` you asked for: the two can differ, and a wrong one answers `not_found`.
+  Keep it as `MISSION_ADDRESS`.
 - **"Update my mission X" / redeploy by name:** look up the mission's id from
   its address first, then send it as `redeployProjectId`. **Never** send
   `name=X` to update: that tries to create a second mission and fails with
   `name_taken`.
 
 ```bash
+# <address> = first label of the live URL (keep it as MISSION_ADDRESS)
 curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
   -H "Authorization: Bearer $MOONBASE_API_KEY" \
   -H "User-Agent: my-agent/1.0" | jq -re .id || { echo "No mission at that address (check the name/key)." >&2; exit 1; }
@@ -975,7 +983,7 @@ meta="$(curl -sSN "$API/api/projects/upload/stream" \
   -F "redeployProjectId=$MOONBASE_MISSION_ID" \
   -o "$log" -w '%{http_code} %{content_type}')" || curl_rc=$?
 
-bash scripts/parse-deploy-result.sh "$log" "${meta%% *}" "${meta#* }" "$curl_rc"
+bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$curl_rc"
 case $? in
   0) : ;;                                   # live — run the success check below
   1) exit 1 ;;                              # a real failure the parser reported

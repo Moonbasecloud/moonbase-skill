@@ -94,7 +94,10 @@ server-side). A printed `unzip -l` listing is **not** a gate.
 If your tool has the skill installed, run the shipped file directly
 (`.claude/skills/moonbase/scripts/package-mission.sh`). Otherwise save this
 exact script as `scripts/package-mission.sh` in the project (commit it, so CI
-runs the identical tool — see `api-and-ci.md`):
+runs the identical tool — see `api-and-ci.md`). The commands below use
+`S` for the folder that holds the two scripts: run them from the project
+folder and set `S=.claude/skills/moonbase/scripts` (skill installed) or
+`S=scripts` (saved into the project).
 
 ```bash
 #!/usr/bin/env bash
@@ -410,7 +413,7 @@ Run it and capture the archive name it prints — that's what you upload (in a
 non-git project, pass `--manifest files.txt` listing your source paths):
 
 ```bash
-mission="$(bash scripts/package-mission.sh)" || exit 1   # fails closed; nothing to upload on error
+mission="$(bash "$S/package-mission.sh")" || exit 1   # fails closed; nothing to upload on error
 ```
 
 Shipping a **static build on purpose** (a prebuilt `dist/`, `build/` or `out/`
@@ -430,12 +433,17 @@ command (Node), or the app object (Python).
 - **New mission:** don't send `redeployProjectId`. Optionally send `name` (the
   address: 3 to 32 lowercase letters, numbers, single hyphens, starting with a
   letter; random if left out) and `displayName`.
+- **The address** is the first label of the live URL the parser prints
+  (`https://<address>.moonbase.host`). Use that for every status call, not
+  the `name` you asked for: the two can differ, and a wrong one answers `not_found`.
+  Keep it as `MISSION_ADDRESS`.
 - **"Update my mission X" / redeploy by name:** look up the mission's id from
   its address first, then send it as `redeployProjectId`. **Never** send
   `name=X` to update: that tries to create a second mission and fails with
   `name_taken`.
 
 ```bash
+# <address> = first label of the live URL (keep it as MISSION_ADDRESS)
 curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
   -H "Authorization: Bearer $MOONBASE_API_KEY" \
   -H "User-Agent: my-agent/1.0" | jq -re .id || { echo "No mission at that address (check the name/key)." >&2; exit 1; }
@@ -692,7 +700,7 @@ meta="$(curl -sSN "$API/api/projects/upload/stream" \
   -F "redeployProjectId=$MOONBASE_MISSION_ID" \
   -o "$log" -w '%{http_code} %{content_type}')" || curl_rc=$?
 
-bash scripts/parse-deploy-result.sh "$log" "${meta%% *}" "${meta#* }" "$curl_rc"
+bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$curl_rc"
 case $? in
   0) : ;;                                   # live — run the success check below
   1) exit 1 ;;                              # a real failure the parser reported
