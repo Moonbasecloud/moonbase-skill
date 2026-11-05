@@ -7,7 +7,7 @@ alwaysApply: false
 <!--
   Cursor rule: save as .cursor/rules/moonbase.mdc.
 
-  This rule is the full moonbase guide (about 163 KB). Cursor loads it only
+  This rule is the full moonbase guide (about 164 KB). Cursor loads it only
   when the conversation is about hosting, deploying or moonbase.
   Generated from the moonbase Skill (skill/moonbase/); all formats:
   https://moonbase.cloud/skill
@@ -228,9 +228,9 @@ inside a builder like Lovable or Bolt, start with the section "Bringing a projec
 
 ## Skill version
 
-**moonbase skill — revision r16, 2026-11-01.** This version and date are the
+**moonbase skill — revision r17, 2026-11-05.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
+filename. r17 adds `go_not_supported` and corrects what a downloaded archive holds. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
 IP-literal host is treated as unknown) and treats a non-object `done`/`error`
 frame as unknown. r13 closed the revision-12 review: a CI job now vendors BOTH helper
 scripts and runs a preflight (so a missing file or tool fails before the upload,
@@ -2319,8 +2319,10 @@ build later, they should keep that ZIP themselves.
 - Only the mission's owner can download archives.
 - Each download is recorded in the Activity log as "Data exported".
 - Downloads are rate-limited; if refused, wait a few minutes.
-- The archive is the original upload as-is: if it had a `.env` or secrets,
-  they're in it too. Environment variables set in moonbase are **not** in it.
+- The archive holds the files as deployed: the upload plus any cleanup or
+  repair moonbase made for that version. A server app's `.env` or other secrets
+  from the upload are in it too. Environment variables set in moonbase are
+  **not** in it.
 - Works whether the mission is live, asleep or paused.
 - If a plan limits how many versions are kept, moonbase emails before older
   versions are removed.
@@ -2902,8 +2904,9 @@ safe to try again after waiting.
 | `no_html_or_package_json_found` | We couldn't find anything to launch | No `index.html` or `package.json` anywhere. Add one. |
 | `no_html_found` | No HTML found | Looks static but has no `.html` file. Include one. |
 | `classification_error` | We couldn't read this upload | moonbase couldn't work out how to deploy it. Contact support with the TRK-ID. |
-| `python_entrypoint_not_detected` | We couldn't find your Python app's entry point | Python web apps deploy now, but moonbase needs a standard app object — a top-level `app = Flask(__name__)`, `app = FastAPI()`, or a Django `manage.py` + `wsgi.py`. Add one and re-upload. |
-| `python_runtime_not_supported` | Python isn't supported yet | Legacy code — Python web apps now deploy (see `python_entrypoint_not_detected` above and the section "Building for moonbase: a project that deploys first time"). A current upload won't return this. |
+| `go_not_supported` | Go apps can't run on moonbase yet | moonbase doesn't run Go. If the project has a web frontend, build it and upload those files. |
+| `python_entrypoint_not_detected` | We couldn't find where your Python app starts | Python web apps deploy now, but moonbase needs a standard app object — a top-level `app = Flask(__name__)`, `app = FastAPI()`, or a Django `manage.py` + `wsgi.py`. Add one and re-upload. |
+| `python_runtime_not_supported` | We couldn't find where your Python app starts | Legacy code — Python web apps now deploy (see `python_entrypoint_not_detected` above and the section "Building for moonbase: a project that deploys first time"). A current upload won't return this. |
 | `framework_unsupported:<framework>` | Framework not supported yet | A recognised framework moonbase can't build yet (a backend language, or a framework not on the supported list). Deploy a static build. |
 | `astro_ssr_not_supported` | Astro SSR isn't supported yet | Astro deploys its **static** output in v1. Remove the SSR adapter / set `output: 'static'` so `astro build` produces `dist/`, then re-upload. |
 | `sveltekit_adapter_node_required` | SvelteKit needs the Node adapter | moonbase runs SvelteKit with `@sveltejs/adapter-node`. Switch `svelte.config.js` to that adapter and re-upload. |
@@ -3013,8 +3016,8 @@ support".
   (write-only, encrypted).
 - An upload with a hardcoded credential in the code is stopped
   (`hardcoded_secret_detected`) so it never goes public.
-- Remember: a downloaded archive is the original upload as-is, so a `.env`
-  inside it would be in the download too.
+- Remember: a downloaded archive holds the files as deployed, so a server
+  app's `.env` would be in the download too.
 
 ### Account safety
 

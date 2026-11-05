@@ -18,7 +18,7 @@ description: >-
 # moonbase: your guide
 
 <!--
-  Bundle revision: r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
+  Bundle revision: r17 (Argus claim check 2026-11-05: `go_not_supported`, archive wording). Before that, r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
   real URL/IDNA parser (node), not just Punycode decoding). Before that, r15 (Codex r14 review 2026-11-01 — R14-01 a deployed-but-not-ready
   `done` (app_ready:false) is its own outcome, exit 3, not Live; R14-02 an xn--
   label must really decode as Punycode; R14-03 a malformed/non-object JSON
@@ -260,9 +260,9 @@ inside a builder like Lovable or Bolt, start with `references/builder-platforms.
 
 ## Skill version
 
-**moonbase skill — revision r16, 2026-11-01.** This version and date are the
+**moonbase skill — revision r17, 2026-11-05.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
+filename. r17 adds `go_not_supported` and corrects what a downloaded archive holds. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
 IP-literal host is treated as unknown) and treats a non-object `done`/`error`
 frame as unknown. r13 closed the revision-12 review: a CI job now vendors BOTH helper
 scripts and runs a preflight (so a missing file or tool fails before the upload,

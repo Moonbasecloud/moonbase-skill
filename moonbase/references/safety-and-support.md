@@ -38,8 +38,8 @@
   (write-only, encrypted).
 - An upload with a hardcoded credential in the code is stopped
   (`hardcoded_secret_detected`) so it never goes public.
-- Remember: a downloaded archive is the original upload as-is, so a `.env`
-  inside it would be in the download too.
+- Remember: a downloaded archive holds the files as deployed, so a server
+  app's `.env` would be in the download too.
 
 ## Account safety
 

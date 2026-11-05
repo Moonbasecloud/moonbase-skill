@@ -45,8 +45,10 @@ build later, they should keep that ZIP themselves.
 - Only the mission's owner can download archives.
 - Each download is recorded in the Activity log as "Data exported".
 - Downloads are rate-limited; if refused, wait a few minutes.
-- The archive is the original upload as-is: if it had a `.env` or secrets,
-  they're in it too. Environment variables set in moonbase are **not** in it.
+- The archive holds the files as deployed: the upload plus any cleanup or
+  repair moonbase made for that version. A server app's `.env` or other secrets
+  from the upload are in it too. Environment variables set in moonbase are
+  **not** in it.
 - Works whether the mission is live, asleep or paused.
 - If a plan limits how many versions are kept, moonbase emails before older
   versions are removed.
