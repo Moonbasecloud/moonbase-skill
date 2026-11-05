@@ -466,7 +466,9 @@ and is treated as unknown if node isn't installed) and a string project_id and t
 not-ready. It exits `3` when the deploy landed but the `done` event says
 `app_ready:false` (or `readiness.state` is `not_ready`): the files are deployed
 but the app needs configuration or is still warming up, so poll the status
-endpoint — do not re-upload. A refusal, an `error` event, or a
+endpoint — do not re-upload. It exits `4` when the `done` event carries an
+`asset_problem`: the page's own files don't load, so waiting won't help; change
+the project and upload a new version. A refusal, an `error` event, or a
 truncated/malformed/unknown stream exits non-zero so you reconcile with the
 status endpoint instead of lying. Run the skill's own copy if it is on disk,
 otherwise save this exact script as `scripts/parse-deploy-result.sh` and commit
@@ -497,6 +499,8 @@ it so CI runs the same tool:
 # Exit:  0 live   1 failed/refused   2 unknown/truncated (reconcile)
 #        3 deployed but NOT READY (app_ready:false / readiness not_ready): the
 #          upload landed; poll the status endpoint, do NOT re-upload.
+#        4 deployed but the page's files don't load (asset_problem): waiting
+#          won't help; change the project and upload a new version.
 report_deploy_result() {
   body="${1:-}"; http_status="${2:-}"; curl_rc="${4:-}"
   mt="$(printf '%s' "${3:-}" | tr 'A-Z' 'a-z')"; mt="${mt%%;*}"
@@ -648,6 +652,12 @@ report_deploy_result() {
         "project_id: " + (.project_id|s),
         (if (.self_repair_notice // "") != "" then "Self-repair: " + (.self_repair_notice|s) else empty end),
         (if (.skipped_entries|type) == "array" and (.skipped_entries|length) > 0 then "Skipped entries: " + ([.skipped_entries[]|s]|join(", ")) else empty end)' 2>/dev/null
+      asset_problem="$(printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" "); if (.asset_problem|type) == "object" then (.asset_problem.message // "The page files are not loading.")|s else "" end' 2>/dev/null)"
+      if [ -n "$asset_problem" ]; then
+        printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" "); (if (.asset_problem.failed_paths|type) == "array" then "Files not loading: " + ([.asset_problem.failed_paths[]|s]|join(", ")) else empty end)' 2>/dev/null
+        printf '%s Waiting will not fix this: change the project, then upload a new version.\n' "$asset_problem" >&2
+        return 4
+      fi
       if [ "$ready" = "no" ]; then
         printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" ");
           (if (.readiness | type) == "object" then "Readiness: " + ((.readiness.state // "not_ready")|s) + " (path " + ((.readiness.path // "unknown")|s) + ", http " + ((.readiness.http_status // "unknown")|s) + ")" else empty end)' 2>/dev/null
@@ -706,6 +716,8 @@ case $? in
   1) exit 1 ;;                              # a real failure the parser reported
   3) echo "Deployed but NOT READY — poll the status endpoint (do not re-upload)." >&2
      exit 3 ;;                              # app_ready:false — deployed, still configuring/warming
+  4) echo "Deployed, but the page's files don't load — change the project, then upload a new version." >&2
+     exit 4 ;;                              # asset_problem — polling won't fix this one
   *) # UNKNOWN: reconcile against status instead of re-uploading blindly.
      echo "Reconciling: was baseline version $prev_version — check status now." >&2
      exit 2 ;;
@@ -735,8 +747,9 @@ code and its HTTP status. `friendly.category` tells the *user* whose fix it is;
 it is never a retry signal and never a substitute for the code. Take the FIRST
 branch that matches, in this order:
 
-- **`done`:** the source is deployed. If its `app_ready` is `false` (parser exit
-  `3`, "Deployed, NOT READY") the app is deployed but not serving yet: keep the
+- **`done`:** the source is deployed. If the parser exits `4` ("Files not
+  loading"), the page's files don't load: change the project and upload again.
+  If `app_ready` is `false` (parser exit `3`, "Deployed, NOT READY") the app is deployed but not serving yet: keep the
   version receipt, tell the user it still needs configuration or warming up, and
   poll the status endpoint until `status` is `live` — never re-upload and never
   call it live. `app_ready:true`, or `null`/absent (readiness not determined),

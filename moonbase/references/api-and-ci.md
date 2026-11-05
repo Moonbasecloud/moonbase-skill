@@ -298,6 +298,7 @@ jobs:
           # The SAME shipped parser the deploy recipe uses — one script, no drift.
           # Exit 3 = deployed but the app is NOT READY (app_ready:false): the job
           # fails on purpose, but do not re-run the upload — poll status instead.
+          # Exit 4 = the page's files don't load (asset_problem): change the project.
           bash scripts/parse-deploy-result.sh "$log" "${meta%% *}" "${meta#* }" "$curl_rc"
 ```
 

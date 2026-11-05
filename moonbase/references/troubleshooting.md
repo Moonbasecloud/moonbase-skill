@@ -89,6 +89,15 @@ configuration (a missing environment variable or secret) or is warming up:
 - poll the status endpoint: it re-checks readiness and flips to `live` when the
   app answers ready.
 
+## "It's online, but the page is blank"
+
+The page answered, but the files that draw it did not load. The deploy result
+shows `app_ready: false` and an `asset_problem` listing the files, and exit 4
+from the parser prints them. Waiting won't help. moonbase already repairs the
+usual leftovers (a Vite `base` or a Create React App `homepage` from GitHub
+Pages), so this is a path it couldn't read, such as one set from an environment
+variable. Make the app work from the root of its address, then upload it again.
+
 ## "My mission is offline"
 
 1. Open the mission's `<mission>.moonbase.host` address in a new tab.

@@ -22,6 +22,8 @@
 # Exit:  0 live   1 failed/refused   2 unknown/truncated (reconcile)
 #        3 deployed but NOT READY (app_ready:false / readiness not_ready): the
 #          upload landed; poll the status endpoint, do NOT re-upload.
+#        4 deployed but the page's files don't load (asset_problem): waiting
+#          won't help; change the project and upload a new version.
 report_deploy_result() {
   body="${1:-}"; http_status="${2:-}"; curl_rc="${4:-}"
   mt="$(printf '%s' "${3:-}" | tr 'A-Z' 'a-z')"; mt="${mt%%;*}"
@@ -173,6 +175,12 @@ report_deploy_result() {
         "project_id: " + (.project_id|s),
         (if (.self_repair_notice // "") != "" then "Self-repair: " + (.self_repair_notice|s) else empty end),
         (if (.skipped_entries|type) == "array" and (.skipped_entries|length) > 0 then "Skipped entries: " + ([.skipped_entries[]|s]|join(", ")) else empty end)' 2>/dev/null
+      asset_problem="$(printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" "); if (.asset_problem|type) == "object" then (.asset_problem.message // "The page files are not loading.")|s else "" end' 2>/dev/null)"
+      if [ -n "$asset_problem" ]; then
+        printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" "); (if (.asset_problem.failed_paths|type) == "array" then "Files not loading: " + ([.asset_problem.failed_paths[]|s]|join(", ")) else empty end)' 2>/dev/null
+        printf '%s Waiting will not fix this: change the project, then upload a new version.\n' "$asset_problem" >&2
+        return 4
+      fi
       if [ "$ready" = "no" ]; then
         printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" ");
           (if (.readiness | type) == "object" then "Readiness: " + ((.readiness.state // "not_ready")|s) + " (path " + ((.readiness.path // "unknown")|s) + ", http " + ((.readiness.http_status // "unknown")|s) + ")" else empty end)' 2>/dev/null

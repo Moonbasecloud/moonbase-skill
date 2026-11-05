@@ -44,7 +44,7 @@ Work out which of these you are, then act that way the whole conversation.
    meta="$(curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
      -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
      -F "file=@$mission" -o "$log" -w '%{http_code} %{content_type}')" || rc=$?
-   bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = deployed, not ready (poll status)
+   bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = not ready (poll); 4 = page files fail (fix)
    # State: GET /api/v1/sites/<address>/status; <address> = 1st label of the live URL.
    ```
 

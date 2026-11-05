@@ -7,7 +7,7 @@ alwaysApply: false
 <!--
   Cursor rule: save as .cursor/rules/moonbase.mdc.
 
-  This rule is the full moonbase guide (about 165 KB). Cursor loads it only
+  This rule is the full moonbase guide (about 166 KB). Cursor loads it only
   when the conversation is about hosting, deploying or moonbase.
   Generated from the moonbase Skill (skill/moonbase/); all formats:
   https://moonbase.cloud/skill
@@ -57,7 +57,7 @@ Work out which of these you are, then act that way the whole conversation.
    meta="$(curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
      -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
      -F "file=@$mission" -o "$log" -w '%{http_code} %{content_type}')" || rc=$?
-   bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = deployed, not ready (poll status)
+   bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = not ready (poll); 4 = page files fail (fix)
    # State: GET /api/v1/sites/<address>/status; <address> = 1st label of the live URL.
    ```
 
@@ -228,9 +228,9 @@ inside a builder like Lovable or Bolt, start with the section "Bringing a projec
 
 ## Skill version
 
-**moonbase skill — revision r18, 2026-11-05.** This version and date are the
+**moonbase skill — revision r19, 2026-11-05.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r18 makes the quickstart run the two helper scripts from the skill's own folder (`.claude/skills/moonbase/scripts`, or `./scripts` if you only have the short file) and says the mission address is the first label of the live URL, never the name you asked for. r17 adds `go_not_supported` and corrects what a downloaded archive holds. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
+filename. r19 adds exit 4: a page whose files don't load. r18 makes the quickstart run the two helper scripts from the skill's own folder (`.claude/skills/moonbase/scripts`, or `./scripts` if you only have the short file) and says the mission address is the first label of the live URL, never the name you asked for. r17 adds `go_not_supported` and corrects what a downloaded archive holds. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
 IP-literal host is treated as unknown) and treats a non-object `done`/`error`
 frame as unknown. r13 closed the revision-12 review: a CI job now vendors BOTH helper
 scripts and runs a preflight (so a missing file or tool fails before the upload,
@@ -743,7 +743,9 @@ and is treated as unknown if node isn't installed) and a string project_id and t
 not-ready. It exits `3` when the deploy landed but the `done` event says
 `app_ready:false` (or `readiness.state` is `not_ready`): the files are deployed
 but the app needs configuration or is still warming up, so poll the status
-endpoint — do not re-upload. A refusal, an `error` event, or a
+endpoint — do not re-upload. It exits `4` when the `done` event carries an
+`asset_problem`: the page's own files don't load, so waiting won't help; change
+the project and upload a new version. A refusal, an `error` event, or a
 truncated/malformed/unknown stream exits non-zero so you reconcile with the
 status endpoint instead of lying. Run the skill's own copy if it is on disk,
 otherwise save this exact script as `scripts/parse-deploy-result.sh` and commit
@@ -774,6 +776,8 @@ it so CI runs the same tool:
 # Exit:  0 live   1 failed/refused   2 unknown/truncated (reconcile)
 #        3 deployed but NOT READY (app_ready:false / readiness not_ready): the
 #          upload landed; poll the status endpoint, do NOT re-upload.
+#        4 deployed but the page's files don't load (asset_problem): waiting
+#          won't help; change the project and upload a new version.
 report_deploy_result() {
   body="${1:-}"; http_status="${2:-}"; curl_rc="${4:-}"
   mt="$(printf '%s' "${3:-}" | tr 'A-Z' 'a-z')"; mt="${mt%%;*}"
@@ -925,6 +929,12 @@ report_deploy_result() {
         "project_id: " + (.project_id|s),
         (if (.self_repair_notice // "") != "" then "Self-repair: " + (.self_repair_notice|s) else empty end),
         (if (.skipped_entries|type) == "array" and (.skipped_entries|length) > 0 then "Skipped entries: " + ([.skipped_entries[]|s]|join(", ")) else empty end)' 2>/dev/null
+      asset_problem="$(printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" "); if (.asset_problem|type) == "object" then (.asset_problem.message // "The page files are not loading.")|s else "" end' 2>/dev/null)"
+      if [ -n "$asset_problem" ]; then
+        printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" "); (if (.asset_problem.failed_paths|type) == "array" then "Files not loading: " + ([.asset_problem.failed_paths[]|s]|join(", ")) else empty end)' 2>/dev/null
+        printf '%s Waiting will not fix this: change the project, then upload a new version.\n' "$asset_problem" >&2
+        return 4
+      fi
       if [ "$ready" = "no" ]; then
         printf '%s' "$obj" | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" ");
           (if (.readiness | type) == "object" then "Readiness: " + ((.readiness.state // "not_ready")|s) + " (path " + ((.readiness.path // "unknown")|s) + ", http " + ((.readiness.http_status // "unknown")|s) + ")" else empty end)' 2>/dev/null
@@ -983,6 +993,8 @@ case $? in
   1) exit 1 ;;                              # a real failure the parser reported
   3) echo "Deployed but NOT READY — poll the status endpoint (do not re-upload)." >&2
      exit 3 ;;                              # app_ready:false — deployed, still configuring/warming
+  4) echo "Deployed, but the page's files don't load — change the project, then upload a new version." >&2
+     exit 4 ;;                              # asset_problem — polling won't fix this one
   *) # UNKNOWN: reconcile against status instead of re-uploading blindly.
      echo "Reconciling: was baseline version $prev_version — check status now." >&2
      exit 2 ;;
@@ -1012,8 +1024,9 @@ code and its HTTP status. `friendly.category` tells the *user* whose fix it is;
 it is never a retry signal and never a substitute for the code. Take the FIRST
 branch that matches, in this order:
 
-- **`done`:** the source is deployed. If its `app_ready` is `false` (parser exit
-  `3`, "Deployed, NOT READY") the app is deployed but not serving yet: keep the
+- **`done`:** the source is deployed. If the parser exits `4` ("Files not
+  loading"), the page's files don't load: change the project and upload again.
+  If `app_ready` is `false` (parser exit `3`, "Deployed, NOT READY") the app is deployed but not serving yet: keep the
   version receipt, tell the user it still needs configuration or warming up, and
   poll the status endpoint until `status` is `live` — never re-upload and never
   call it live. `app_ready:true`, or `null`/absent (readiness not determined),
@@ -1474,6 +1487,7 @@ jobs:
           # The SAME shipped parser the deploy recipe uses — one script, no drift.
           # Exit 3 = deployed but the app is NOT READY (app_ready:false): the job
           # fails on purpose, but do not re-run the upload — poll status instead.
+          # Exit 4 = the page's files don't load (asset_problem): change the project.
           bash scripts/parse-deploy-result.sh "$log" "${meta%% *}" "${meta#* }" "$curl_rc"
 ```
 
@@ -2846,6 +2860,15 @@ configuration (a missing environment variable or secret) or is warming up:
   `MOONBASE_READINESS_PATH`) returns 2xx once it is configured;
 - poll the status endpoint: it re-checks readiness and flips to `live` when the
   app answers ready.
+
+### "It's online, but the page is blank"
+
+The page answered, but the files that draw it did not load. The deploy result
+shows `app_ready: false` and an `asset_problem` listing the files, and exit 4
+from the parser prints them. Waiting won't help. moonbase already repairs the
+usual leftovers (a Vite `base` or a Create React App `homepage` from GitHub
+Pages), so this is a path it couldn't read, such as one set from an environment
+variable. Make the app work from the root of its address, then upload it again.
 
 ### "My mission is offline"
 
