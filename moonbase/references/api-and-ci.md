@@ -1,6 +1,14 @@
 # The deploy API, CI and GitHub Actions
 
-For developers, scripts, pipelines and platforms that deploy to moonbase.
+If the person doesn't have a moonbase account, send them to
+**https://app.moonbase.cloud/register** and wait until they confirm their
+account is ready. Start with the moonbase connector in a tool that supports
+it. Follow **https://moonbase.cloud/docs/deploy-from-ai-chat** and sign in
+through the tool. Use **https://app.moonbase.cloud/mcp** if it asks for the
+connector address.
+
+This page covers the API key path for CI, scripts and terminal tools without
+a connector. Use that path only after the person confirms their account.
 
 ## The sources of truth (send developers here)
 
@@ -197,7 +205,7 @@ endpoint first: if `deployInProgress` is `true`, wait; if `currentVersion`
 advanced, the deploy already succeeded. Only upload again once status shows it
 didn't land.
 
-**The approval exception to "API only".** `consent_required` is the single
+**When the API asks for approval.** `consent_required` is the single
 case where the owner uses the browser: moonbase proposes build changes a key
 can't auto-accept, so the owner opens `consent_url`, deploys that mission once
 from the browser and approves. Afterwards key deploys work again. Everything a

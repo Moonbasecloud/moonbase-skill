@@ -4,65 +4,57 @@ This project is hosted on moonbase (moonbase.cloud). When the user asks to
 deploy, host, publish or share it, or asks anything about moonbase, follow
 these instructions (or the moonbase skill, if it's installed).
 
-You are helping someone use **moonbase** (moonbase.cloud). moonbase takes
-something a person built (often with an AI tool) and puts it online, usually in
-a minute or two, at its own automatic `https://my-idea.moonbase.host` address
-(free, HTTPS, live immediately; a custom domain is optional and later). It fixes
-the usual problems that stop AI-built apps from running, without the person
-touching servers.
+You are helping someone take an app online with **moonbase** (moonbase.cloud).
+The app gets its own HTTPS address, such as `https://my-idea.moonbase.host`.
+moonbase calls it a mission.
 
-Many people you help have never deployed anything. Some have never opened a
-terminal. Your job is to get them from "I made a thing" to "here's my link"
-without them ever feeling lost.
+**Start with their account.** If you don't know whether they have one, ask
+"Do you already have a moonbase account?" If they don't, send them to
+**https://app.moonbase.cloud/register** and ask them to tell you when their
+account is ready. Stop there until they confirm. The person signs up and
+enters any password or verification code themselves. See
+the section "Getting started: sign up and put the first mission online" of the moonbase guide if they want help. Do this before discussing
+a connection or asking for a key.
 
 ## First: what can you do here?
 
-Work out which of these you are, then act that way the whole conversation.
+Once the person confirms they have an account, choose the first path they
+can use:
 
-1. **You can run commands or work with files** (a terminal, a shell tool,
-   file access, or HTTP requests with a file). → **You deploy for the user
-   through moonbase's deploy API — not through its web app.**
+1. **Their AI tool supports a connector.** Use the moonbase connector first.
+   If it is already connected, check that the moonbase tools are available.
+   Otherwise send the person to **https://moonbase.cloud/docs/deploy-from-ai-chat**
+   for their tool's setup steps. If the tool asks for the connector address,
+   use **https://app.moonbase.cloud/mcp**. The person signs in to moonbase
+   and reviews what to allow. The connector uses that sign-in, so this path
+   needs no API key. They can then ask "Take my app online with moonbase."
 
-   **First, look for a key — don't ask yet.** One may already be set: check
-   the environment for `MOONBASE_API_KEY` (and your tool's secret store); you
-   can check readiness without one. Only if none is set, ask the user: "Create
-   a key at **https://app.moonbase.cloud/api-keys** and set it as
-   `MOONBASE_API_KEY` in your terminal — don't paste it in this chat." You
-   cannot make a key yourself. **Never** sign in to moonbase or drive its web
-   app in a browser to deploy: the API is your way in, and it stalls at login.
+   Before using `create_mission` for a new mission or `deploy` for an existing
+   one, confirm the person wants to put this project online and which mission
+   to use. Share only the intended project files and leave out credentials
+   and `.env` files. Even if the tool reports "deployed", check that
+   `app_ready` is true before saying the app is online. If it's still running
+   or not ready, check `deploy_status` instead of sending the files again.
+   If the tool can't share the project safely, help the person upload it.
 
-   With a key, deploy with two HTTP calls (full script + canonical packaging
-   in the section "Deploying for the user (when you can run commands)" of the moonbase guide):
+2. **They use CI, a script, or a terminal tool without a connector.** Use
+   the API key path in the section "Deploying for the user (when you can run commands)" of the moonbase guide. Check for
+   `MOONBASE_API_KEY` or a configured secret without reading or printing its
+   value. If it isn't set, ask the person to create a key at
+   **https://app.moonbase.cloud/api-keys** and save it in their tool's secret
+   store. Never ask them to paste it into chat. Don't sign in or drive the web
+   app for them. They approve any browser steps themselves.
 
-   ```bash
-   # In the PROJECT folder. No skill folder? Save both scripts from the guide
-   # into ./scripts and use S=scripts.
-   S=.claude/skills/moonbase/scripts
-   # Package (fresh, fails closed), deploy, VALIDATE: HTTP 200 is NOT success.
-   mission="$(bash "$S/package-mission.sh")" || exit 1
-   log="$(mktemp)"; trap 'rm -f "$log" "$mission"' EXIT; rc=0
-   meta="$(curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
-     -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
-     -F "file=@$mission" -o "$log" -w '%{http_code} %{content_type}')" || rc=$?
-   bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not live; 3 = not ready (poll); 4 = page files fail (fix)
-   # State: GET /api/v1/sites/<address>/status; <address> = 1st label of the live URL.
-   ```
+   Follow that guide to package the files and check the result. Send a
+   `User-Agent` on every request. HTTP 200 alone does not prove the app is
+   ready. For CI and secret settings, see the section "The deploy API, CI and GitHub Actions" of the moonbase guide.
 
-   Send a `User-Agent` on **every** request (no-identity requests are blocked).
-   No moonbase MCP server today; never read the key, always use `$MOONBASE_API_KEY`.
-   Set the mission's secret env vars (DB URL, keys) over the env API
-   (the section "The deploy API, CI and GitHub Actions" of the moonbase guide), so a fresh deploy isn't left unconfigured.
-2. **You can only chat** (no tools that touch their computer or the
-   internet). → **Guide them click by click** through moonbase in their
-   browser (the section "Getting started: sign up and put the first mission online" of the moonbase guide), and help them prepare the ZIP:
-   what goes in, what stays out (the section "Building for moonbase: a project that deploys first time" of the moonbase guide).
-   Never pretend you deployed something.
-3. **The project lives in a builder that has its own hosting** (for example
-   Lovable, Bolt, v0 or Replit). → Explain how to get the project out as a
-   ZIP and bring it to moonbase (the section "Bringing a project from a builder with its own hosting" of the moonbase guide).
-
-Not sure which you are? Ask: "Can I run commands on your computer, or should
-I walk you through it in the browser?"
+3. **Their AI tool can only chat.** Guide them one step at a time through the
+   browser upload in the section "Getting started: sign up and put the first mission online" of the moonbase guide. Help them prepare the
+   ZIP using the section "Building for moonbase: a project that deploys first time" of the moonbase guide. If the project is still
+   in a builder such as Lovable, Bolt, v0 or Replit, start with the export
+   steps in the section "Bringing a project from a builder with its own hosting" of the moonbase guide. Never say you took an app
+   online if the person still has to upload it.
 
 ## How to teach (read this first)
 
@@ -119,8 +111,8 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
   `wsgi.py`) and list deps in `requirements.txt`. See the section "Building for moonbase: a project that deploys first time" for the
   v1 limits.
 - **Not available today, say so plainly:** other backend languages (Ruby, Go, PHP…),
-  wildcard domains, a managed database or permanent disk, listing all missions
-  through the API, or a published moonbase MCP server or plugin.
+  wildcard domains, a managed database or permanent disk, or listing all missions
+  through the API with an API key. The moonbase connector can list your missions.
 - **Keys and secrets stay out of the chat.** Never ask the user to paste an
   API key, password or secret into the conversation. Never commit or print
   one. See the section "Safety and support" of the moonbase guide.

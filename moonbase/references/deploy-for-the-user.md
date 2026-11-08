@@ -1,31 +1,27 @@
 # Deploying for the user (when you can run commands)
 
-When the user says **"deploy this to moonbase"** and you can run shell
-commands (or make an HTTP request with a file), you do the deploy yourself
-with moonbase's deploy API. If you can only chat, walk the user through the
-browser upload in `getting-started.md` instead.
+Confirm the person has a moonbase account before setting anything up. If
+they don't, send them to **https://app.moonbase.cloud/register** and wait
+until they confirm.
+
+If their AI tool supports the moonbase connector, follow
+**https://moonbase.cloud/docs/deploy-from-ai-chat** first. The person signs
+in to connect it. This guide is the API key fallback for CI, scripts and
+tools that can run commands without a connector. For chat-only tools, guide
+the person through the browser upload in `getting-started.md`.
 
 **Send a `User-Agent` header on every request.** Each `curl` below carries
-`-H "User-Agent: my-agent/1.0"` — put your own tool's name and version there.
-moonbase is behind a filter that blocks requests with no client identity, so
-a missing or default `User-Agent` is refused before it reaches the API.
+`-H "User-Agent: my-agent/1.0"`. Use your tool's name and version there.
+moonbase may refuse a request without a client identity before it reaches
+the API.
 
-**Deploy through the API, never through the web app.** A moonbase API key is
-what lets you deploy on your own — but **look for one before you ask** (Step
-1): it may already be set in the environment or your tool's secrets, and you
-can review whether the project is ready without one. You cannot create a key
-yourself. Do **not** try to sign in to moonbase or automate its web app in a
-browser to deploy: that path needs a human and stalls at the login screen.
-The browser upload exists for people who don't want to use the API, not as a
-fallback for you — with one narrow exception (`consent_required`, in Step 4).
-
-Note: there is **no published moonbase MCP server or plugin** today. Use the
-API with `curl`, as below. It's the same endpoint the browser uses, with the
-same checks.
+Use the API with the person's permission. Check for an existing key before
+asking for one. The person creates any new key and takes any browser steps,
+including approval if the API returns `consent_required` (see Step 4).
 
 ## Step 1. Find a key first; only ask if there isn't one
 
-**Before you ask for anything, check for a key that already exists** — this is
+**Once the person confirms their account, check for a key that already exists** — this is
 an automated flow and the user may have set one up already:
 
 - the `MOONBASE_API_KEY` environment variable,
