@@ -18,7 +18,7 @@ description: >-
 # moonbase: your guide
 
 <!--
-  Bundle revision: r20 (account first, then connector, API key only as a fallback). Before that, r19 (first-deploy matrix 2026-11-05: `asset_problem`, a page whose files don't load is exit 4 and waiting won't help). Before that, r18 (fresh-agent staging run 2026-11-05: quickstart runs the helper scripts from the skill folder, one MISSION_ADDRESS rule). Before that, r17 (Argus claim check 2026-11-05: `go_not_supported`, archive wording). Before that, r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
+  Bundle revision: r22 (the full pre-deploy brief, Avi-approved scope 2026-11-09: dependencies, baked-in localhost, empty-database tables, sign-in redirect URIs, secrets, runtime consequences, and checking the live link before saying it is done). Before that, r21 (first cut of the dependency brief). Before that, r20 (account first, then connector, API key only as a fallback). Before that, r19 (first-deploy matrix 2026-11-05: `asset_problem`, a page whose files don't load is exit 4 and waiting won't help). Before that, r18 (fresh-agent staging run 2026-11-05: quickstart runs the helper scripts from the skill folder, one MISSION_ADDRESS rule). Before that, r17 (Argus claim check 2026-11-05: `go_not_supported`, archive wording). Before that, r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
   real URL/IDNA parser (node), not just Punycode decoding). Before that, r15 (Codex r14 review 2026-11-01 — R14-01 a deployed-but-not-ready
   `done` (app_ready:false) is its own outcome, exit 3, not Live; R14-02 an xn--
   label must really decode as Punycode; R14-03 a malformed/non-object JSON
@@ -165,6 +165,7 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
 | Know what moonbase is, what it costs, if it fits | `references/what-is-moonbase.md` |
 | Sign up and put their first mission online | `references/getting-started.md` |
 | Check a project is a fit, or prepare it to deploy first time (static vs dynamic, frameworks, poor-fit signals, what moonbase fixes) | `references/building-for-moonbase.md` |
+| Settle what the app needs from outside itself before the first deploy: a database and its tables, baked-in `localhost` addresses, sign-in redirect URIs, keys, mail, uploads, scheduled work, and checking the live link | `references/what-your-app-needs.md` |
 | Use an API key from CI or a terminal, update a mission, check status | `references/deploy-for-the-user.md` |
 | Bring a project from a builder with its own hosting (Lovable, Bolt, v0, Replit) | `references/builder-platforms.md` |
 | Use the API, CI or GitHub Actions | `references/api-and-ci.md` |
@@ -178,6 +179,13 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
 | Stay safe with keys and secrets; reach support | `references/safety-and-support.md` |
 
 <!-- core -->
+## Before you deploy
+
+moonbase runs the app's code, not the database, keys or mail service it uses,
+and a baked-in `localhost` resolves nowhere. Miss one and the deploy succeeds
+while the app stays broken. Settle these, then open the live link and use it:
+`references/what-your-app-needs.md`.
+
 ## Rules you never break
 
 - **Truth first.** Everything in these files was checked against moonbase's
@@ -269,9 +277,17 @@ export it first (`references/builder-platforms.md`).
 
 ## Skill version
 
-**moonbase skill — revision r20, 2026-11-08.** This version and date are the
+**moonbase skill — revision r22, 2026-11-09.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r20 puts signup first and makes the connector the first choice in tools that support it. r19 adds exit 4: a page whose files don't load. r18 makes the quickstart run the two helper scripts from the skill's own folder (`.claude/skills/moonbase/scripts`, or `./scripts` if you only have the short file) and says the mission address is the first label of the live URL, never the name you asked for. r17 adds `go_not_supported` and corrects what a downloaded archive holds. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
+filename. r22 is the full pre-deploy brief, written around one question: what
+would make someone see a broken app after it successfully went online? It
+covers the dependencies the app needs from outside itself, addresses baked in
+at build time, a database that exists but has no tables, sign-in redirect URIs
+at the provider, keys in the mission rather than the source, what the runtime
+decides (mail, uploads, scheduled work, request time, size, memory, realtime,
+sleep), and opening the live link and using the app before telling anyone it is
+done. Services are named only in groups, never recommended. r21 was the first
+cut of that brief. r20 puts signup first and makes the connector the first choice in tools that support it. r19 adds exit 4: a page whose files don't load. r18 makes the quickstart run the two helper scripts from the skill's own folder (`.claude/skills/moonbase/scripts`, or `./scripts` if you only have the short file) and says the mission address is the first label of the live URL, never the name you asked for. r17 adds `go_not_supported` and corrects what a downloaded archive holds. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
 IP-literal host is treated as unknown) and treats a non-object `done`/`error`
 frame as unknown. r13 closed the revision-12 review: a CI job now vendors BOTH helper
 scripts and runs a preflight (so a missing file or tool fails before the upload,

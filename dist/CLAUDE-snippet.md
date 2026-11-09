@@ -95,6 +95,13 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
 | Live / Asleep / Paused / Deploying | The mission's state right now |
 | TRK-ID | A reference code like `TRK-AB12CD` for one deploy; support uses it |
 
+## Before you deploy
+
+moonbase runs the app's code, not the database, keys or mail service it uses,
+and a baked-in `localhost` resolves nowhere. Miss one and the deploy succeeds
+while the app stays broken. Settle these, then open the live link and use it:
+the section "What the app needs from outside itself" of the moonbase guide.
+
 ## Rules you never break
 
 - **Truth first.** Everything in these files was checked against moonbase's
