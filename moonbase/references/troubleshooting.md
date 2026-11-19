@@ -169,7 +169,7 @@ safe to try again after waiting.
 | `framework_unsupported:<framework>` | Framework not supported yet | A recognised framework moonbase can't build yet (a backend language, or a framework not on the supported list). Deploy a static build. |
 | `astro_ssr_not_supported` | Astro SSR isn't supported yet | Astro deploys its **static** output in v1. Remove the SSR adapter / set `output: 'static'` so `astro build` produces `dist/`, then re-upload. |
 | `sveltekit_adapter_node_required` | SvelteKit needs the Node adapter | moonbase runs SvelteKit with `@sveltejs/adapter-node`. Switch `svelte.config.js` to that adapter and re-upload. |
-| `hardcoded_secret_detected` | Possible secret found in your upload | A key or password is in the files. Remove it, use environment variables, upload again. |
+| `hardcoded_secret_detected` | Possible secret found in your upload | A possible key or credential was found in the files and the upload was stopped. Remove the credential from the uploaded files, use environment variables, and upload again. If the credential is real, rotate it with its provider. When all matches are in test or fixture files, the refusal suggests leaving them out of the ZIP or source after confirming that the app builds and runs without them. |
 | `malware_detected` | Upload blocked — malware detected | Something harmful was found. Remove it; false positive? Contact support with the TRK-ID. |
 | `scanner_unavailable` | Upload paused — scanner temporarily unavailable | Retry ✓ in a few minutes. |
 | `scan_incomplete` | Upload paused — scan didn't finish | Retry ✓ in a few minutes. |
@@ -216,7 +216,9 @@ it in Mission Control → **Password protection** (`mission-control.md`).
 
 | Code | Title | What it means → what to do |
 |---|---|---|
-| `password_protection_coming_soon` | Password protection isn't available yet | A `password` was sent with the deploy. Leave it out, deploy, then set the password in Mission Control. |
+| `password_protection_coming_soon` | Set the password in Mission Control | A `password` was sent with a new version of an existing mission. Deploy without it, then set or change the password in Mission Control (or `set_password`). A new mission's first launch can carry a password. |
+| `password_protection_disabled` | Password protection is switched off right now | moonbase paused new password protection, so a launch with a password was refused. Try later. Launch without one only if the mission doesn't need to be protected from its first version. |
+| `password_protection_unavailable` | We couldn't protect the mission | The password couldn't be turned on before launch, so nothing was published. If moonbase couldn't confirm the password is off the address again, the address stays reserved to your account as a failed mission until it is checked. Retry; if it repeats, or the address shows as taken by your failed mission, contact support with the TRK-ID. |
 | `invalid_password` | Password isn't valid | The deploy's `password` field had the wrong length. Leave it out and set the password in Mission Control. |
 
 ### moonbase's side

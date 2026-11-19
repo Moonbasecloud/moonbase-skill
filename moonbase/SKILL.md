@@ -18,7 +18,7 @@ description: >-
 # moonbase: your guide
 
 <!--
-  Bundle revision: r22 (the full pre-deploy brief, Avi-approved scope 2026-11-09: dependencies, baked-in localhost, empty-database tables, sign-in redirect URIs, secrets, runtime consequences, and checking the live link before saying it is done). Before that, r21 (first cut of the dependency brief). Before that, r20 (account first, then connector, API key only as a fallback). Before that, r19 (first-deploy matrix 2026-11-05: `asset_problem`, a page whose files don't load is exit 4 and waiting won't help). Before that, r18 (fresh-agent staging run 2026-11-05: quickstart runs the helper scripts from the skill folder, one MISSION_ADDRESS rule). Before that, r17 (Argus claim check 2026-11-05: `go_not_supported`, archive wording). Before that, r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
+  Bundle revision: r23 (publish path 2026-11-19: create_upload is the default for a project with images or over about 100 KB, inline files only for small text-only projects, the browser upload only when no shell reaches the upload host, fallbacks in order: a one-time allow-list setting per client, a browser-assisted upload on the project's Deploy new version screen, the person dropping the ZIP there; a visitor password may go through the chat; a Connector not working section). Before that, r22 (the full pre-deploy brief, Avi-approved scope 2026-11-09: dependencies, baked-in localhost, empty-database tables, sign-in redirect URIs, secrets, runtime consequences, and checking the live link before saying it is done). Before that, r21 (first cut of the dependency brief). Before that, r20 (account first, then connector, API key only as a fallback). Before that, r19 (first-deploy matrix 2026-11-05: `asset_problem`, a page whose files don't load is exit 4 and waiting won't help). Before that, r18 (fresh-agent staging run 2026-11-05: quickstart runs the helper scripts from the skill folder, one MISSION_ADDRESS rule). Before that, r17 (Argus claim check 2026-11-05: `go_not_supported`, archive wording). Before that, r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
   real URL/IDNA parser (node), not just Punycode decoding). Before that, r15 (Codex r14 review 2026-11-01 — R14-01 a deployed-but-not-ready
   `done` (app_ready:false) is its own outcome, exit 3, not Live; R14-02 an xn--
   label must really decode as Punycode; R14-03 a malformed/non-object JSON
@@ -71,13 +71,14 @@ can use:
    and reviews what to allow. The connector uses that sign-in, so this path
    needs no API key. They can then ask "Take my app online with moonbase."
 
-   Before using `create_mission` for a new mission or `deploy` for an existing
-   one, confirm the person wants to put this project online and which mission
-   to use. Share only the intended project files and leave out credentials
-   and `.env` files. Even if the tool reports "deployed", check that
-   `app_ready` is true before saying the app is online. If it's still running
-   or not ready, check `deploy_status` instead of sending the files again.
-   If the tool can't share the project safely, help the person upload it.
+   Confirm the project and that they want it online. Leave out
+   credentials and `.env` files. With images or over about 100 KB:
+   `create_upload` gives one `curl` line, run in your sandbox, a device
+   shell or their terminal (no API key; single-use, 10 minutes); its
+   result lists fallbacks. Small text-only projects go inline as
+   `files`. A visitor password (`password` or `generate_password`) is
+   visible in the chat; the person decides. Check `app_ready` (or
+   `deploy_status`) before calling the app online.
 
 2. **They use CI, a script, or a terminal tool without a connector.** Use
    the API key path in `references/deploy-for-the-user.md`. Check for
@@ -91,9 +92,9 @@ can use:
    `User-Agent` on every request. HTTP 200 alone does not prove the app is
    ready. For CI and secret settings, see `references/api-and-ci.md`.
 
-3. **Their AI tool can only chat.** Guide them one step at a time through the
-   browser upload in `references/getting-started.md`. Help them prepare the
-   ZIP using `references/building-for-moonbase.md`. If the project is still
+3. **Only chat, no connector or shell.** Guide them one step at a time
+   through the browser upload in `references/getting-started.md`. Help them
+   prepare the ZIP using `references/building-for-moonbase.md`. If the project is still
    in a builder such as Lovable, Bolt, v0 or Replit, start with the export
    steps in `references/builder-platforms.md`. Never say you took an app
    online if the person still has to upload it.
@@ -110,8 +111,9 @@ Run this from the project folder after confirming the account is ready.
 S=.claude/skills/moonbase/scripts
 mission="$(bash "$S/package-mission.sh")" || exit 1
 log="$(mktemp)"; trap 'rm -f "$log" "$mission"' EXIT; rc=0
-meta="$(curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
+set +x
+meta="$(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
+  --header @- -H "User-Agent: my-agent/1.0" \
   -F "file=@$mission" -o "$log" -w '%{http_code} %{content_type}')" || rc=$?
 bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not ready; 3 = poll; 4 = fix page files
 # State: GET /api/v1/sites/<address>/status; <address> = 1st label of the mission URL.
@@ -202,8 +204,8 @@ while the app stays broken. Settle these, then open the live link and use it:
   `wsgi.py`) and list deps in `requirements.txt`. See `building-for-moonbase.md` for the
   v1 limits.
 - **Not available today, say so plainly:** other backend languages (Ruby, Go, PHP…),
-  wildcard domains, a managed database or permanent disk, or listing all missions
-  through the API with an API key. The moonbase connector can list your missions.
+  wildcard domains, managed databases (closed pilot) or permanent disk, or listing all
+  missions through the API with an API key. The moonbase connector can list your missions.
 - **Keys and secrets stay out of the chat.** Never ask the user to paste an
   API key, password or secret into the conversation. Never commit or print
   one. See `references/safety-and-support.md`.
@@ -270,16 +272,40 @@ Node/Express, Flask, Django or FastAPI). If their app needs WebSockets, heavy
 compute, a persistent local disk or an unsupported backend, explain the limit
 before they try to put it online. See `references/building-for-moonbase.md`.
 
-Then use the connector if their tool supports it, the API key path for CI or
-terminal tools without a connector, or the browser upload if they only have
-chat. If the project is still in a builder like Lovable or Bolt, help them
+Then use the connector if their tool supports it (`create_upload` for a
+project with images or over about 100 KB), the API key path for CI or
+terminal tools without a connector, or the browser upload only when neither a
+connector nor a shell is available. If the project is still in a builder like Lovable or Bolt, help them
 export it first (`references/builder-platforms.md`).
+
+## Connector not working
+
+The moonbase connector address is **https://app.moonbase.cloud/mcp**. Older
+custom connectors that point anywhere else, for example one named
+`moonbase-pilot` at `app-staging.moonbase.host/mcp`, no longer work.
+
+A failing connector is fixed in the assistant's own connector settings: the
+person reconnects moonbase there, or removes the old entry and adds one with
+the address above. The public agent guide at
+**https://moonbase.cloud/agents** lists the menu path per assistant: one
+was checked against that assistant's own documentation on 2026-11-19 and
+carries its source; the others are marked unverified there.
+
+A 502 or "couldn't connect" from a custom connector does not by itself mean
+moonbase is down. moonbase's current status is at
+**https://moonbase.cloud/status**, and as JSON at
+**https://moonbase.cloud/api/status**.
 
 ## Skill version
 
-**moonbase skill — revision r22, 2026-11-09.** This version and date are the
+**moonbase skill — revision r23, 2026-11-19.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r22 is the full pre-deploy brief, written around one question: what
+filename. r23 is the publish path: with the connector, a project with images
+or over about 100 KB goes through `create_upload` and its one-line `curl`
+command, small text-only projects go inline as `files`, and the upload
+result lists the fallbacks in order. A visitor password may go through the
+chat (`password` or `generate_password`); API keys and credentials still do
+not. It adds a "Connector not working" section. r22 is the full pre-deploy brief, written around one question: what
 would make someone see a broken app after it successfully went online? It
 covers the dependencies the app needs from outside itself, addresses baked in
 at build time, a database that exists but has no tables, sign-in redirect URIs

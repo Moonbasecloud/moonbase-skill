@@ -68,8 +68,8 @@ day**.
 | A day showing 0 | A real, measured zero: nobody visited. |
 | "Couldn't load" | The figures couldn't be fetched right now. The mission itself is fine; try later. |
 
-Traffic is per mission, not per custom domain. On paid plans, visits beyond
-the plan's monthly number are still counted and the mission stays live.
+Traffic is per mission, not per custom domain. Visits are counted, never
+capped, on every plan.
 
 ## The "Hosted by moonbase" badge
 
@@ -96,13 +96,29 @@ Each mission can have its own password. Only the mission's owner can set it.
   can view the mission again.
 - moonbase never shows the saved password again (it stores it scrambled); you
   can only replace it.
-- It can be set only **after the first launch**, and can't be removed while
-  the mission is **paused**.
-- The **New mission** window can also have a **Password protection** card,
-  applied as soon as the mission exists.
+- In Mission Control's **Settings**, it can be set once the mission exists
+  (after its first launch), and can't be removed while the mission is
+  **paused**. To protect a mission from its very first version, give the
+  password when you create it (below).
+- The **New mission** window can also have a **Password protection** card.
+  The password goes with the launch: moonbase's server asks for it before
+  the first version is published. Static files (JavaScript, CSS, images)
+  can still be served from Cloudflare's cache once a visitor who knows the
+  password has loaded them, so keep secrets out of browser files.
 - If the page says "Password protection is unavailable right now", moonbase
   has it switched off for new passwords for the moment; existing passwords
   keep working and can still be changed or removed.
-- **Deploying through the API can't set a password** (a `password` form
-  field is refused with `password_protection_coming_soon`). Deploy, then set
-  the password in Mission Control.
+- **A new mission can be launched with a password**: `create_mission`'s
+  `password`, or a `password` form field on the first deploy. moonbase's
+  server asks for it before the first version is published (the same
+  static-file caching caveat applies). For an **existing**
+  mission a `password` on a deploy is refused with
+  `password_protection_coming_soon`: set or change it in Mission Control (or
+  with `set_password`) instead.
+- **Through the connector:** `create_mission` and `create_upload` take
+  `password`, or `generate_password: true` (moonbase makes one and returns it);
+  `set_password` sets one on an existing mission. A visitor password keeps
+  people out of the mission; it is not an account secret, so it may go
+  through the chat. Its value is visible in the conversation, and the person
+  decides. API keys and other credentials are different: they are typed only
+  on moonbase's own page.

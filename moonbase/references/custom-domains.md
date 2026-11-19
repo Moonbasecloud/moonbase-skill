@@ -42,6 +42,14 @@ never changes anything at the registrar; the user adds the record.
    moonbase gets the HTTPS certificate (from Let's Encrypt), usually within a
    few minutes, and the domain shows as active.*
 
+   An AI connected through the moonbase connector can run the same check with
+   the `verify_domain` tool (project plus domain). It returns the domain's
+   status, what was found and expected for each DNS record, and the link to
+   the Domains page (https://app.moonbase.cloud/domains), which the person can
+   open to see the same result. It changes only moonbase's stored status (and
+   starts the certificate once both records are in place); it does not change
+   DNS.
+
 **Cloudflare users:** set the record to **DNS only (grey cloud)**, not
 proxied (orange). The orange proxy blocks moonbase's certificate.
 
@@ -59,7 +67,8 @@ one from memory.
 3. Make sure no other old record (another host's A or CNAME) is still there
    for the same name.
 4. Cloudflare: grey cloud.
-5. Wait a bit, then click **Verify** again.
+5. Wait a bit, then click **Verify** again (or, over the connector, call
+   `verify_domain` again; its `records` list shows which record still differs).
 
 If moonbase refuses to add the domain because the plan doesn't include
 custom domains, it names the cheapest plan that does: upgrade

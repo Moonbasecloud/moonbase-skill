@@ -41,11 +41,10 @@ Recipe**). Details: `building-for-moonbase.md`.
 
 - There is a **free plan** and **paid plans**. Today the plans are called
   moonbase free, moonbase plus, moonbase pro and moonbase max.
-- Plans differ in: how many missions you can have, total storage, visits per
-  month that are included, the biggest single upload, and features.
+- Plans differ in: how many missions you can have, total storage, the biggest
+  single upload, and features.
 - **Paid plans only:** custom domains and sharing a mission with teammates.
-- **Visits are counted, never capped.** Missions stay live past the plan's
-  number.
+- **Visits are counted, never capped.** No plan limits visitors.
 - On the free plan, **dynamic** missions go to sleep when nobody visits for a
   while and wake on the next visit (static missions never sleep). See
   `mission-control.md`.

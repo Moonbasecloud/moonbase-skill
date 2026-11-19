@@ -7,7 +7,7 @@ alwaysApply: false
 <!--
   Cursor rule: save as .cursor/rules/moonbase.mdc.
 
-  This rule is the full moonbase guide (about 179 KB). Cursor loads it only
+  This rule is the full moonbase guide (about 184 KB). Cursor loads it only
   when the conversation is about hosting, deploying or moonbase.
   Generated from the moonbase Skill (skill/moonbase/); all formats:
   https://moonbase.cloud/skill
@@ -42,13 +42,14 @@ can use:
    and reviews what to allow. The connector uses that sign-in, so this path
    needs no API key. They can then ask "Take my app online with moonbase."
 
-   Before using `create_mission` for a new mission or `deploy` for an existing
-   one, confirm the person wants to put this project online and which mission
-   to use. Share only the intended project files and leave out credentials
-   and `.env` files. Even if the tool reports "deployed", check that
-   `app_ready` is true before saying the app is online. If it's still running
-   or not ready, check `deploy_status` instead of sending the files again.
-   If the tool can't share the project safely, help the person upload it.
+   Confirm the project and that they want it online. Leave out
+   credentials and `.env` files. With images or over about 100 KB:
+   `create_upload` gives one `curl` line, run in your sandbox, a device
+   shell or their terminal (no API key; single-use, 10 minutes); its
+   result lists fallbacks. Small text-only projects go inline as
+   `files`. A visitor password (`password` or `generate_password`) is
+   visible in the chat; the person decides. Check `app_ready` (or
+   `deploy_status`) before calling the app online.
 
 2. **They use CI, a script, or a terminal tool without a connector.** Use
    the API key path in the section "Deploying for the user (when you can run commands)" below. Check for
@@ -62,9 +63,9 @@ can use:
    `User-Agent` on every request. HTTP 200 alone does not prove the app is
    ready. For CI and secret settings, see the section "The deploy API, CI and GitHub Actions" below.
 
-3. **Their AI tool can only chat.** Guide them one step at a time through the
-   browser upload in the section "Getting started: sign up and put the first mission online" below. Help them prepare the
-   ZIP using the section "Building for moonbase: a project that deploys first time" below. If the project is still
+3. **Only chat, no connector or shell.** Guide them one step at a time
+   through the browser upload in the section "Getting started: sign up and put the first mission online" below. Help them
+   prepare the ZIP using the section "Building for moonbase: a project that deploys first time" below. If the project is still
    in a builder such as Lovable, Bolt, v0 or Replit, start with the export
    steps in the section "Bringing a project from a builder with its own hosting" below. Never say you took an app
    online if the person still has to upload it.
@@ -80,8 +81,9 @@ Run this from the project folder after confirming the account is ready.
 S=.claude/skills/moonbase/scripts
 mission="$(bash "$S/package-mission.sh")" || exit 1
 log="$(mktemp)"; trap 'rm -f "$log" "$mission"' EXIT; rc=0
-meta="$(curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
+set +x
+meta="$(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sSN https://app.moonbase.cloud/api/projects/upload/stream \
+  --header @- -H "User-Agent: my-agent/1.0" \
   -F "file=@$mission" -o "$log" -w '%{http_code} %{content_type}')" || rc=$?
 bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit $?  # non-zero = not ready; 3 = poll; 4 = fix page files
 # State: GET /api/v1/sites/<address>/status; <address> = 1st label of the mission URL.
@@ -169,8 +171,8 @@ the section "What the app needs from outside itself" below.
   `wsgi.py`) and list deps in `requirements.txt`. See the section "Building for moonbase: a project that deploys first time" for the
   v1 limits.
 - **Not available today, say so plainly:** other backend languages (Ruby, Go, PHP…),
-  wildcard domains, a managed database or permanent disk, or listing all missions
-  through the API with an API key. The moonbase connector can list your missions.
+  wildcard domains, managed databases (closed pilot) or permanent disk, or listing all
+  missions through the API with an API key. The moonbase connector can list your missions.
 - **Keys and secrets stay out of the chat.** Never ask the user to paste an
   API key, password or secret into the conversation. Never commit or print
   one. See the section "Safety and support" below.
@@ -236,16 +238,40 @@ Node/Express, Flask, Django or FastAPI). If their app needs WebSockets, heavy
 compute, a persistent local disk or an unsupported backend, explain the limit
 before they try to put it online. See the section "Building for moonbase: a project that deploys first time" below.
 
-Then use the connector if their tool supports it, the API key path for CI or
-terminal tools without a connector, or the browser upload if they only have
-chat. If the project is still in a builder like Lovable or Bolt, help them
+Then use the connector if their tool supports it (`create_upload` for a
+project with images or over about 100 KB), the API key path for CI or
+terminal tools without a connector, or the browser upload only when neither a
+connector nor a shell is available. If the project is still in a builder like Lovable or Bolt, help them
 export it first (the section "Bringing a project from a builder with its own hosting" below).
+
+## Connector not working
+
+The moonbase connector address is **https://app.moonbase.cloud/mcp**. Older
+custom connectors that point anywhere else, for example one named
+`moonbase-pilot` at `app-staging.moonbase.host/mcp`, no longer work.
+
+A failing connector is fixed in the assistant's own connector settings: the
+person reconnects moonbase there, or removes the old entry and adds one with
+the address above. The public agent guide at
+**https://moonbase.cloud/agents** lists the menu path per assistant: one
+was checked against that assistant's own documentation on 2026-11-19 and
+carries its source; the others are marked unverified there.
+
+A 502 or "couldn't connect" from a custom connector does not by itself mean
+moonbase is down. moonbase's current status is at
+**https://moonbase.cloud/status**, and as JSON at
+**https://moonbase.cloud/api/status**.
 
 ## Skill version
 
-**moonbase skill — revision r22, 2026-11-09.** This version and date are the
+**moonbase skill — revision r23, 2026-11-19.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r22 is the full pre-deploy brief, written around one question: what
+filename. r23 is the publish path: with the connector, a project with images
+or over about 100 KB goes through `create_upload` and its one-line `curl`
+command, small text-only projects go inline as `files`, and the upload
+result lists the fallbacks in order. A visitor password may go through the
+chat (`password` or `generate_password`); API keys and credentials still do
+not. It adds a "Connector not working" section. r22 is the full pre-deploy brief, written around one question: what
 would make someone see a broken app after it successfully went online? It
 covers the dependencies the app needs from outside itself, addresses baked in
 at build time, a database that exists but has no tables, sign-in redirect URIs
@@ -431,9 +457,18 @@ until they confirm.
 
 If their AI tool supports the moonbase connector, follow
 **https://moonbase.cloud/docs/deploy-from-ai-chat** first. The person signs
-in to connect it. This guide is the API key fallback for CI, scripts and
-tools that can run commands without a connector. For chat-only tools, guide
-the person through the browser upload in the section "Getting started: sign up and put the first mission online".
+in to connect it. With the connector, a project with images, fonts or other
+binary files, or over about 100 KB, publishes through `create_upload`: it
+returns a single-use upload link (10 minutes) and the one-line `curl` command
+that sends the ZIP from any shell that has it (the code sandbox, a device
+shell, or the person's terminal), with no API key. Its result lists, in
+order, what follows when the sandbox blocks the upload host ("403 from proxy
+after CONNECT"): the one-time setting per client that allows the host, then a
+browser-assisted upload on that project's Deploy new version screen (the agent
+opens the link; the person shares the ZIP with the session once), then the
+person dropping the ZIP on that same screen. A small text-only project can go
+inline as `files`. This guide is the API key path for CI, scripts and tools
+that can run commands without a connector.
 
 **Send a `User-Agent` header on every request.** Each `curl` below carries
 `-H "User-Agent: my-agent/1.0"`. Use your tool's name and version there.
@@ -865,8 +900,9 @@ command (Node), or the app object (Python).
 
 ```bash
 # <address> = first label of the live URL (keep it as MISSION_ADDRESS)
-curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+set +x
+printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
+  --header @- \
   -H "User-Agent: my-agent/1.0" | jq -re .id || { echo "No mission at that address (check the name/key)." >&2; exit 1; }
 ```
 
@@ -1109,10 +1145,11 @@ them to the shipped parser:
 API="https://app.moonbase.cloud"
 # For a REDEPLOY, record the current version FIRST, so an UNKNOWN outcome can be
 # reconciled by "did currentVersion go up?" (Step 5). Empty for a new mission.
+set +x
 prev_version=""
 if [ -n "${MOONBASE_MISSION_ID:-}" ]; then
-  prev_version="$(curl -sS "$API/api/v1/sites/$MISSION_ADDRESS/status" \
-    -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
+  prev_version="$(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sS "$API/api/v1/sites/$MISSION_ADDRESS/status" \
+    --header @- -H "User-Agent: my-agent/1.0" \
     | jq -r '.currentVersion // empty')"
 fi
 # The stream can carry build output, so keep it in a private, short-lived file
@@ -1124,8 +1161,8 @@ log="$(mktemp)"; chmod 600 "$log"; trap 'rm -f "$log" "$mission"' EXIT  # also r
 # fails AFTER a complete-looking `done` (e.g. timeout, exit 28) must be treated
 # as UNKNOWN, never a success.
 curl_rc=0
-meta="$(curl -sSN "$API/api/projects/upload/stream" \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+meta="$(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sSN "$API/api/projects/upload/stream" \
+  --header @- \
   -H "User-Agent: my-agent/1.0" \
   -F "file=@$mission" \
   -F "redeployProjectId=$MOONBASE_MISSION_ID" \
@@ -1300,8 +1337,9 @@ real route with config and persistence in place). Also surface
 ### Step 5. Check a mission's status
 
 ```bash
-curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+set +x
+printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
+  --header @- \
   -H "User-Agent: my-agent/1.0"
 ```
 
@@ -1361,15 +1399,16 @@ a connector. Use that path only after the person confirms their account.
 | `GET https://app.moonbase.cloud/api/v1/sites/{address}/status` | Read a mission's state |
 | `GET https://app.moonbase.cloud/api/v1/sites/{address}/env` | List the env-var key names set on a mission |
 | `PUT https://app.moonbase.cloud/api/v1/sites/{address}/env` | Set one or more env vars (see "Setting environment variables") |
+| `DELETE https://app.moonbase.cloud/api/v1/sites/{address}/env` | Delete one saved env var: JSON body `{"key": "NAME"}`, returns `{"deleted": true}` (`false` if that name wasn't saved); takes effect on the next deploy |
 
-Auth on **all four** — upload, status, and the env GET and PUT — is the same:
+Auth on **all five** — upload, status, and the env GET, PUT and DELETE — is the same:
 `Authorization: Bearer mb_live_…` (an API key from **API Keys**), same deploy
 scope, scoped to the missions that key owns. Always use `app.moonbase.cloud`.
 The old `app.moonbase.host` only redirects.
 
 Passing the key with `-H "Authorization: Bearer $KEY"` puts it in the process's
 **argv**, which is visible in `ps`/`/proc` on a shared host and can land in
-shell traces. Where that matters, feed the header to `curl` out of band:
+shell traces. Feed the header to `curl` through stdin (`--header @-`) or a private file:
 `-H @file` (read the header line from a file) or `--config <file>` (a curl
 config file holding a `header = "Authorization: Bearer …"` line). **Not**
 `--netrc` — that supplies HTTP Basic `login:password` from a `.netrc`, not an
@@ -1624,17 +1663,21 @@ jobs:
         # (`scripts/parse-deploy-result.sh`, deploy-for-the-user.md Step 4): it
         # passes ONLY on a complete, final `done` with a usable live URL, so a
         # truncated or unknown stream fails the job instead of going green.
+        env:
+          MOONBASE_API_KEY: ${{ secrets.MOONBASE_API_KEY }}
+          MOONBASE_MISSION_ID: ${{ secrets.MOONBASE_MISSION_ID }}
         run: |
           set -euo pipefail
+          set +x
           log="$(mktemp)"; chmod 600 "$log"; trap 'rm -f "$log"' EXIT
           # Capture curl's own exit (don't rely on set -e): a transfer that fails
           # after a complete-looking `done` must be UNKNOWN, not a success.
           curl_rc=0
-          meta="$(curl -sSN -X POST https://app.moonbase.cloud/api/projects/upload/stream \
-            -H "Authorization: Bearer ${{ secrets.MOONBASE_API_KEY }}" \
+          meta="$(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sSN -X POST https://app.moonbase.cloud/api/projects/upload/stream \
+            --header @- \
             -H "User-Agent: github-actions-moonbase/1.0" \
-            -F "file=@${{ env.MISSION_ZIP }}" \
-            -F "redeployProjectId=${{ secrets.MOONBASE_MISSION_ID }}" \
+            -F "file=@$MISSION_ZIP" \
+            -F "redeployProjectId=$MOONBASE_MISSION_ID" \
             -o "$log" -w '%{http_code} %{content_type}')" || curl_rc=$?
           # The SAME shipped parser the deploy recipe uses — one script, no drift.
           # Exit 3 = deployed but the app is NOT READY (app_ready:false): the job
@@ -1664,8 +1707,9 @@ and scope as a deploy, scoped to the missions that key owns.
 **List the keys that are set** (never the values — they are write-only):
 
 ```bash
-curl https://app.moonbase.cloud/api/v1/sites/<slug>/env \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+set +x
+printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl https://app.moonbase.cloud/api/v1/sites/<slug>/env \
+  --header @- \
   -H "User-Agent: my-agent/1.0"
 ```
 
@@ -1690,7 +1734,7 @@ raw response:
 set +x
 jq -n '{env: {DATABASE_URL: env.DATABASE_URL, STRIPE_SECRET: env.STRIPE_SECRET}}' \
   | curl -sS -X PUT https://app.moonbase.cloud/api/v1/sites/<slug>/env \
-      -H "Authorization: Bearer $MOONBASE_API_KEY" \
+      --header @<(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY") \
       -H "User-Agent: my-agent/1.0" \
       -H "Content-Type: application/json" \
       --data-binary @- \
@@ -1717,16 +1761,16 @@ never read back, so a `GET`:
   name whether the OLD or the NEW value is stored, so a `GET` can't tell you the
   value actually changed. Don't claim it does.
 
-To be sure a changed value took effect, rely on the write receipt, then verify
-at the **app level** — redeploy (values apply on the next deploy) and have the
-app read the variable, or hit a health/debug route that reflects it. Set
-variables before you deploy, or set them and redeploy.
+After an acknowledged write, deploy or redeploy so the app loads the saved
+configuration. Verify the feature or dependency that needs the variable.
+Keep the stored value out of test output, including health responses and logs.
 
-The whole set is written in **one transaction**, so a mid-write fault stores
-nothing and comes back as `503 env_write_failed` (not a partial write) — safe to
-retry. A full mission returns `409 env_vars_limit` (with `max`); a cap that
-can't be read returns `503 mission_cap_unavailable`. In every failure case
-nothing is stored.
+The whole set is written in **one transaction**. A full mission returns
+`409 env_vars_limit` (with `max`), and an unreadable cap returns
+`503 mission_cap_unavailable`. Both cap responses refuse the write before
+storing anything. A `503 env_write_failed` means the write outcome could not
+be confirmed. The transaction may have committed before its acknowledgement
+was lost.
 
 **On an unknown outcome** (the connection dropped, or a `5xx` such as
 `env_write_failed`), don't assume it failed *or* succeeded. For a **new** key,
@@ -2298,11 +2342,10 @@ Recipe**). Details: the section "Building for moonbase: a project that deploys f
 
 - There is a **free plan** and **paid plans**. Today the plans are called
   moonbase free, moonbase plus, moonbase pro and moonbase max.
-- Plans differ in: how many missions you can have, total storage, visits per
-  month that are included, the biggest single upload, and features.
+- Plans differ in: how many missions you can have, total storage, the biggest
+  single upload, and features.
 - **Paid plans only:** custom domains and sharing a mission with teammates.
-- **Visits are counted, never capped.** Missions stay live past the plan's
-  number.
+- **Visits are counted, never capped.** No plan limits visitors.
 - On the free plan, **dynamic** missions go to sleep when nobody visits for a
   while and wake on the next visit (static missions never sleep). See
   the section "Mission Control: status, sleep, pause, password, environment variables, analytics".
@@ -2489,7 +2532,7 @@ host is better served than one whose deploy "worked".
   paste it into the chat. moonbase blocks an upload that looks like it carries
   a hardcoded credential (`hardcoded_secret_detected`), and a key that reached
   a repository is a key someone has to go and revoke.
-- Set them with `set_env` over the connector, through the env API, or in
+- Set them with `set_env` over the connector (remove one with `delete_env`), through the env API, or in
   **Mission Control → Environment Variables**. The mechanics, the reserved
   names and the `NEXT_PUBLIC_` warning are in
   the section "Building for moonbase: a project that deploys first time" below.
@@ -2632,6 +2675,14 @@ never changes anything at the registrar; the user adds the record.
    moonbase gets the HTTPS certificate (from Let's Encrypt), usually within a
    few minutes, and the domain shows as active.*
 
+   An AI connected through the moonbase connector can run the same check with
+   the `verify_domain` tool (project plus domain). It returns the domain's
+   status, what was found and expected for each DNS record, and the link to
+   the Domains page (https://app.moonbase.cloud/domains), which the person can
+   open to see the same result. It changes only moonbase's stored status (and
+   starts the certificate once both records are in place); it does not change
+   DNS.
+
 **Cloudflare users:** set the record to **DNS only (grey cloud)**, not
 proxied (orange). The orange proxy blocks moonbase's certificate.
 
@@ -2649,7 +2700,8 @@ one from memory.
 3. Make sure no other old record (another host's A or CNAME) is still there
    for the same name.
 4. Cloudflare: grey cloud.
-5. Wait a bit, then click **Verify** again.
+5. Wait a bit, then click **Verify** again (or, over the connector, call
+   `verify_domain` again; its `records` list shows which record still differs).
 
 If moonbase refuses to add the domain because the plan doesn't include
 custom domains, it names the cheapest plan that does: upgrade
@@ -2740,8 +2792,8 @@ day**.
 | A day showing 0 | A real, measured zero: nobody visited. |
 | "Couldn't load" | The figures couldn't be fetched right now. The mission itself is fine; try later. |
 
-Traffic is per mission, not per custom domain. On paid plans, visits beyond
-the plan's monthly number are still counted and the mission stays live.
+Traffic is per mission, not per custom domain. Visits are counted, never
+capped, on every plan.
 
 ### The "Hosted by moonbase" badge
 
@@ -2768,16 +2820,32 @@ Each mission can have its own password. Only the mission's owner can set it.
   can view the mission again.
 - moonbase never shows the saved password again (it stores it scrambled); you
   can only replace it.
-- It can be set only **after the first launch**, and can't be removed while
-  the mission is **paused**.
-- The **New mission** window can also have a **Password protection** card,
-  applied as soon as the mission exists.
+- In Mission Control's **Settings**, it can be set once the mission exists
+  (after its first launch), and can't be removed while the mission is
+  **paused**. To protect a mission from its very first version, give the
+  password when you create it (below).
+- The **New mission** window can also have a **Password protection** card.
+  The password goes with the launch: moonbase's server asks for it before
+  the first version is published. Static files (JavaScript, CSS, images)
+  can still be served from Cloudflare's cache once a visitor who knows the
+  password has loaded them, so keep secrets out of browser files.
 - If the page says "Password protection is unavailable right now", moonbase
   has it switched off for new passwords for the moment; existing passwords
   keep working and can still be changed or removed.
-- **Deploying through the API can't set a password** (a `password` form
-  field is refused with `password_protection_coming_soon`). Deploy, then set
-  the password in Mission Control.
+- **A new mission can be launched with a password**: `create_mission`'s
+  `password`, or a `password` form field on the first deploy. moonbase's
+  server asks for it before the first version is published (the same
+  static-file caching caveat applies). For an **existing**
+  mission a `password` on a deploy is refused with
+  `password_protection_coming_soon`: set or change it in Mission Control (or
+  with `set_password`) instead.
+- **Through the connector:** `create_mission` and `create_upload` take
+  `password`, or `generate_password: true` (moonbase makes one and returns it);
+  `set_password` sets one on an existing mission. A visitor password keeps
+  people out of the mission; it is not an account secret, so it may go
+  through the chat. Its value is visible in the conversation, and the person
+  decides. API keys and other credentials are different: they are typed only
+  on moonbase's own page.
 
 ---
 
@@ -2943,8 +3011,8 @@ the user there.
 
 - A free plan and paid plans (today: moonbase free, plus, pro and max), with
   monthly and yearly prices on the pricing page.
-- Plans differ in missions, storage, included visits per month, the biggest
-  single upload, and features. Custom domains and sharing need a paid plan.
+- Plans differ in missions, storage, the biggest single upload, and
+  features. Visits are counted, never capped. Custom domains and sharing need a paid plan.
 - Payments go through **Paddle**. Billing is self-serve.
 
 ### Upgrade, step by step
@@ -3166,7 +3234,7 @@ safe to try again after waiting.
 | `framework_unsupported:<framework>` | Framework not supported yet | A recognised framework moonbase can't build yet (a backend language, or a framework not on the supported list). Deploy a static build. |
 | `astro_ssr_not_supported` | Astro SSR isn't supported yet | Astro deploys its **static** output in v1. Remove the SSR adapter / set `output: 'static'` so `astro build` produces `dist/`, then re-upload. |
 | `sveltekit_adapter_node_required` | SvelteKit needs the Node adapter | moonbase runs SvelteKit with `@sveltejs/adapter-node`. Switch `svelte.config.js` to that adapter and re-upload. |
-| `hardcoded_secret_detected` | Possible secret found in your upload | A key or password is in the files. Remove it, use environment variables, upload again. |
+| `hardcoded_secret_detected` | Possible secret found in your upload | A possible key or credential was found in the files and the upload was stopped. Remove the credential from the uploaded files, use environment variables, and upload again. If the credential is real, rotate it with its provider. When all matches are in test or fixture files, the refusal suggests leaving them out of the ZIP or source after confirming that the app builds and runs without them. |
 | `malware_detected` | Upload blocked — malware detected | Something harmful was found. Remove it; false positive? Contact support with the TRK-ID. |
 | `scanner_unavailable` | Upload paused — scanner temporarily unavailable | Retry ✓ in a few minutes. |
 | `scan_incomplete` | Upload paused — scan didn't finish | Retry ✓ in a few minutes. |
@@ -3213,7 +3281,9 @@ it in Mission Control → **Password protection** (the section "Mission Control:
 
 | Code | Title | What it means → what to do |
 |---|---|---|
-| `password_protection_coming_soon` | Password protection isn't available yet | A `password` was sent with the deploy. Leave it out, deploy, then set the password in Mission Control. |
+| `password_protection_coming_soon` | Set the password in Mission Control | A `password` was sent with a new version of an existing mission. Deploy without it, then set or change the password in Mission Control (or `set_password`). A new mission's first launch can carry a password. |
+| `password_protection_disabled` | Password protection is switched off right now | moonbase paused new password protection, so a launch with a password was refused. Try later. Launch without one only if the mission doesn't need to be protected from its first version. |
+| `password_protection_unavailable` | We couldn't protect the mission | The password couldn't be turned on before launch, so nothing was published. If moonbase couldn't confirm the password is off the address again, the address stays reserved to your account as a failed mission until it is checked. Retry; if it repeats, or the address shows as taken by your failed mission, contact support with the TRK-ID. |
 | `invalid_password` | Password isn't valid | The deploy's `password` field had the wrong length. Leave it out and set the password in Mission Control. |
 
 #### moonbase's side

@@ -6,9 +6,18 @@ until they confirm.
 
 If their AI tool supports the moonbase connector, follow
 **https://moonbase.cloud/docs/deploy-from-ai-chat** first. The person signs
-in to connect it. This guide is the API key fallback for CI, scripts and
-tools that can run commands without a connector. For chat-only tools, guide
-the person through the browser upload in `getting-started.md`.
+in to connect it. With the connector, a project with images, fonts or other
+binary files, or over about 100 KB, publishes through `create_upload`: it
+returns a single-use upload link (10 minutes) and the one-line `curl` command
+that sends the ZIP from any shell that has it (the code sandbox, a device
+shell, or the person's terminal), with no API key. Its result lists, in
+order, what follows when the sandbox blocks the upload host ("403 from proxy
+after CONNECT"): the one-time setting per client that allows the host, then a
+browser-assisted upload on that project's Deploy new version screen (the agent
+opens the link; the person shares the ZIP with the session once), then the
+person dropping the ZIP on that same screen. A small text-only project can go
+inline as `files`. This guide is the API key path for CI, scripts and tools
+that can run commands without a connector.
 
 **Send a `User-Agent` header on every request.** Each `curl` below carries
 `-H "User-Agent: my-agent/1.0"`. Use your tool's name and version there.
@@ -440,8 +449,9 @@ command (Node), or the app object (Python).
 
 ```bash
 # <address> = first label of the live URL (keep it as MISSION_ADDRESS)
-curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+set +x
+printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
+  --header @- \
   -H "User-Agent: my-agent/1.0" | jq -re .id || { echo "No mission at that address (check the name/key)." >&2; exit 1; }
 ```
 
@@ -684,10 +694,11 @@ them to the shipped parser:
 API="https://app.moonbase.cloud"
 # For a REDEPLOY, record the current version FIRST, so an UNKNOWN outcome can be
 # reconciled by "did currentVersion go up?" (Step 5). Empty for a new mission.
+set +x
 prev_version=""
 if [ -n "${MOONBASE_MISSION_ID:-}" ]; then
-  prev_version="$(curl -sS "$API/api/v1/sites/$MISSION_ADDRESS/status" \
-    -H "Authorization: Bearer $MOONBASE_API_KEY" -H "User-Agent: my-agent/1.0" \
+  prev_version="$(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sS "$API/api/v1/sites/$MISSION_ADDRESS/status" \
+    --header @- -H "User-Agent: my-agent/1.0" \
     | jq -r '.currentVersion // empty')"
 fi
 # The stream can carry build output, so keep it in a private, short-lived file
@@ -699,8 +710,8 @@ log="$(mktemp)"; chmod 600 "$log"; trap 'rm -f "$log" "$mission"' EXIT  # also r
 # fails AFTER a complete-looking `done` (e.g. timeout, exit 28) must be treated
 # as UNKNOWN, never a success.
 curl_rc=0
-meta="$(curl -sSN "$API/api/projects/upload/stream" \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+meta="$(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sSN "$API/api/projects/upload/stream" \
+  --header @- \
   -H "User-Agent: my-agent/1.0" \
   -F "file=@$mission" \
   -F "redeployProjectId=$MOONBASE_MISSION_ID" \
@@ -875,8 +886,9 @@ real route with config and persistence in place). Also surface
 ## Step 5. Check a mission's status
 
 ```bash
-curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+set +x
+printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sS "https://app.moonbase.cloud/api/v1/sites/<address>/status" \
+  --header @- \
   -H "User-Agent: my-agent/1.0"
 ```
 

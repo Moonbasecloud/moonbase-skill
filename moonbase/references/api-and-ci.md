@@ -28,15 +28,16 @@ a connector. Use that path only after the person confirms their account.
 | `GET https://app.moonbase.cloud/api/v1/sites/{address}/status` | Read a mission's state |
 | `GET https://app.moonbase.cloud/api/v1/sites/{address}/env` | List the env-var key names set on a mission |
 | `PUT https://app.moonbase.cloud/api/v1/sites/{address}/env` | Set one or more env vars (see "Setting environment variables") |
+| `DELETE https://app.moonbase.cloud/api/v1/sites/{address}/env` | Delete one saved env var: JSON body `{"key": "NAME"}`, returns `{"deleted": true}` (`false` if that name wasn't saved); takes effect on the next deploy |
 
-Auth on **all four** — upload, status, and the env GET and PUT — is the same:
+Auth on **all five** — upload, status, and the env GET, PUT and DELETE — is the same:
 `Authorization: Bearer mb_live_…` (an API key from **API Keys**), same deploy
 scope, scoped to the missions that key owns. Always use `app.moonbase.cloud`.
 The old `app.moonbase.host` only redirects.
 
 Passing the key with `-H "Authorization: Bearer $KEY"` puts it in the process's
 **argv**, which is visible in `ps`/`/proc` on a shared host and can land in
-shell traces. Where that matters, feed the header to `curl` out of band:
+shell traces. Feed the header to `curl` through stdin (`--header @-`) or a private file:
 `-H @file` (read the header line from a file) or `--config <file>` (a curl
 config file holding a `header = "Authorization: Bearer …"` line). **Not**
 `--netrc` — that supplies HTTP Basic `login:password` from a `.netrc`, not an
@@ -291,17 +292,21 @@ jobs:
         # (`scripts/parse-deploy-result.sh`, deploy-for-the-user.md Step 4): it
         # passes ONLY on a complete, final `done` with a usable live URL, so a
         # truncated or unknown stream fails the job instead of going green.
+        env:
+          MOONBASE_API_KEY: ${{ secrets.MOONBASE_API_KEY }}
+          MOONBASE_MISSION_ID: ${{ secrets.MOONBASE_MISSION_ID }}
         run: |
           set -euo pipefail
+          set +x
           log="$(mktemp)"; chmod 600 "$log"; trap 'rm -f "$log"' EXIT
           # Capture curl's own exit (don't rely on set -e): a transfer that fails
           # after a complete-looking `done` must be UNKNOWN, not a success.
           curl_rc=0
-          meta="$(curl -sSN -X POST https://app.moonbase.cloud/api/projects/upload/stream \
-            -H "Authorization: Bearer ${{ secrets.MOONBASE_API_KEY }}" \
+          meta="$(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sSN -X POST https://app.moonbase.cloud/api/projects/upload/stream \
+            --header @- \
             -H "User-Agent: github-actions-moonbase/1.0" \
-            -F "file=@${{ env.MISSION_ZIP }}" \
-            -F "redeployProjectId=${{ secrets.MOONBASE_MISSION_ID }}" \
+            -F "file=@$MISSION_ZIP" \
+            -F "redeployProjectId=$MOONBASE_MISSION_ID" \
             -o "$log" -w '%{http_code} %{content_type}')" || curl_rc=$?
           # The SAME shipped parser the deploy recipe uses — one script, no drift.
           # Exit 3 = deployed but the app is NOT READY (app_ready:false): the job
@@ -331,8 +336,9 @@ and scope as a deploy, scoped to the missions that key owns.
 **List the keys that are set** (never the values — they are write-only):
 
 ```bash
-curl https://app.moonbase.cloud/api/v1/sites/<slug>/env \
-  -H "Authorization: Bearer $MOONBASE_API_KEY" \
+set +x
+printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl https://app.moonbase.cloud/api/v1/sites/<slug>/env \
+  --header @- \
   -H "User-Agent: my-agent/1.0"
 ```
 
@@ -357,7 +363,7 @@ raw response:
 set +x
 jq -n '{env: {DATABASE_URL: env.DATABASE_URL, STRIPE_SECRET: env.STRIPE_SECRET}}' \
   | curl -sS -X PUT https://app.moonbase.cloud/api/v1/sites/<slug>/env \
-      -H "Authorization: Bearer $MOONBASE_API_KEY" \
+      --header @<(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY") \
       -H "User-Agent: my-agent/1.0" \
       -H "Content-Type: application/json" \
       --data-binary @- \
@@ -384,16 +390,16 @@ never read back, so a `GET`:
   name whether the OLD or the NEW value is stored, so a `GET` can't tell you the
   value actually changed. Don't claim it does.
 
-To be sure a changed value took effect, rely on the write receipt, then verify
-at the **app level** — redeploy (values apply on the next deploy) and have the
-app read the variable, or hit a health/debug route that reflects it. Set
-variables before you deploy, or set them and redeploy.
+After an acknowledged write, deploy or redeploy so the app loads the saved
+configuration. Verify the feature or dependency that needs the variable.
+Keep the stored value out of test output, including health responses and logs.
 
-The whole set is written in **one transaction**, so a mid-write fault stores
-nothing and comes back as `503 env_write_failed` (not a partial write) — safe to
-retry. A full mission returns `409 env_vars_limit` (with `max`); a cap that
-can't be read returns `503 mission_cap_unavailable`. In every failure case
-nothing is stored.
+The whole set is written in **one transaction**. A full mission returns
+`409 env_vars_limit` (with `max`), and an unreadable cap returns
+`503 mission_cap_unavailable`. Both cap responses refuse the write before
+storing anything. A `503 env_write_failed` means the write outcome could not
+be confirmed. The transaction may have committed before its acknowledgement
+was lost.
 
 **On an unknown outcome** (the connection dropped, or a `5xx` such as
 `env_write_failed`), don't assume it failed *or* succeeded. For a **new** key,

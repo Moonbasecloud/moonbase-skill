@@ -29,13 +29,14 @@ can use:
    and reviews what to allow. The connector uses that sign-in, so this path
    needs no API key. They can then ask "Take my app online with moonbase."
 
-   Before using `create_mission` for a new mission or `deploy` for an existing
-   one, confirm the person wants to put this project online and which mission
-   to use. Share only the intended project files and leave out credentials
-   and `.env` files. Even if the tool reports "deployed", check that
-   `app_ready` is true before saying the app is online. If it's still running
-   or not ready, check `deploy_status` instead of sending the files again.
-   If the tool can't share the project safely, help the person upload it.
+   Confirm the project and that they want it online. Leave out
+   credentials and `.env` files. With images or over about 100 KB:
+   `create_upload` gives one `curl` line, run in your sandbox, a device
+   shell or their terminal (no API key; single-use, 10 minutes); its
+   result lists fallbacks. Small text-only projects go inline as
+   `files`. A visitor password (`password` or `generate_password`) is
+   visible in the chat; the person decides. Check `app_ready` (or
+   `deploy_status`) before calling the app online.
 
 2. **They use CI, a script, or a terminal tool without a connector.** Use
    the API key path in the section "Deploying for the user (when you can run commands)" of the moonbase guide. Check for
@@ -49,9 +50,9 @@ can use:
    `User-Agent` on every request. HTTP 200 alone does not prove the app is
    ready. For CI and secret settings, see the section "The deploy API, CI and GitHub Actions" of the moonbase guide.
 
-3. **Their AI tool can only chat.** Guide them one step at a time through the
-   browser upload in the section "Getting started: sign up and put the first mission online" of the moonbase guide. Help them prepare the
-   ZIP using the section "Building for moonbase: a project that deploys first time" of the moonbase guide. If the project is still
+3. **Only chat, no connector or shell.** Guide them one step at a time
+   through the browser upload in the section "Getting started: sign up and put the first mission online" of the moonbase guide. Help them
+   prepare the ZIP using the section "Building for moonbase: a project that deploys first time" of the moonbase guide. If the project is still
    in a builder such as Lovable, Bolt, v0 or Replit, start with the export
    steps in the section "Bringing a project from a builder with its own hosting" of the moonbase guide. Never say you took an app
    online if the person still has to upload it.
@@ -118,8 +119,8 @@ the section "What the app needs from outside itself" of the moonbase guide.
   `wsgi.py`) and list deps in `requirements.txt`. See the section "Building for moonbase: a project that deploys first time" for the
   v1 limits.
 - **Not available today, say so plainly:** other backend languages (Ruby, Go, PHP…),
-  wildcard domains, a managed database or permanent disk, or listing all missions
-  through the API with an API key. The moonbase connector can list your missions.
+  wildcard domains, managed databases (closed pilot) or permanent disk, or listing all
+  missions through the API with an API key. The moonbase connector can list your missions.
 - **Keys and secrets stay out of the chat.** Never ask the user to paste an
   API key, password or secret into the conversation. Never commit or print
   one. See the section "Safety and support" of the moonbase guide.

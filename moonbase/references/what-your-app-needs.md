@@ -154,7 +154,7 @@ host is better served than one whose deploy "worked".
   paste it into the chat. moonbase blocks an upload that looks like it carries
   a hardcoded credential (`hardcoded_secret_detected`), and a key that reached
   a repository is a key someone has to go and revoke.
-- Set them with `set_env` over the connector, through the env API, or in
+- Set them with `set_env` over the connector (remove one with `delete_env`), through the env API, or in
   **Mission Control → Environment Variables**. The mechanics, the reserved
   names and the `NEXT_PUBLIC_` warning are in
   `references/building-for-moonbase.md`.

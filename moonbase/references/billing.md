@@ -9,8 +9,8 @@ the user there.
 
 - A free plan and paid plans (today: moonbase free, plus, pro and max), with
   monthly and yearly prices on the pricing page.
-- Plans differ in missions, storage, included visits per month, the biggest
-  single upload, and features. Custom domains and sharing need a paid plan.
+- Plans differ in missions, storage, the biggest single upload, and
+  features. Visits are counted, never capped. Custom domains and sharing need a paid plan.
 - Payments go through **Paddle**. Billing is self-serve.
 
 ## Upgrade, step by step
