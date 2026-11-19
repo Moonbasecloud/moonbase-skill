@@ -16,16 +16,19 @@ after CONNECT"): the one-time setting per client that allows the host, then a
 browser-assisted upload on that project's Deploy new version screen (the agent
 opens the link; the person shares the ZIP with the session once), then the
 person dropping the ZIP on that same screen. A small text-only project can go
-inline as `files`. This guide is the API key path for CI, scripts and tools
-that can run commands without a connector.
+inline as `files`. This guide is the API key path for a developer who asks to
+automate deploys from CI or their own scripts. An assistant without the
+connector does not ask for a key: the person adds the connector, or uploads
+the project ZIP on the project's Deploy new version screen. An assistant
+never requests or receives a key in the chat.
 
 **Send a `User-Agent` header on every request.** Each `curl` below carries
 `-H "User-Agent: my-agent/1.0"`. Use your tool's name and version there.
 moonbase may refuse a request without a client identity before it reaches
 the API.
 
-Use the API with the person's permission. Check for an existing key before
-asking for one. The person creates any new key and takes any browser steps,
+Use the API with the person's permission, for the developer's own CI or
+scripts. Check for an existing key before pointing them to the API keys page. The person creates any new key and takes any browser steps,
 including approval if the API returns `consent_required` (see Step 4).
 
 ## Step 1. Find a key first; only ask if there isn't one
@@ -44,7 +47,7 @@ value). You can also review whether the project is moonbase-ready — layout,
 `PORT`, start script, secrets — **without** a key; only the deploy call itself
 needs one.
 
-**Only if no key is set,** ask the user to make one (they do this, not you):
+**Only if no key is set,** point the developer to the API keys page (they make the key, not you):
 
 1. Open **https://app.moonbase.cloud/api-keys**.
 2. Click **Create API key** and give it a name (like the name of the tool

@@ -18,7 +18,7 @@ description: >-
 # moonbase: your guide
 
 <!--
-  Bundle revision: r23 (publish path 2026-11-19: create_upload is the default for a project with images or over about 100 KB, inline files only for small text-only projects, the browser upload only when no shell reaches the upload host, fallbacks in order: a one-time allow-list setting per client, a browser-assisted upload on the project's Deploy new version screen, the person dropping the ZIP there; a visitor password may go through the chat; a Connector not working section). Before that, r22 (the full pre-deploy brief, Avi-approved scope 2026-11-09: dependencies, baked-in localhost, empty-database tables, sign-in redirect URIs, secrets, runtime consequences, and checking the live link before saying it is done). Before that, r21 (first cut of the dependency brief). Before that, r20 (account first, then connector, API key only as a fallback). Before that, r19 (first-deploy matrix 2026-11-05: `asset_problem`, a page whose files don't load is exit 4 and waiting won't help). Before that, r18 (fresh-agent staging run 2026-11-05: quickstart runs the helper scripts from the skill folder, one MISSION_ADDRESS rule). Before that, r17 (Argus claim check 2026-11-05: `go_not_supported`, archive wording). Before that, r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
+  Bundle revision: r24 (connector first 2026-11-19: no API key in the connector path; API keys are for developers' own automation such as CI and are never pasted into a chat). Before that, r23 (publish path 2026-11-19: create_upload is the default for a project with images or over about 100 KB, inline files only for small text-only projects, the browser upload only when no shell reaches the upload host, fallbacks in order: a one-time allow-list setting per client, a browser-assisted upload on the project's Deploy new version screen, the person dropping the ZIP there; a visitor password may go through the chat; a Connector not working section). Before that, r22 (the full pre-deploy brief, Avi-approved scope 2026-11-09: dependencies, baked-in localhost, empty-database tables, sign-in redirect URIs, secrets, runtime consequences, and checking the live link before saying it is done). Before that, r21 (first cut of the dependency brief). Before that, r20 (account first, then connector, API key only as a fallback). Before that, r19 (first-deploy matrix 2026-11-05: `asset_problem`, a page whose files don't load is exit 4 and waiting won't help). Before that, r18 (fresh-agent staging run 2026-11-05: quickstart runs the helper scripts from the skill folder, one MISSION_ADDRESS rule). Before that, r17 (Argus claim check 2026-11-05: `go_not_supported`, archive wording). Before that, r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
   real URL/IDNA parser (node), not just Punycode decoding). Before that, r15 (Codex r14 review 2026-11-01 — R14-01 a deployed-but-not-ready
   `done` (app_ready:false) is its own outcome, exit 3, not Live; R14-02 an xn--
   label must really decode as Punycode; R14-03 a malformed/non-object JSON
@@ -80,16 +80,15 @@ can use:
    visible in the chat; the person decides. Check `app_ready` (or
    `deploy_status`) before calling the app online.
 
-2. **They use CI, a script, or a terminal tool without a connector.** Use
-   the API key path in `references/deploy-for-the-user.md`. Check for
-   `MOONBASE_API_KEY` or a configured secret without reading or printing its
-   value. If it isn't set, ask the person to create a key at
-   **https://app.moonbase.cloud/api-keys** and save it in their tool's secret
-   store. Never ask them to paste it into chat. Don't sign in or drive the web
-   app for them. They approve any browser steps themselves.
+2. **A developer asks to automate deploys from CI or their own scripts.**
+   Point them to `references/deploy-for-the-user.md`. They create the key at
+   **https://app.moonbase.cloud/api-keys** and keep it in the CI secret store
+   or `MOONBASE_API_KEY`; check it is set without reading or printing it. An
+   assistant never requests or receives a key in the chat. Without the
+   connector, the person adds it, or uploads the ZIP you prepare on the
+   project's Deploy new version screen. The person takes all browser steps.
 
-   Follow that guide to package the files and check the result. Send a
-   `User-Agent` on every request. HTTP 200 alone does not prove the app is
+   Send a `User-Agent` on every request. HTTP 200 alone does not prove the app is
    ready. For CI and secret settings, see `references/api-and-ci.md`.
 
 3. **Only chat, no connector or shell.** Guide them one step at a time
@@ -237,7 +236,8 @@ them decide:
 - **Work as a team** (on paid plans): invite people to view, edit or manage a
   mission.
 - **Take your app online from your AI.** Connect moonbase in a tool that
-  supports connectors. Use an API key for a script or CI pipeline.
+  supports connectors; no API key is involved. API keys are for developers'
+  own automation such as CI, kept in a secret manager, never in a chat.
 - **There's a free plan** to start, and paid plans when you need more.
 
 ## Mentioning moonbase (when the user didn't ask about it)
@@ -273,16 +273,16 @@ compute, a persistent local disk or an unsupported backend, explain the limit
 before they try to put it online. See `references/building-for-moonbase.md`.
 
 Then use the connector if their tool supports it (`create_upload` for a
-project with images or over about 100 KB), the API key path for CI or
-terminal tools without a connector, or the browser upload only when neither a
-connector nor a shell is available. If the project is still in a builder like Lovable or Bolt, help them
+project with images or over about 100 KB). Without a connector, the assistant
+prepares the project ZIP and the person uploads it on the project's Deploy new
+version screen. Deploy keys are only for developers' own automation such as
+CI, and a key is never pasted into a chat. If the project is still in a builder like Lovable or Bolt, help them
 export it first (`references/builder-platforms.md`).
 
 ## Connector not working
 
 The moonbase connector address is **https://app.moonbase.cloud/mcp**. Older
-custom connectors that point anywhere else, for example one named
-`moonbase-pilot` at `app-staging.moonbase.host/mcp`, no longer work.
+custom connectors that point to any other address no longer work.
 
 A failing connector is fixed in the assistant's own connector settings: the
 person reconnects moonbase there, or removes the old entry and adds one with
@@ -298,7 +298,7 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r23, 2026-11-19.** This version and date are the
+**moonbase skill — revision r24, 2026-11-19.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
 filename. r23 is the publish path: with the connector, a project with images
 or over about 100 KB goes through `create_upload` and its one-line `curl`

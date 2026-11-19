@@ -8,8 +8,7 @@ different on their screen; the names below are the ones moonbase uses.
 
 If they don't have a moonbase account, start here. Give them
 **https://app.moonbase.cloud/register** and ask them to tell you when their
-account is ready. Wait for that confirmation before bringing up the connector
-or an API key.
+account is ready. Wait for that confirmation before bringing up the connector.
 
 1. Open **https://app.moonbase.cloud/register**.
    *You'll see "Create your account".*
@@ -40,8 +39,9 @@ Verify the email before taking the app online.
    choose the guide for that tool. If it asks for an address, use
    **https://app.moonbase.cloud/mcp**. Sign in and review what the connector
    can do. Once it is connected, ask "Take my app online with moonbase."
-2. For CI, a script or a terminal tool without a connector, use an API key.
-   See `api-and-ci.md`. Keep the key in the tool's secret store.
+2. API keys are for developers' own automation, such as CI or a script.
+   See `api-and-ci.md`. The key is kept in a secret manager or environment
+   variable and is never pasted into a chat.
 3. If they want to upload the app themselves, or their AI tool can only chat,
    continue to Part 4.
 

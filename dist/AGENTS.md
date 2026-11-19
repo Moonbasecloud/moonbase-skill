@@ -43,16 +43,15 @@ can use:
    visible in the chat; the person decides. Check `app_ready` (or
    `deploy_status`) before calling the app online.
 
-2. **They use CI, a script, or a terminal tool without a connector.** Use
-   the API key path in the section "Deploying for the user (when you can run commands)" of the moonbase guide. Check for
-   `MOONBASE_API_KEY` or a configured secret without reading or printing its
-   value. If it isn't set, ask the person to create a key at
-   **https://app.moonbase.cloud/api-keys** and save it in their tool's secret
-   store. Never ask them to paste it into chat. Don't sign in or drive the web
-   app for them. They approve any browser steps themselves.
+2. **A developer asks to automate deploys from CI or their own scripts.**
+   Point them to the section "Deploying for the user (when you can run commands)" of the moonbase guide. They create the key at
+   **https://app.moonbase.cloud/api-keys** and keep it in the CI secret store
+   or `MOONBASE_API_KEY`; check it is set without reading or printing it. An
+   assistant never requests or receives a key in the chat. Without the
+   connector, the person adds it, or uploads the ZIP you prepare on the
+   project's Deploy new version screen. The person takes all browser steps.
 
-   Follow that guide to package the files and check the result. Send a
-   `User-Agent` on every request. HTTP 200 alone does not prove the app is
+   Send a `User-Agent` on every request. HTTP 200 alone does not prove the app is
    ready. For CI and secret settings, see the section "The deploy API, CI and GitHub Actions" of the moonbase guide.
 
 3. **Only chat, no connector or shell.** Guide them one step at a time

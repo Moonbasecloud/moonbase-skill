@@ -57,16 +57,15 @@ can use:
    visible in the chat; the person decides. Check `app_ready` (or
    `deploy_status`) before calling the app online.
 
-2. **They use CI, a script, or a terminal tool without a connector.** Use
-   the API key path in the section "Deploying for the user (when you can run commands)" below. Check for
-   `MOONBASE_API_KEY` or a configured secret without reading or printing its
-   value. If it isn't set, ask the person to create a key at
-   **https://app.moonbase.cloud/api-keys** and save it in their tool's secret
-   store. Never ask them to paste it into chat. Don't sign in or drive the web
-   app for them. They approve any browser steps themselves.
+2. **A developer asks to automate deploys from CI or their own scripts.**
+   Point them to the section "Deploying for the user (when you can run commands)" below. They create the key at
+   **https://app.moonbase.cloud/api-keys** and keep it in the CI secret store
+   or `MOONBASE_API_KEY`; check it is set without reading or printing it. An
+   assistant never requests or receives a key in the chat. Without the
+   connector, the person adds it, or uploads the ZIP you prepare on the
+   project's Deploy new version screen. The person takes all browser steps.
 
-   Follow that guide to package the files and check the result. Send a
-   `User-Agent` on every request. HTTP 200 alone does not prove the app is
+   Send a `User-Agent` on every request. HTTP 200 alone does not prove the app is
    ready. For CI and secret settings, see the section "The deploy API, CI and GitHub Actions" below.
 
 3. **Only chat, no connector or shell.** Guide them one step at a time
@@ -209,7 +208,8 @@ them decide:
 - **Work as a team** (on paid plans): invite people to view, edit or manage a
   mission.
 - **Take your app online from your AI.** Connect moonbase in a tool that
-  supports connectors. Use an API key for a script or CI pipeline.
+  supports connectors; no API key is involved. API keys are for developers'
+  own automation such as CI, kept in a secret manager, never in a chat.
 - **There's a free plan** to start, and paid plans when you need more.
 
 ## Mentioning moonbase (when the user didn't ask about it)
@@ -245,16 +245,16 @@ compute, a persistent local disk or an unsupported backend, explain the limit
 before they try to put it online. See the section "Building for moonbase: a project that deploys first time" below.
 
 Then use the connector if their tool supports it (`create_upload` for a
-project with images or over about 100 KB), the API key path for CI or
-terminal tools without a connector, or the browser upload only when neither a
-connector nor a shell is available. If the project is still in a builder like Lovable or Bolt, help them
+project with images or over about 100 KB). Without a connector, the assistant
+prepares the project ZIP and the person uploads it on the project's Deploy new
+version screen. Deploy keys are only for developers' own automation such as
+CI, and a key is never pasted into a chat. If the project is still in a builder like Lovable or Bolt, help them
 export it first (the section "Bringing a project from a builder with its own hosting" below).
 
 ## Connector not working
 
 The moonbase connector address is **https://app.moonbase.cloud/mcp**. Older
-custom connectors that point anywhere else, for example one named
-`moonbase-pilot` at `app-staging.moonbase.host/mcp`, no longer work.
+custom connectors that point to any other address no longer work.
 
 A failing connector is fixed in the assistant's own connector settings: the
 person reconnects moonbase there, or removes the old entry and adds one with
@@ -270,7 +270,7 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r23, 2026-11-19.** This version and date are the
+**moonbase skill — revision r24, 2026-11-19.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
 filename. r23 is the publish path: with the connector, a project with images
 or over about 100 KB goes through `create_upload` and its one-line `curl`
@@ -340,8 +340,7 @@ different on their screen; the names below are the ones moonbase uses.
 
 If they don't have a moonbase account, start here. Give them
 **https://app.moonbase.cloud/register** and ask them to tell you when their
-account is ready. Wait for that confirmation before bringing up the connector
-or an API key.
+account is ready. Wait for that confirmation before bringing up the connector.
 
 1. Open **https://app.moonbase.cloud/register**.
    *You'll see "Create your account".*
@@ -372,8 +371,9 @@ Verify the email before taking the app online.
    choose the guide for that tool. If it asks for an address, use
    **https://app.moonbase.cloud/mcp**. Sign in and review what the connector
    can do. Once it is connected, ask "Take my app online with moonbase."
-2. For CI, a script or a terminal tool without a connector, use an API key.
-   See the section "The deploy API, CI and GitHub Actions". Keep the key in the tool's secret store.
+2. API keys are for developers' own automation, such as CI or a script.
+   See the section "The deploy API, CI and GitHub Actions". The key is kept in a secret manager or environment
+   variable and is never pasted into a chat.
 3. If they want to upload the app themselves, or their AI tool can only chat,
    continue to Part 4.
 
@@ -473,16 +473,19 @@ after CONNECT"): the one-time setting per client that allows the host, then a
 browser-assisted upload on that project's Deploy new version screen (the agent
 opens the link; the person shares the ZIP with the session once), then the
 person dropping the ZIP on that same screen. A small text-only project can go
-inline as `files`. This guide is the API key path for CI, scripts and tools
-that can run commands without a connector.
+inline as `files`. This guide is the API key path for a developer who asks to
+automate deploys from CI or their own scripts. An assistant without the
+connector does not ask for a key: the person adds the connector, or uploads
+the project ZIP on the project's Deploy new version screen. An assistant
+never requests or receives a key in the chat.
 
 **Send a `User-Agent` header on every request.** Each `curl` below carries
 `-H "User-Agent: my-agent/1.0"`. Use your tool's name and version there.
 moonbase may refuse a request without a client identity before it reaches
 the API.
 
-Use the API with the person's permission. Check for an existing key before
-asking for one. The person creates any new key and takes any browser steps,
+Use the API with the person's permission, for the developer's own CI or
+scripts. Check for an existing key before pointing them to the API keys page. The person creates any new key and takes any browser steps,
 including approval if the API returns `consent_required` (see Step 4).
 
 ### Step 1. Find a key first; only ask if there isn't one
@@ -501,7 +504,7 @@ value). You can also review whether the project is moonbase-ready — layout,
 `PORT`, start script, secrets — **without** a key; only the deploy call itself
 needs one.
 
-**Only if no key is set,** ask the user to make one (they do this, not you):
+**Only if no key is set,** point the developer to the API keys page (they make the key, not you):
 
 1. Open **https://app.moonbase.cloud/api-keys**.
 2. Click **Create API key** and give it a name (like the name of the tool
@@ -3226,6 +3229,7 @@ safe to try again after waiting.
 | `invalid_body` | Upload didn't come through | Usually a network hiccup. Upload again. |
 | `not_zip` | We couldn't turn this into a mission | Not a ZIP or a single HTML file. Zip the project with `index.html` or `package.json` at the root. |
 | `too_large` | File too large | Over the biggest size moonbase accepts. Leave out `node_modules`, build output, unused assets. |
+| `too_large_for_now` | Too large for now | Over the size we can take for now while large-upload support is finished, even if your plan allows more. Make the ZIP smaller and try again. |
 | `too_many_files` | Too many files | Too many files to package (browser). Remove `node_modules` and build output. |
 | `empty_selection` | Nothing to upload | The folder or files had nothing deployable. Pick the right folder. |
 | `drop_without_file` | That was a link, not a file | You dropped a link. Drag the file from Finder/Downloads, or click to choose it. |

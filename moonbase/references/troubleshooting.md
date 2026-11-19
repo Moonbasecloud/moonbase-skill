@@ -155,6 +155,7 @@ safe to try again after waiting.
 | `invalid_body` | Upload didn't come through | Usually a network hiccup. Upload again. |
 | `not_zip` | We couldn't turn this into a mission | Not a ZIP or a single HTML file. Zip the project with `index.html` or `package.json` at the root. |
 | `too_large` | File too large | Over the biggest size moonbase accepts. Leave out `node_modules`, build output, unused assets. |
+| `too_large_for_now` | Too large for now | Over the size we can take for now while large-upload support is finished, even if your plan allows more. Make the ZIP smaller and try again. |
 | `too_many_files` | Too many files | Too many files to package (browser). Remove `node_modules` and build output. |
 | `empty_selection` | Nothing to upload | The folder or files had nothing deployable. Pick the right folder. |
 | `drop_without_file` | That was a link, not a file | You dropped a link. Drag the file from Finder/Downloads, or click to choose it. |
