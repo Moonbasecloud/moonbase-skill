@@ -206,6 +206,7 @@ Show the exact limit from the **structured fields** (`reason`, and
 | Code | Title | What it means → what to do |
 |---|---|---|
 | `deploy_in_progress` | A deploy is already running | One build per mission at a time. Retry ✓ after `retry_after_sec` seconds. |
+| `mission_downgrade_locked` | This project is locked because your plan ended | Your plan ended, and this project is over the Free plan's limit, so it's locked. It keeps working, but it can't be deployed, rolled back, resumed or renamed, and its password, environment variables and domains can't be changed. You can still pause, export, archive or delete it. Upgrade to unlock it. If you don't, it will be paused and later deleted; we'll email you before it's deleted. (`downgrade_state` is `locked` or `paused`.) Not retryable, and nothing in the code needs changing: only the owner can upgrade or delete missions so the account fits. |
 | `rate_limited` | Too many launches in a row | Too many deploys in a short time. Retry ✓ after `retry_after_sec` seconds. Don't loop. |
 | `consent_required` | This deploy needs your OK in moonbase | moonbase wants to change the build and needs the owner's OK. Open `consent_url`, deploy once from the browser and review the changes. Then tool deploys work again. |
 | `consent_invalid_json` | Something went wrong with your confirmation | A hiccup sending your approval. Try again from the start. |
@@ -227,6 +228,7 @@ it in Mission Control → **Password protection** (`mission-control.md`).
 | Code | Title | What it means → what to do |
 |---|---|---|
 | `internal` | Something went wrong | Retry ✓ under the one retry policy (`api-and-ci.md`): bounded attempts, honour any `Retry-After`. Keeps happening? Support with the TRK-ID. |
+| `deployment_maintenance` | | New deployments are temporarily paused. Existing missions keep serving. Wait and retry later; do not change database settings or start duplicate deploys. |
 | `service_draining` | | moonbase is restarting. Retry ✓ under the same bounded policy (wait the server's delay first). |
 
 ## When nothing here fits

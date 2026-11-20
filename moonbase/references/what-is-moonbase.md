@@ -44,7 +44,7 @@ Recipe**). Details: `building-for-moonbase.md`.
 - Plans differ in: how many missions you can have, total storage, the biggest
   single upload, and features.
 - **Paid plans only:** custom domains and sharing a mission with teammates.
-- **Visits are counted, never capped.** No plan limits visitors.
+- **Visitors are counted, never capped.** No plan limits visitors.
 - On the free plan, **dynamic** missions go to sleep when nobody visits for a
   while and wake on the next visit (static missions never sleep). See
   `mission-control.md`.

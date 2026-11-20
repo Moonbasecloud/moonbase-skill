@@ -116,8 +116,9 @@ about the platform, not preferences, and each has one practical consequence:
   is blocked permanently as anti-spam. An email provider's HTTPS API works, and
   so does authenticated submission on 465 or 587 — use either.
 - **Uploaded files don't survive.** The container's filesystem is rebuilt on
-  every deploy, so anything the app writes to disk — uploaded images, generated
-  PDFs, an SQLite file — is gone next time. Files people upload belong in
+  every deploy and can be read-only (only a small `/tmp` is reliably
+  writable), so anything the app writes to disk — uploaded images, generated
+  PDFs, an SQLite file — fails or is gone next time. Files people upload belong in
   external object storage over HTTPS.
 - **Nothing scheduled runs by itself.** There is no cron and no background
   worker: one web process, and on the free plan it sleeps when idle, so

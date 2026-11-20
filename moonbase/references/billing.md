@@ -10,7 +10,7 @@ the user there.
 - A free plan and paid plans (today: moonbase free, plus, pro and max), with
   monthly and yearly prices on the pricing page.
 - Plans differ in missions, storage, the biggest single upload, and
-  features. Visits are counted, never capped. Custom domains and sharing need a paid plan.
+  features. Visitors are counted, never capped. Custom domains and sharing need a paid plan.
 - Payments go through **Paddle**. Billing is self-serve.
 
 ## Upgrade, step by step
@@ -33,9 +33,11 @@ How usage counts:
 - **Storage** = the live files of every mission **plus** the earlier versions
   kept in each Mission Log. Versions count toward the limit but only live
   files are billed.
-- **Visits** are counted across all missions together and reset on the 1st
-  of each month. They're **never capped**: missions stay live past the
-  plan's number.
+- **Visitors** are counted across all missions together, per calendar month
+  (UTC), and reset on the 1st; on a plan with no included number, Usage
+  shows the last 30 days. Visitors are counted per day: someone who visits
+  on 5 different days counts as 5. They're **never capped**: missions stay
+  live past the plan's number.
 
 ## What happens at a limit
 

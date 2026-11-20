@@ -233,10 +233,12 @@ before uploading.
 
 moonbase **runs** the app; it does not store the app's data. There is **no
 built-in database** and **no permanent disk**. Every deploy builds a fresh
-container, and for static-style apps the filesystem is read-only, so anything
-the app writes to local disk while it runs — an SQLite file, uploaded images,
-a `data/` folder — is **gone on the next deploy**. Treat the filesystem as
-temporary scratch space, never as the place the real data lives.
+container, so anything the app writes to local disk while it runs — an
+SQLite file, uploaded images, a `data/` folder — is **gone on the next
+deploy**. Don't count on writing to the app's own folder at all: the
+filesystem can be read-only, and the only place to rely on for temporary files
+is a small `/tmp`, which can be cleared whenever the mission restarts or
+sleeps. Never treat local disk as the place the real data lives.
 
 To keep data between deploys, the app connects to an **external service** and
 gets its address from an environment variable (see *Environment variables*

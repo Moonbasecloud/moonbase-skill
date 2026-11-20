@@ -41,6 +41,30 @@
 - Remember: a downloaded archive holds the files as deployed, so a server
   app's `.env` would be in the download too.
 
+## Files moonbase does not serve, and default headers
+
+- On every mission, static or app, moonbase answers **404** for these paths,
+  whatever the mission's own code does: `.env` and `.env.*`, folders such as
+  `.git/` and `.svn/`, credential files such as `.npmrc`, `.htpasswd` and
+  `.aws/`, database files and dumps (`.sql`, `.sqlite`, `.db`), backup
+  leftovers (`.bak`, `.old`, `.orig`, `~`, `*backup*.zip`), private keys
+  (`.pem`, `.key`, files named id_rsa) and source maps (`.js.map`, `.css.map`). A file
+  that has to be public goes under a different name or extension. Publishing
+  source maps is not available yet.
+- A static upload also leaves out the `.env` family, `.git/` folders, SSH key
+  files and any text or JSON file holding a private key. They are listed in
+  `skipped_entries` after the deploy.
+- When the mission does not send them itself, moonbase adds
+  `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin` and a
+  `frame-ancestors` policy. A header the app sends is kept as the app sent
+  it. If the app sends `X-Frame-Options` or its own `frame-ancestors`,
+  moonbase adds no `frame-ancestors`, so the app's framing rule applies, even
+  if the Mission Control preview then cannot show the mission. Missions are served
+  over HTTPS only; plain HTTP redirects to HTTPS.
+- These are protections on moonbase's side. They do not check the mission's own
+  code for security problems.
+
 ## Account safety
 
 Turn on **two-factor authentication** in **Account → Security**, and save

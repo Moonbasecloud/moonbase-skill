@@ -10,15 +10,15 @@ description: >-
   moonbase itself: signing up, uploading a ZIP or folder, deploy errors,
   versions and rollback, custom domains and DNS, environment variables,
   analytics, sleeping missions, sharing a mission with teammates,
-  notifications, API keys, CI, plans and billing, exporting or deleting an
-  account. Explains every step in very simple language, one action at a
-  time.
+  notifications, API keys, CI, plans and billing, exporting a managed database,
+  or exporting or deleting an account. Explains every step in very simple
+  language, one action at a time.
 ---
 
 # moonbase: your guide
 
 <!--
-  Bundle revision: r24 (connector first 2026-11-19: no API key in the connector path; API keys are for developers' own automation such as CI and are never pasted into a chat). Before that, r23 (publish path 2026-11-19: create_upload is the default for a project with images or over about 100 KB, inline files only for small text-only projects, the browser upload only when no shell reaches the upload host, fallbacks in order: a one-time allow-list setting per client, a browser-assisted upload on the project's Deploy new version screen, the person dropping the ZIP there; a visitor password may go through the chat; a Connector not working section). Before that, r22 (the full pre-deploy brief, Avi-approved scope 2026-11-09: dependencies, baked-in localhost, empty-database tables, sign-in redirect URIs, secrets, runtime consequences, and checking the live link before saying it is done). Before that, r21 (first cut of the dependency brief). Before that, r20 (account first, then connector, API key only as a fallback). Before that, r19 (first-deploy matrix 2026-11-05: `asset_problem`, a page whose files don't load is exit 4 and waiting won't help). Before that, r18 (fresh-agent staging run 2026-11-05: quickstart runs the helper scripts from the skill folder, one MISSION_ADDRESS rule). Before that, r17 (Argus claim check 2026-11-05: `go_not_supported`, archive wording). Before that, r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
+  Bundle revision: r26 (train n5 2026-11-20: the r25 Launch check together with the managed database export, status and allowance sections in references/mission-control.md). Before that, r25 (Launch check 2026-11-19: what launch_check reads for search engines and AI assistants, review_url, and offers that wait for the owner's approval). Before that, r24 (connector first 2026-11-19: no API key in the connector path; API keys are for developers' own automation such as CI and are never pasted into a chat). Before that, r23 (publish path 2026-11-19: create_upload is the default for a project with images or over about 100 KB, inline files only for small text-only projects, the browser upload only when no shell reaches the upload host, fallbacks in order: a one-time allow-list setting per client, a browser-assisted upload on the project's Deploy new version screen, the person dropping the ZIP there; a visitor password may go through the chat; a Connector not working section). Before that, r22 (the full pre-deploy brief, Avi-approved scope 2026-11-09: dependencies, baked-in localhost, empty-database tables, sign-in redirect URIs, secrets, runtime consequences, and checking the live link before saying it is done). Before that, r21 (first cut of the dependency brief). Before that, r20 (account first, then connector, API key only as a fallback). Before that, r19 (first-deploy matrix 2026-11-05: `asset_problem`, a page whose files don't load is exit 4 and waiting won't help). Before that, r18 (fresh-agent staging run 2026-11-05: quickstart runs the helper scripts from the skill folder, one MISSION_ADDRESS rule). Before that, r17 (Argus claim check 2026-11-05: `go_not_supported`, archive wording). Before that, r16 (Codex r15 review 2026-11-01 — R15-01 an xn-- host must pass a
   real URL/IDNA parser (node), not just Punycode decoding). Before that, r15 (Codex r14 review 2026-11-01 — R14-01 a deployed-but-not-ready
   `done` (app_ready:false) is its own outcome, exit 3, not Live; R14-02 an xn--
   label must really decode as Punycode; R14-03 a malformed/non-object JSON
@@ -172,7 +172,7 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
 | Use the API, CI or GitHub Actions | `references/api-and-ci.md` |
 | Ship a new version, go back to an old one, download a version | `references/versions-and-rollback.md` |
 | Use their own domain (DNS steps) | `references/custom-domains.md` |
-| Understand Mission Control: status, sleep and wake, pause, environment variables, analytics, password protection | `references/mission-control.md` |
+| Understand Mission Control: status, sleep and wake, pause, environment variables, analytics, password protection, the Launch check (search and AI assistants), or a managed database export | `references/mission-control.md` |
 | Share a mission with teammates; accept an invite | `references/sharing.md` |
 | Notifications, activity log, settings, profile, security, export or delete the account | `references/account.md` |
 | Plans, upgrading, invoices, limits | `references/billing.md` |
@@ -298,9 +298,12 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r24, 2026-11-19.** This version and date are the
+**moonbase skill — revision r26, 2026-11-20.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r23 is the publish path: with the connector, a project with images
+filename. r26 carries the r25 Launch check together with the managed database
+export, status and allowance sections in `references/mission-control.md`. r25 describes the Launch check for search engines and AI assistants
+(`launch_check`, its `review_url` and its `offers`, which wait for the owner's
+approval) in `references/mission-control.md`. r23 is the publish path: with the connector, a project with images
 or over about 100 KB goes through `create_upload` and its one-line `curl`
 command, small text-only projects go inline as `files`, and the upload
 result lists the fallbacks in order. A visitor password may go through the

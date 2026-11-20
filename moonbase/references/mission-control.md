@@ -1,4 +1,4 @@
-# Mission Control: status, sleep, pause, password, environment variables, analytics
+# Mission Control: status, sleep, pause, password, environment variables, analytics, database export
 
 **Mission Control** is the page each mission opens to. Open it from
 **Missions** (the list of all your missions, with status, latest version,
@@ -60,15 +60,15 @@ day**.
 
 | What you see | What it means |
 |---|---|
-| **Visitors** | Different people that day. Someone who comes back another day counts again. |
-| **Requests** | Every request to the mission (pages, images, scripts…), except known bots. Always bigger than visitors. |
+| **Visitors** | Different people who opened a page that day. Someone who comes back another day counts again. Errors, robots.txt, favicons and moonbase's own checks are not visitors. |
+| **Requests** | Every request to the mission (pages, images, scripts, errors…), except known bots and moonbase's own checks. Always bigger than visitors. |
 | Days | Counted in UTC (world time), not your local time. |
 | Freshness | Updated every 15 minutes, from the server's access logs. |
 | "Just launched" | No traffic figures have arrived yet for this new mission. That's not a zero. |
 | A day showing 0 | A real, measured zero: nobody visited. |
 | "Couldn't load" | The figures couldn't be fetched right now. The mission itself is fine; try later. |
 
-Traffic is per mission, not per custom domain. Visits are counted, never
+Traffic is per mission, not per custom domain. Visitors are counted, never
 capped, on every plan.
 
 ## The "Hosted by moonbase" badge
@@ -122,3 +122,142 @@ Each mission can have its own password. Only the mission's owner can set it.
   through the chat. Its value is visible in the conversation, and the person
   decides. API keys and other credentials are different: they are typed only
   on moonbase's own page.
+
+## Launch check: search engines and AI assistants
+
+The **Launch check** in Mission Control reads the mission's live page the
+way search engines and AI assistants do, and lists what to change. It only
+reads; it changes nothing. It runs on missions where moonbase has turned the
+check on; elsewhere the connector answers `not_available`.
+
+Through the connector, `launch_check` returns the same report, plus
+`review_url`, which opens the Launch check for this mission in moonbase. Give
+the person that link as it is; where the check sits on the page can differ
+between missions. Each address can be checked a few times per 10 minutes,
+counted across all accounts, so moonbase never floods anyone's server; past
+that the connector answers `checked_recently` and says when to try again.
+What it covers:
+
+- **AI crawler access.** robots.txt and the AI search and training crawlers
+  it allows, by their robots.txt names (the report's messages list them).
+  Blocking a training crawler is the owner's choice and is reported as
+  information only. The check also asks for the home page as each AI crawler
+  and reports any that a firewall or bot protection turns away while a
+  browser gets the page.
+- **Sitemap.** A sitemap.xml exists, robots.txt names it, its entries have
+  real `<lastmod>` dates, and it lists the home page and the pages the home
+  page links to.
+- **Main text in the HTML.** The words in the HTML the server sends, without
+  JavaScript, compared with the text that only appears once JavaScript runs.
+- **Page basics.** Title, description, one h1, canonical link and Open Graph
+  tags, on the home page and on up to four pages it links to (`pages` in the
+  report says which page lacks what).
+- **Structured data.** schema.org JSON-LD that fits the page's own content
+  (Organization or LocalBusiness, Product, FAQPage), built only from facts
+  already on the page. No reviews, ratings or details the page doesn't have.
+
+`offers` holds drafts written from the mission's own pages: a robots.txt, a
+line for an existing robots.txt, a sitemap.xml or the entries it leaves out,
+and an llms.txt. Each one has `ownerApprovalRequired: true`. The owner sees
+the draft and decides; with their yes, the file goes into the app's source
+and a new version is deployed, then the check runs again. A sitemap draft
+carries no dates, because the check doesn't know when each page changed. An
+llms.txt is optional, and no AI assistant promises to read one.
+
+The check reports what a reader can see. It doesn't promise a ranking or a
+mention in any AI assistant's answers.
+
+## Managed database export (closed pilot)
+
+Database exports are part of the closed managed-database pilot, with no date for wider availability. A mission's page or the presence
+of a connector tool does not mean new export requests are available.
+
+If the connected moonbase tools include `export_database`, use it for a
+mission the person owns, identified by its address or project ID. The tool
+needs write permission; a read-only connection is refused. It returns the
+owner's export page and status, not a database file or a download credential.
+
+- **export_page** is the exact page URL you open for the owner.
+- **state** is the latest export's status, or **none** when there is no export.
+- **request_available** says whether a new request is available for this
+  project. When it is false, explain that new requests are unavailable; the
+  page can still show existing exports. Do not treat an existing ready export
+  as permission to create another one.
+- **expires_at** reports a ready export's expiry when present. Use the
+  returned status and instructions; do not invent a fixed download period.
+
+Open the exact returned **export_page** URL for the person, whether new
+requests are available or the page is showing existing exports. Do not send
+them searching for the export screen. If your client cannot open URLs, say
+so and give that exact link; only say you opened it after doing so.
+
+When a new request is available, the owner confirms their password on that
+page and enters their two-factor code there if their account requires it.
+The person completes those steps themselves; never ask for a password or
+code in chat or submit it for them. An available file is
+downloaded on that page, in the browser that requested it, subject to its
+expiry and single-download conditions. The connector does not bypass those
+checks or fetch the database contents into the conversation.
+
+If the tool reports **no_database**, the project has no managed database
+available to export. **not_found** means no project owned by that connection
+matched the identifier. Do not retry with another person's project or
+suggest a hidden download endpoint.
+
+A database export is separate from downloading a mission's source files or
+backing up those files. Returning a page link is not evidence that an export
+was created, downloaded, restored or captured by a scheduled backup.
+
+## Managed database status (closed pilot)
+
+Use `mission_info` or `deploy_status` with the owned project's `project_id` or
+`slug`. These existing read tools return `database`, `database_page` and
+`database_next_steps`. Polling `deploy_status` with an `attempt_id` returns
+that deployment attempt rather than database status.
+
+`database` is the same owner-only metadata view used by Mission Control:
+connection, storage measurements and freshness, backup evidence, and access
+state. It contains no connection string, password, database identifier or
+export download credential. Missing measurements stay null. Backup `state`
+can be `available`, `pending`, `failed`, `disabled`, `no_schedule` or
+`unavailable`. Report `checkedAt`, `lastSucceededAt`, `latestAttemptFailed` and
+`nextScheduledAt` together: an older verified success does not hide a newer
+failed attempt. Unavailable evidence does not mean backups are disabled or
+successful. Stale or mismatched-generation backup evidence is unavailable.
+
+Backup evidence requires a configured, installed trusted feed for that
+project; default pilot eligibility and an explicit catalog rollout mode
+still require actual generation-bound enrollment. A connected database alone does not establish backup
+enrollment, a successful backup, restore readiness or general availability.
+No retention or recovery guarantee follows from this status response.
+
+When human action needs the database card, **open the exact `database_page`**
+(`/missions/<project_id>#database`) for the person. If the client cannot open
+URLs, explain that limitation and provide the exact returned link. Only say
+it is open after opening it. The person enters secrets directly in moonbase;
+never request them in chat, CLI or clipboard. Database status is read-only;
+use `export_database` and its separate export page for the owner export flow
+described above.
+
+## Managed database allowance and storage (closed pilot)
+
+Managed databases are a closed pilot: customers cannot create one today, and
+there is no date for wider availability. The planned allowance is one managed
+database in each paid plan. Actual availability and the configured allowance
+still govern creation; the presence of a tool or guide is not proof that a
+project is enrolled. Existing
+databases remain subject to their account's resource and storage limits.
+
+Use `account_usage` for the account's storage report. Managed database bytes
+count together with live files and retained source archives. A missing, stale
+or unverified database measurement leaves storage unknown; do not report it
+as zero or claim that the account has spare capacity. An unknown total can
+refuse a new upload until moonbase can establish the storage measurement.
+This accounting does not introduce a new charge or change billing prices.
+
+Creation reserves the configured database allowance across all Missions in
+the account, including provisioning and failed resources. Two simultaneous
+requests do not each receive the same remaining allowance. An existing
+resource can recover without creating another allowance. A quota refusal is
+not permission to remove another database, backup or recovery record; follow
+the returned account guidance and ask support about unresolved resources.
