@@ -270,9 +270,10 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r26, 2026-11-20.** This version and date are the
+**moonbase skill — revision r27, 2026-11-20.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r26 carries the r25 Launch check together with the managed database
+filename. r27 adds taking over a custom domain another account added but never
+proved (`domain_held_unverified`, one TXT record, and `domain_page`: open the returned link for the person) in the section "Custom domains" below. r26 carries the r25 Launch check together with the managed database
 export, status and allowance sections in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below. r25 describes the Launch check for search engines and AI assistants
 (`launch_check`, its `review_url` and its `offers`, which wait for the owner's
 approval) in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below. r23 is the publish path: with the connector, a project with images
@@ -330,6 +331,108 @@ What r7 carried forward from r6:
   the peer), not just encrypt the connection.
 - Check a mission's password state before calling it private, and treat the
   packaging gate as a filename filter, not a secrets scanner.
+
+---
+
+## Custom domains
+
+Every mission is **automatically** live at `<mission>.moonbase.host` with HTTPS
+the moment it deploys — that is its shareable address right away, so you never
+need a custom domain to go live. A custom domain (like `example.com` or
+`app.example.com`) is an **optional, later** step: add it only **after** the
+mission already exists and is live, and it needs a **paid plan**.
+
+Explain DNS simply: "DNS is the internet's address book. You'll add one line
+to your domain's address book that says 'send visitors to moonbase'."
+
+The user needs: a domain they already own, and access to where they bought
+it (the "registrar": GoDaddy, Namecheap, Cloudflare, etc.). moonbase
+never changes anything at the registrar; the user adds the record.
+
+### Step by step
+
+1. In moonbase, open **Domains** (in the sidebar, or from the mission's Mission Control).
+2. Click **Add domain**.
+3. Type the domain (`example.com` or `app.example.com`) and pick which
+   mission it should show.
+   *moonbase shows the exact DNS record to add. Keep this page open.*
+4. In a new tab, sign in to your registrar and open the DNS settings for that
+   domain.
+5. Add the record exactly as moonbase shows it:
+   - **Main domain** (`example.com`, called "apex"): an **A** record.
+     - Type: `A`
+     - Name: `@` (or leave it blank)
+     - Value: the IP address shown on moonbase's Domains page
+     - TTL: `300` (or the lowest the registrar allows)
+     A main domain can't use a CNAME (that's a DNS rule).
+   - **Subdomain** (`www.example.com`, `app.example.com`): a **CNAME** record.
+     - Type: `CNAME`
+     - Name: `www` (or `app`, etc.)
+     - Value: your mission's own address shown on the Domains page, like
+       `your-mission.moonbase.host` (never a `*.` wildcard: registrars reject
+       it)
+     - TTL: `300`
+6. Save the record at the registrar.
+7. Back in moonbase, click **Verify**.
+   *First the domain waits for DNS until moonbase sees your record. Then
+   moonbase gets the HTTPS certificate (from Let's Encrypt), usually within a
+   few minutes, and the domain shows as active.*
+
+   An AI connected through the moonbase connector can run the same check with
+   the `verify_domain` tool (project plus domain). It returns the domain's
+   status, what was found and expected for each DNS record, and the link to
+   the Domains page (https://app.moonbase.cloud/domains), which the person can
+   open to see the same result. It changes only moonbase's stored status (and
+   starts the certificate once both records are in place); it does not change
+   DNS.
+
+**Cloudflare users:** set the record to **DNS only (grey cloud)**, not
+proxied (orange). The orange proxy blocks moonbase's certificate.
+
+**How long?** Usually under an hour, sometimes up to 48 hours. moonbase checks
+from its own server, which may see the change before your computer does. A
+tool like dnschecker.org shows progress around the world.
+
+Use the IP address and target that moonbase's Domains page shows. Don't type
+one from memory.
+
+### If it won't verify
+
+1. Open the domain on **Domains** and compare the record letter by letter.
+2. A record for a main domain, CNAME for a subdomain.
+3. Make sure no other old record (another host's A or CNAME) is still there
+   for the same name.
+4. Cloudflare: grey cloud.
+5. Wait a bit, then click **Verify** again (or, over the connector, call
+   `verify_domain` again; its `records` list shows which record still differs).
+
+If moonbase says another account added the domain but never proved it owns
+it, the domain can still be connected here by proving it is yours: moonbase
+shows one TXT record (its name and value). Add it at the DNS provider, wait
+for it to be seen, then add the domain again. Over the connector,
+`add_domain` refuses with `domain_held_unverified` and gives the same record
+and `domain_page`, the exact link to this project's domain section in
+moonbase. Open the returned link for the person (or, if this client cannot
+open links, give them that exact link), show them the record, and call
+`add_domain` again once it is published. A
+domain that another account already proved stays theirs.
+
+If moonbase refuses to add the domain because the plan doesn't include
+custom domains, it names the cheapest plan that does: upgrade
+(the section "Plans, upgrading and billing"), then add the domain again.
+
+### Honest limits
+
+- Wildcard domains (`*.example.com`) aren't supported.
+- Traffic is measured per mission, not per domain.
+- Custom domains are on paid plans only (see the section "Plans, upgrading and billing").
+
+moonbase may send notifications such as "DNS verification pending", "Domain
+connected", "TLS certificate renewed" and "Domain certificate expiring";
+certificates renew automatically.
+
+Guides: https://moonbase.cloud/docs/custom-domains and
+https://moonbase.cloud/docs/custom-domains-101
 
 ---
 
@@ -2912,97 +3015,6 @@ Guide: https://moonbase.cloud/docs/export-your-mission
 
 ---
 
-## Custom domains
-
-Every mission is **automatically** live at `<mission>.moonbase.host` with HTTPS
-the moment it deploys — that is its shareable address right away, so you never
-need a custom domain to go live. A custom domain (like `example.com` or
-`app.example.com`) is an **optional, later** step: add it only **after** the
-mission already exists and is live, and it needs a **paid plan**.
-
-Explain DNS simply: "DNS is the internet's address book. You'll add one line
-to your domain's address book that says 'send visitors to moonbase'."
-
-The user needs: a domain they already own, and access to where they bought
-it (the "registrar": GoDaddy, Namecheap, Cloudflare, etc.). moonbase
-never changes anything at the registrar; the user adds the record.
-
-### Step by step
-
-1. In moonbase, open **Domains** (in the sidebar, or from the mission's Mission Control).
-2. Click **Add domain**.
-3. Type the domain (`example.com` or `app.example.com`) and pick which
-   mission it should show.
-   *moonbase shows the exact DNS record to add. Keep this page open.*
-4. In a new tab, sign in to your registrar and open the DNS settings for that
-   domain.
-5. Add the record exactly as moonbase shows it:
-   - **Main domain** (`example.com`, called "apex"): an **A** record.
-     - Type: `A`
-     - Name: `@` (or leave it blank)
-     - Value: the IP address shown on moonbase's Domains page
-     - TTL: `300` (or the lowest the registrar allows)
-     A main domain can't use a CNAME (that's a DNS rule).
-   - **Subdomain** (`www.example.com`, `app.example.com`): a **CNAME** record.
-     - Type: `CNAME`
-     - Name: `www` (or `app`, etc.)
-     - Value: your mission's own address shown on the Domains page, like
-       `your-mission.moonbase.host` (never a `*.` wildcard: registrars reject
-       it)
-     - TTL: `300`
-6. Save the record at the registrar.
-7. Back in moonbase, click **Verify**.
-   *First the domain waits for DNS until moonbase sees your record. Then
-   moonbase gets the HTTPS certificate (from Let's Encrypt), usually within a
-   few minutes, and the domain shows as active.*
-
-   An AI connected through the moonbase connector can run the same check with
-   the `verify_domain` tool (project plus domain). It returns the domain's
-   status, what was found and expected for each DNS record, and the link to
-   the Domains page (https://app.moonbase.cloud/domains), which the person can
-   open to see the same result. It changes only moonbase's stored status (and
-   starts the certificate once both records are in place); it does not change
-   DNS.
-
-**Cloudflare users:** set the record to **DNS only (grey cloud)**, not
-proxied (orange). The orange proxy blocks moonbase's certificate.
-
-**How long?** Usually under an hour, sometimes up to 48 hours. moonbase checks
-from its own server, which may see the change before your computer does. A
-tool like dnschecker.org shows progress around the world.
-
-Use the IP address and target that moonbase's Domains page shows. Don't type
-one from memory.
-
-### If it won't verify
-
-1. Open the domain on **Domains** and compare the record letter by letter.
-2. A record for a main domain, CNAME for a subdomain.
-3. Make sure no other old record (another host's A or CNAME) is still there
-   for the same name.
-4. Cloudflare: grey cloud.
-5. Wait a bit, then click **Verify** again (or, over the connector, call
-   `verify_domain` again; its `records` list shows which record still differs).
-
-If moonbase refuses to add the domain because the plan doesn't include
-custom domains, it names the cheapest plan that does: upgrade
-(the section "Plans, upgrading and billing"), then add the domain again.
-
-### Honest limits
-
-- Wildcard domains (`*.example.com`) aren't supported.
-- Traffic is measured per mission, not per domain.
-- Custom domains are on paid plans only (see the section "Plans, upgrading and billing").
-
-moonbase may send notifications such as "DNS verification pending", "Domain
-connected", "TLS certificate renewed" and "Domain certificate expiring";
-certificates renew automatically.
-
-Guides: https://moonbase.cloud/docs/custom-domains and
-https://moonbase.cloud/docs/custom-domains-101
-
----
-
 ## Sharing a mission with teammates
 
 You can invite people to a mission so they can see it, deploy it, or manage
@@ -3337,6 +3349,7 @@ variable. Make the app work from the root of its address, then upload it again.
 | "Mission Warming Up" / loading screen | A sleeping free-plan mission waking up. Wait a second or two. |
 | Changed an environment variable but nothing changed | Changes apply on the next deploy. Click **Deploy new version**. |
 | Domain won't verify | Record must match exactly; A for main domain, CNAME for subdomain; Cloudflare grey cloud; wait up to 48h; click **Verify** again. |
+| Adding a domain says another account added it but never proved it (`domain_held_unverified`) | Add the TXT record moonbase shows (name and value) at the DNS provider, then add the domain again. Over the connector, open the returned `domain_page` link for the person. See the section "Custom domains". |
 | Traffic numbers don't load | A missing data source, not a broken mission. Try later. |
 | A script or CI job stopped authenticating | Its API key was probably deleted. Check **API Keys**; create a new key and update the secret. |
 | moonbase's own error page (not your mission's) | Part of the app failed to load. Use the way back it offers; missions aren't affected. Repeated? Contact support. |

@@ -116,6 +116,7 @@ variable. Make the app work from the root of its address, then upload it again.
 | "Mission Warming Up" / loading screen | A sleeping free-plan mission waking up. Wait a second or two. |
 | Changed an environment variable but nothing changed | Changes apply on the next deploy. Click **Deploy new version**. |
 | Domain won't verify | Record must match exactly; A for main domain, CNAME for subdomain; Cloudflare grey cloud; wait up to 48h; click **Verify** again. |
+| Adding a domain says another account added it but never proved it (`domain_held_unverified`) | Add the TXT record moonbase shows (name and value) at the DNS provider, then add the domain again. Over the connector, open the returned `domain_page` link for the person. See `custom-domains.md`. |
 | Traffic numbers don't load | A missing data source, not a broken mission. Try later. |
 | A script or CI job stopped authenticating | Its API key was probably deleted. Check **API Keys**; create a new key and update the secret. |
 | moonbase's own error page (not your mission's) | Part of the app failed to load. Use the way back it offers; missions aren't affected. Repeated? Contact support. |

@@ -70,6 +70,17 @@ one from memory.
 5. Wait a bit, then click **Verify** again (or, over the connector, call
    `verify_domain` again; its `records` list shows which record still differs).
 
+If moonbase says another account added the domain but never proved it owns
+it, the domain can still be connected here by proving it is yours: moonbase
+shows one TXT record (its name and value). Add it at the DNS provider, wait
+for it to be seen, then add the domain again. Over the connector,
+`add_domain` refuses with `domain_held_unverified` and gives the same record
+and `domain_page`, the exact link to this project's domain section in
+moonbase. Open the returned link for the person (or, if this client cannot
+open links, give them that exact link), show them the record, and call
+`add_domain` again once it is published. A
+domain that another account already proved stays theirs.
+
 If moonbase refuses to add the domain because the plan doesn't include
 custom domains, it names the cheapest plan that does: upgrade
 (`billing.md`), then add the domain again.
