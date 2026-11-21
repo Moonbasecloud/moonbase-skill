@@ -49,6 +49,7 @@ report_deploy_result() {
       rmsg="$(jq -se 'if length==1 and (.[0]|type=="object") and (((.[0].title // .[0].error)|type)=="string") then .[0] else error end' "$body" 2>/dev/null | jq -r 'def s: tostring|gsub("[[:cntrl:]\u2028\u2029]";" ");
              "Deploy refused: " + ((.title // .error // "error")|s)
              + (if .nextStep then " — " + (.nextStep|s) else "" end)
+             + (if .trkId then " (error ID: " + (.trkId|s) + ")" else "" end)
              + (if .retry_after_sec then " (retry after " + (.retry_after_sec|s) + "s)" else "" end)' 2>/dev/null)" && [ -n "$rmsg" ] || { echo "Deploy returned a JSON body that is not a recognised refusal — reconcile with the status endpoint before uploading again." >&2; return 2; }
       printf '%s\n' "$rmsg" >&2
       return 1 ;;
