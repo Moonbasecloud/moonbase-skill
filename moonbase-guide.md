@@ -132,7 +132,7 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
 | Mission Log | The list of every version of a mission |
 | Deploy / launch | Put a version online |
 | Live / Asleep / Paused / Deploying | The mission's state right now |
-| TRK-ID | A reference code like `TRK-AB12CD` for one deploy; support uses it |
+| Error ID | A reference code like `TRK-AB12CD` for one deploy (the `trace_id` field); support uses it |
 
 ## Where things are (read only the part you need)
 
@@ -272,9 +272,9 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r42, 2026-11-21.** This version and date are the
+**moonbase skill — revision r43, 2026-11-21.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r42 corrects the agent guidance for `user_not_found`, `zip_unsafe`, `email_not_verified`, `identity_required` and `terms_reconsent_required` in the section "Troubleshooting" below, and `explain_error` now gives the same words for them; `password_protection_unavailable` gains the same set_password sentence in both, though the two texts still differ elsewhere; `explain_error` also has corrected agent words for `waiting_for_maintenance`, `python_entrypoint_not_detected` and `python_runtime_not_supported`. r41 adds rows for 13 more codes a connector tool, a queued deploy or an upload link can return (`deployment_maintenance`, `fetch_failed`, `forbidden`, `http_<status>`, `invalid_input`, `mission_slug_unusable`, `not_found`, `payload_too_large`, `plan_limit_exceeded`, `service_draining`, `source_digest_mismatch`, `upload_token_slug_mismatch`, `url_not_allowed`) in the section "Troubleshooting" below, and `explain_error` now explains them; a failed queued deploy is deployed again with a new idempotency_key, and a held upload link with a new link from create_upload. r40 adds rows for every other result code a queued deploy can end with (`expired_during_maintenance`, `auth_required`, `async_deploy_unavailable`, `deploy_history_pending`, `deploy_interrupted_before_dispatch`, `project_not_found`), and the generic `deploy_failed`, in the section "Troubleshooting" below; `explain_error` now explains them and `queue_expired`. r39 adds the `queue_expired` result code (a queued deploy that never started) in the section "Troubleshooting" below. r38 adds the `upload_check_busy` refusal (moonbase was busy and couldn't check the upload; try again in a minute) in the section "Troubleshooting" below. r37: a Firebase web config's `apiKey` no longer stops an upload, so a
+filename. r43 gives the support reference one name, **Error ID** (the `trace_id` field, or `trkId`), as the app shows it, in `SKILL.md` and the section "Troubleshooting" below, the section "Versions and rollback" below and the section "Safety and support" below; `explain_error` uses the same words, and its `password_protection_unavailable` support sentence now matches the Skill; the `python_entrypoint_not_detected` row now matches `explain_error` word for word, and the `python_runtime_not_supported` row gives the same instruction after one sentence saying it is legacy. r42 corrects the agent guidance for `user_not_found`, `zip_unsafe`, `email_not_verified`, `identity_required` and `terms_reconsent_required` in the section "Troubleshooting" below, and `explain_error` now gives the same words for them; `password_protection_unavailable` gains the same set_password sentence in both, though the two texts still differ elsewhere; `explain_error` also has corrected agent words for `waiting_for_maintenance`, `python_entrypoint_not_detected` and `python_runtime_not_supported`. r41 adds rows for 13 more codes a connector tool, a queued deploy or an upload link can return (`deployment_maintenance`, `fetch_failed`, `forbidden`, `http_<status>`, `invalid_input`, `mission_slug_unusable`, `not_found`, `payload_too_large`, `plan_limit_exceeded`, `service_draining`, `source_digest_mismatch`, `upload_token_slug_mismatch`, `url_not_allowed`) in the section "Troubleshooting" below, and `explain_error` now explains them; a failed queued deploy is deployed again with a new idempotency_key, and a held upload link with a new link from create_upload. r40 adds rows for every other result code a queued deploy can end with (`expired_during_maintenance`, `auth_required`, `async_deploy_unavailable`, `deploy_history_pending`, `deploy_interrupted_before_dispatch`, `project_not_found`), and the generic `deploy_failed`, in the section "Troubleshooting" below; `explain_error` now explains them and `queue_expired`. r39 adds the `queue_expired` result code (a queued deploy that never started) in the section "Troubleshooting" below. r38 adds the `upload_check_busy` refusal (moonbase was busy and couldn't check the upload; try again in a minute) in the section "Troubleshooting" below. r37: a Firebase web config's `apiKey` no longer stops an upload, so a
 Firebase web app publishes without a build step; any other `AIza` Google key is
 still refused (the section "Connecting a backend: Supabase, Firebase or your own API" below, the section "Troubleshooting" below). r36 adds the section "Connecting a backend: Supabase, Firebase or your own API" below: connecting Supabase,
 Firebase or the person's own API, which values are public and which stay on the
@@ -929,9 +929,9 @@ means the mission isn't up yet. Don't reassure the user that "the old version
 is still live" when there isn't one.
 
 Second rule: read moonbase's own message first. Every failure shows a plain
-title, an explanation, a next step and a **TRK-ID** (`TRK-…`, also called
-Error ID or trace ID). Prefer moonbase's words over guessing, and never
-delete a mission to "start fresh".
+title, an explanation, a next step and an **Error ID** (`TRK-…`; in API and
+tool results it is the `trace_id` field, or `trkId`). Prefer moonbase's words
+over guessing, and never delete a mission to "start fresh".
 
 ### "My deploy failed"
 
@@ -948,7 +948,7 @@ delete a mission to "start fresh".
    exposes a top-level app object and lists every dependency in
    `requirements.txt`; every environment variable it needs is set. (See
    the section "Building for moonbase: a project that deploys first time".)
-5. Deploy a new version. Still stuck? Send the TRK-ID to support.
+5. Deploy a new version. Still stuck? Send the Error ID to support.
 
 Common console lines: "npm install failed" (a dependency problem), "npm run
 build failed" (a build error in the code), "Port not bound" (the app isn't
@@ -984,7 +984,7 @@ Node build steps stream as `build_log` lines while they run; Python build
 output isn't streamed, so for a Python failure the `message` on the `error`
 event is the diagnosis. Read it yourself; show the user `friendly.*`, and if
 you share a log excerpt, redact and bound it first (the section "The deploy API, CI and GitHub Actions"). There's
-no way to fetch the full build log once the stream closes — keep the **TRK-ID**
+no way to fetch the full build log once the stream closes — keep the **Error ID**
 and give it to support to read the full log. (the section "The deploy API, CI and GitHub Actions", "Build logs and
 build failures", has the detail.)
 
@@ -1092,13 +1092,13 @@ it.
 | `empty_selection` | Nothing to upload | Shown only in the moonbase web app; tools never receive it. |
 | `drop_without_file` | That was a link, not a file | Shown only in the moonbase web app; tools never receive it. |
 | `file_read_failed` | Couldn't read that file | Shown only in the moonbase web app; tools never receive it. |
-| `zip_unsafe` | Upload rejected for safety | This upload's structure tripped one of moonbase's safety checks (an unusual file count, size or path), so it was rejected before any of its files were unpacked. Check that the ZIP holds only your project's files, then upload again. If it holds only the project's files and is still refused, the person can contact moonbase support with the trace ID from this result (trace_id, or trkId in an upload link's response), or the attempt_id. |
+| `zip_unsafe` | Upload rejected for safety | This upload's structure tripped one of moonbase's safety checks (an unusual file count, size or path), so it was rejected before any of its files were unpacked. Check that the ZIP holds only your project's files, then upload again. If it holds only the project's files and is still refused, the person can contact moonbase support with the error ID from this result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or the attempt_id. |
 | `no_html_or_package_json_found` | We couldn't find anything to launch | No `index.html` or `package.json` anywhere. Add one. |
 | `no_html_found` | No HTML found | Looks static but has no `.html` file. Include one. |
-| `classification_error` | We couldn't read this upload | Something about this upload's structure confused our inspector. The person can contact moonbase support with the trace ID from this result (trace_id, or trkId in an upload link's response), or the attempt_id. |
+| `classification_error` | We couldn't read this upload | Something about this upload's structure confused our inspector. The person can contact moonbase support with the error ID from this result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or the attempt_id. |
 | `go_not_supported` | Go apps can't run on moonbase yet | moonbase doesn't run Go. If the project has a web frontend, build it and upload those files. |
-| `python_entrypoint_not_detected` | We couldn't find where your Python app starts | Python web apps deploy now, but moonbase needs a standard app object — a top-level `app = Flask(__name__)`, `app = FastAPI()`, or a Django `manage.py` + `wsgi.py`. Add one and re-upload. |
-| `python_runtime_not_supported` | We couldn't find where your Python app starts | Legacy code — Python web apps now deploy (see `python_entrypoint_not_detected` above and the section "Building for moonbase: a project that deploys first time"). A current upload won't return this. |
+| `python_entrypoint_not_detected` | We couldn't find where your Python app starts | This is a Python project. moonbase runs Python web apps, but couldn't find one here it knows how to start: it looks for a Flask, FastAPI or Django app. Add a top-level `app = Flask(__name__)` or `app = FastAPI()` in a root `app.py`, `main.py` or `server.py`, or a Django `manage.py` and `wsgi.py`, then deploy again. |
+| `python_runtime_not_supported` | We couldn't find where your Python app starts | Legacy code with the same meaning as `python_entrypoint_not_detected`; a current upload won't return it. Add a top-level `app = Flask(__name__)` or `app = FastAPI()` in a root `app.py`, `main.py` or `server.py`, or a Django `manage.py` and `wsgi.py`, then deploy again. |
 | `framework_unsupported:<framework>` | Framework not supported yet | A recognised framework moonbase can't build yet (a backend language, or a framework not on the supported list). Deploy a static build. |
 | `astro_ssr_not_supported` | Astro SSR isn't supported yet | Astro deploys its **static** output in v1. Remove the SSR adapter / set `output: 'static'` so `astro build` produces `dist/`, then re-upload. |
 | `sveltekit_adapter_node_required` | SvelteKit needs the Node adapter | moonbase runs SvelteKit with `@sveltejs/adapter-node`. Switch `svelte.config.js` to that adapter and re-upload. |
@@ -1108,7 +1108,7 @@ it.
 | `payload_too_large` | Project too large to send this way | The project is larger than this way of sending it allows. For files or zip_base64 (8 MiB inline limit), use create_upload. A source_url or file download over the plan's size limit per deploy needs a smaller project or a bigger plan; account_usage shows the limit. |
 | `source_digest_mismatch` | Upload didn't match its checksum | The ZIP moonbase received or downloaded for this queued deploy didn't match the expected_sha256 given, so it was not published. Check that expected_sha256 is the SHA-256 of that exact ZIP (for a source_url, that the file hasn't changed), or leave it out when sending files. Then deploy again with a new idempotency_key. |
 | `hardcoded_secret_detected` | Possible secret found in your upload | A possible key or credential was found in the files and the upload was stopped. Remove the credential from the uploaded files, use environment variables, and upload again. If the credential is real, rotate it with its provider. When all matches are in test or fixture files, the refusal suggests leaving them out of the ZIP or source after confirming that the app builds and runs without them. A Firebase web config's `apiKey` (in an object with `authDomain` and `projectId`) is not refused; any other `AIza` Google key is, so move it to an environment variable read by server code. |
-| `malware_detected` | Upload blocked — malware detected | Our malware scanner found something harmful in this upload and blocked it before deploying. If the person believes this is a false positive, they can contact moonbase support with the trace ID from this result (trace_id, or trkId in an upload link's response), or the attempt_id. |
+| `malware_detected` | Upload blocked — malware detected | Our malware scanner found something harmful in this upload and blocked it before deploying. If the person believes this is a false positive, they can contact moonbase support with the error ID from this result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or the attempt_id. |
 | `scanner_unavailable` | Upload paused — scanner temporarily unavailable | Retry ✓ in a few minutes. |
 | `scan_incomplete` | Upload paused — scan didn't finish | Retry ✓ in a few minutes. |
 | `scan_too_large` | Upload paused — file too large to scan | Make it smaller, or contact support. |
@@ -1173,14 +1173,14 @@ it in Mission Control → **Password protection** (the section "Mission Control:
 |---|---|---|
 | `password_protection_coming_soon` | Set the password in Mission Control | A visitor password can be given only with a project's first launch, not with a new version. Deploy the new version without a password, then use set_password if the project has no password yet; an existing password is changed on the project's page in the moonbase app. |
 | `password_protection_disabled` | Password protection is switched off right now | moonbase paused new password protection, so a launch with a password was refused. Try later. Launch without one only if the mission doesn't need to be protected from its first version. |
-| `password_protection_unavailable` | We couldn't protect the mission | The password couldn't be turned on before launch, so nothing was published. If moonbase couldn't confirm the password is off the address again, the address stays reserved to your account as a failed project until it is checked. Tell the person the version isn't live and the password isn't on. Deploy again in a minute. If the address now shows as a failed project in your account, it keeps its password: ship a new version to that project (deploy with its slug; API: redeployProjectId), without a password, and it goes live protected. A new launch with the same name is refused as name_taken. Otherwise, if the person agrees the first version may be public for a moment, deploy without a password, then use set_password. If it keeps failing, they can contact moonbase support with the trace_id. |
+| `password_protection_unavailable` | We couldn't protect the mission | The password couldn't be turned on before launch, so nothing was published. If moonbase couldn't confirm the password is off the address again, the address stays reserved to your account as a failed project until it is checked. Tell the person the version isn't live and the password isn't on. Deploy again in a minute. If the address now shows as a failed project in your account, it keeps its password: ship a new version to that project (deploy with its slug; API: redeployProjectId), without a password, and it goes live protected. A new launch with the same name is refused as name_taken. Otherwise, if the person agrees the first version may be public for a moment, deploy without a password, then use set_password. If it keeps failing, they can contact moonbase support with the error ID (trace_id in deploy_status) or the attempt_id. |
 | `invalid_password` | Password isn't valid | The deploy's `password` field had the wrong length. Leave it out and set the password in Mission Control. |
 
 #### moonbase's side
 
 | Code | Title | What it means → what to do |
 |---|---|---|
-| `internal` | Something went wrong | Something went wrong on moonbase's side, and this version is not live. Try again; if it keeps happening, the person can contact moonbase support with the trace ID from this result (trace_id, or trkId in an upload link's response), or the attempt_id. |
+| `internal` | Something went wrong | Something went wrong on moonbase's side, and this version is not live. Try again; if it keeps happening, the person can contact moonbase support with the error ID from this result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or the attempt_id. |
 | `deployment_maintenance` | | New deployments are temporarily paused. Existing missions keep serving. Wait and retry later; do not change database settings or start duplicate deploys. |
 | `deployment_maintenance` (a connector tool error or `deploy_status` result code) | Deploys paused for maintenance | moonbase is in a maintenance window and new deploys are paused; this one was not published, and the live version keeps serving. Deploy again in a few minutes. platform_status shows any maintenance notice moonbase has published. |
 | `waiting_for_maintenance` (a `deploy` result phase, status `in_progress`) | | Not an error. moonbase is in a maintenance window and accepted this version instead of refusing it; it starts publishing it automatically when maintenance ends, and the current live version keeps serving until then. Tell the person it is waiting. Poll `deploy_status` with the `attempt_id` about once a minute; do not start duplicate deploys. A newer deploy of the same project replaces the waiting one. Past `expires_at` it is not published (`expired_during_maintenance`): deploy again. Only new versions of an existing project wait this way: a `deploy` with `files` or `zip_base64`, and, where moonbase has it switched on, a ZIP sent to a `create_upload` link or the app's upload screen (the upload answers HTTP 202 with this receipt). Other sources and new projects still get `deployment_maintenance`. |
@@ -1199,7 +1199,7 @@ alone does not stop deploys; a refusal still says why in its own code.
 ### When nothing here fits
 
 Say you're not sure, point to https://moonbase.cloud/docs/troubleshooting and
-https://moonbase.cloud/docs/deploy-wont-work, and to support with the TRK-ID
+https://moonbase.cloud/docs/deploy-wont-work, and to support with the Error ID
 (the section "Safety and support"). A confident wrong answer is worse than "let's ask
 support".
 
@@ -3524,11 +3524,11 @@ build later, they should keep that ZIP themselves.
 ### Deploy logs
 
 While a deploy runs, the console streams every step. If it fails, it shows
-the first error and the deploy's **TRK-ID**. The full build log isn't shown
+the first error and the deploy's **Error ID**. The full build log isn't shown
 in the app (or fetchable through the API) after the deploy ends today: keep
-the **TRK-ID** — support can look the full log up from it. For reading a
+the **Error ID** — support can look the full log up from it. For reading a
 failure from the API stream (Node build output, Python failure messages such
-as a `docker_build_failed:exit=1` tail, and how to escalate with the TRK-ID),
+as a `docker_build_failed:exit=1` tail, and how to escalate with the Error ID),
 see the section "The deploy API, CI and GitHub Actions", "Build logs and build failures".
 
 Guide: https://moonbase.cloud/docs/export-your-mission
@@ -3859,11 +3859,11 @@ Contact support (https://moonbase.cloud/contact) when:
 - a deploy keeps failing and the project builds fine on your computer;
 - the mission is unreachable on its `moonbase.host` address and isn't
   paused or asleep;
-- you need the full build log (support can find it from the TRK-ID);
+- you need the full build log (support can find it from the Error ID);
 - billing problems or a refund;
 - recovering a deleted account (within the retention period).
 
-Always include: the **TRK-ID** (Error ID), the mission's name and address,
+Always include: the **Error ID** (`TRK-…`), the mission's name and address,
 when it started, and the exact message or browser error.
 
 Status of moonbase itself: the "Status" and "Incident History" links in the

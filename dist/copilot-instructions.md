@@ -97,7 +97,7 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
 | Mission Log | The list of every version of a mission |
 | Deploy / launch | Put a version online |
 | Live / Asleep / Paused / Deploying | The mission's state right now |
-| TRK-ID | A reference code like `TRK-AB12CD` for one deploy; support uses it |
+| Error ID | A reference code like `TRK-AB12CD` for one deploy (the `trace_id` field); support uses it |
 
 ## Before you deploy
 

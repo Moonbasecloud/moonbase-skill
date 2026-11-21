@@ -80,11 +80,11 @@ Contact support (https://moonbase.cloud/contact) when:
 - a deploy keeps failing and the project builds fine on your computer;
 - the mission is unreachable on its `moonbase.host` address and isn't
   paused or asleep;
-- you need the full build log (support can find it from the TRK-ID);
+- you need the full build log (support can find it from the Error ID);
 - billing problems or a refund;
 - recovering a deleted account (within the retention period).
 
-Always include: the **TRK-ID** (Error ID), the mission's name and address,
+Always include: the **Error ID** (`TRK-…`), the mission's name and address,
 when it started, and the exact message or browser error.
 
 Status of moonbase itself: the "Status" and "Incident History" links in the

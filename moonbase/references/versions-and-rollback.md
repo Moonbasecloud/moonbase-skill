@@ -56,11 +56,11 @@ build later, they should keep that ZIP themselves.
 ## Deploy logs
 
 While a deploy runs, the console streams every step. If it fails, it shows
-the first error and the deploy's **TRK-ID**. The full build log isn't shown
+the first error and the deploy's **Error ID**. The full build log isn't shown
 in the app (or fetchable through the API) after the deploy ends today: keep
-the **TRK-ID** — support can look the full log up from it. For reading a
+the **Error ID** — support can look the full log up from it. For reading a
 failure from the API stream (Node build output, Python failure messages such
-as a `docker_build_failed:exit=1` tail, and how to escalate with the TRK-ID),
+as a `docker_build_failed:exit=1` tail, and how to escalate with the Error ID),
 see `api-and-ci.md`, "Build logs and build failures".
 
 Guide: https://moonbase.cloud/docs/export-your-mission
