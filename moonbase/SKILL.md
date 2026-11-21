@@ -304,9 +304,9 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r37, 2026-11-21.** This version and date are the
+**moonbase skill — revision r38, 2026-11-21.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r37: a Firebase web config's `apiKey` no longer stops an upload, so a
+filename. r38 adds the `upload_check_busy` refusal (moonbase was busy and couldn't check the upload; try again in a minute) in `references/troubleshooting.md`. r37: a Firebase web config's `apiKey` no longer stops an upload, so a
 Firebase web app publishes without a build step; any other `AIza` Google key is
 still refused (`references/connect-your-backend.md`, `references/troubleshooting.md`). r36 adds `references/connect-your-backend.md`: connecting Supabase,
 Firebase or the person's own API, which values are public and which stay on the
