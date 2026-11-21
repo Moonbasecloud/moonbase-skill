@@ -304,9 +304,9 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r38, 2026-11-21.** This version and date are the
+**moonbase skill — revision r40, 2026-11-21.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r38 adds the `upload_check_busy` refusal (moonbase was busy and couldn't check the upload; try again in a minute) in `references/troubleshooting.md`. r37: a Firebase web config's `apiKey` no longer stops an upload, so a
+filename. r40 adds rows for every other result code a queued deploy can end with (`expired_during_maintenance`, `auth_required`, `async_deploy_unavailable`, `deploy_history_pending`, `deploy_interrupted_before_dispatch`, `project_not_found`), and the generic `deploy_failed`, in `references/troubleshooting.md`; `explain_error` now explains them and `queue_expired`. r39 adds the `queue_expired` result code (a queued deploy that never started) in `references/troubleshooting.md`. r38 adds the `upload_check_busy` refusal (moonbase was busy and couldn't check the upload; try again in a minute) in `references/troubleshooting.md`. r37: a Firebase web config's `apiKey` no longer stops an upload, so a
 Firebase web app publishes without a build step; any other `AIza` Google key is
 still refused (`references/connect-your-backend.md`, `references/troubleshooting.md`). r36 adds `references/connect-your-backend.md`: connecting Supabase,
 Firebase or the person's own API, which values are public and which stay on the
