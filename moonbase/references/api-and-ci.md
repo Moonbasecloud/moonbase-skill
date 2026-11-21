@@ -390,6 +390,18 @@ never read back, so a `GET`:
   name whether the OLD or the NEW value is stored, so a `GET` can't tell you the
   value actually changed. Don't claim it does.
 
+**Replace or delete a saved value.** A `PUT` on a name that is already saved
+replaces its value. A `DELETE` with the body `{"key": "NAME"}` (the exact saved
+name) removes it and returns `{"deleted": true}`, or `{"deleted": false}` when
+nothing was saved under that name. A moonbase-managed name is refused with
+`400 platform_var_managed`, for a `PUT` and a `DELETE` alike: `MOONBASE_*`,
+`MOONSERVER_*`, `*_LIVE_URL`, and a saved name whose `source` is `engine` (such
+as a moonbase database's `DATABASE_URL`). A batch `PUT` that includes one
+writes nothing. The runtime defaults `PORT`, `NODE_ENV` and
+`NEXT_TELEMETRY_DISABLED` can be set with a `PUT`; a `DELETE` of one is refused
+with the same code. A replacement and a deletion are each recorded in
+the mission's Activity log by name only. Both apply on the next deploy.
+
 After an acknowledged write, deploy or redeploy so the app loads the saved
 configuration. Verify the feature or dependency that needs the variable.
 Keep the stored value out of test output, including health responses and logs.

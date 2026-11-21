@@ -44,6 +44,35 @@ Control.
 4. Click **Deploy new version** (the same ZIP is fine). **Changes only take
    effect on the next deploy.**
 
+**Replacing or deleting a saved value.** Each saved name has **Replace** and
+**Delete**. **Replace** opens an empty field: the old value is never shown or
+filled in, so the new value is typed in full. **Delete** asks for confirmation
+first; the version that is live keeps running with its existing settings, and
+the next deploy may fail if the app still needs that value. Both apply on the
+next deploy, and both are recorded in the Activity log by name only (never the
+value). Names moonbase manages itself show no Replace or Delete. Anyone who
+can edit the mission can replace or delete a value.
+
+**Names moonbase manages.** moonbase sets some names itself: its own
+`MOONBASE_*`, `MOONSERVER_*` and `*_LIVE_URL` names, and any saved name whose
+source is `engine`, such as the `DATABASE_URL` of a moonbase database, which
+moonbase refreshes at each deploy. These rows are listed (by name, like every
+other) but can't be replaced or deleted from this screen, from the API or from
+the connector: `set_env`, `delete_env` and the env API refuse them with
+`platform_var_managed`. The connector's refusal names the screens to open:
+`env_page` (this screen, where the name shows as managed) and, for a moonbase
+database, `database_page` (the mission's **Database** section). A
+`DATABASE_URL` the person saved themselves is theirs to replace or delete.
+The runtime defaults `PORT`, `NODE_ENV` and `NEXT_TELEMETRY_DISABLED` can still
+be set or replaced with `set_env` or the env API; this screen shows them without
+Replace or Delete, and they can't be deleted.
+
+The link `https://app.moonbase.cloud/missions/<id>#env-vars` opens this
+screen directly. Over the connector, `list_env`, `set_env` and `delete_env`
+return it as `env_page`, so a person who would rather type a secret themselves
+than give it to the assistant can be sent straight to the right screen.
+For a secret value, such as an API key, password or connection string, the person types it on that screen through `env_page` rather than in chat.
+
 During an upload you can also drag your `.env` file into the settings
 window to fill everything in. moonbase applies non-secret values from a
 shipped `.env` automatically, but never applies anything that looks like a

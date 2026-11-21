@@ -37,6 +37,28 @@ Managing people, in the same window:
 - Each plan allows a maximum number of people per mission (pending invites
   count too). moonbase says so when it's reached.
 
+## Manage people from an AI agent (connector)
+
+The moonbase connector has the same list and actions as the **Share**
+window, with the same rules (owner or admin, paid plan):
+
+| Tool | What it does |
+|---|---|
+| `list_members` | The people with access and the open invitations: role, Pending or active, and whether this account may change or remove each one (each has a `person_id`). |
+| `invite_member` | Emails an invitation to an address with a `role`: `view`, `edit` or `admin`. Nothing is granted until they accept. |
+| `set_member_role` | Changes an accepted person's role (`person_id` from `list_members`). |
+| `remove_member` | Removes someone's access, or cancels a pending invitation. |
+
+- The invite answer is the same whether or not the address already has a
+  moonbase account.
+- Inviting, changing a role and removing someone are run only after the
+  person names the project, the address or person, and the role.
+- Accepting is always done by the invited person, from the email, signed in
+  with that address. No tool accepts for them.
+- Every result includes the project's page with the **Share** window open:
+  `https://app.moonbase.cloud/missions/<id>#share`. A person who wants
+  to see or change the list themselves opens that link.
+
 ## Accept an invite (the invited person)
 
 1. Open the email "<name> invited you to <mission> on moonbase" and click

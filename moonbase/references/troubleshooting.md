@@ -139,12 +139,21 @@ safe to try again after waiting.
 | `user_not_found` | Account not found | The account no longer exists. Sign out and in; for the API, use a key from a current account. |
 | `forbidden` | | Signed in as someone the mission is shared with as View. Ask the owner or an admin for Edit access. |
 
+A payment problem on the account shows as a banner across the signed-in app,
+and with the connector `account_usage` and `platform_status` return it as
+`payment`: its `state` (`ok`, `payment_failed` or `past_due`), for
+`past_due` the `grace_ends_at` when its grace period ends, and `billing_url`.
+When the state isn't `ok`, tell the person plainly and give them the
+`billing_url` link, where they can see what happens next and update their
+payment method. It's their own account only, and it has no card or amount in
+it.
+
 ### API keys
 
 | Code | Title | What it means → what to do |
 |---|---|---|
-| `invalid_key` | API key not accepted | Wrong, revoked or no deploy scope. Create a new key on **API Keys**. |
-| `key_expired` | API key expired | Create a new key and use it. |
+| `invalid_key` | API key not accepted | Wrong, revoked or no deploy scope. A password reset, a password change or an email change on the account can turn off all its API keys as a precaution. Ask the person to create a new key in **API keys** (https://app.moonbase.cloud/api-keys), open that link for them, and have them put the key in the CI secret store, not in the chat. |
+| `key_expired` | API key expired | Ask the person to create a new key in **API keys** (https://app.moonbase.cloud/api-keys) and use it. |
 | `no_key` | | Status endpoint called without a key. Send `Authorization: Bearer mb_live_…`. |
 | `not_found` | | Status endpoint: no mission with this address on the key's account. Check the address and the account. |
 
@@ -171,7 +180,7 @@ safe to try again after waiting.
 | `framework_unsupported:<framework>` | Framework not supported yet | A recognised framework moonbase can't build yet (a backend language, or a framework not on the supported list). Deploy a static build. |
 | `astro_ssr_not_supported` | Astro SSR isn't supported yet | Astro deploys its **static** output in v1. Remove the SSR adapter / set `output: 'static'` so `astro build` produces `dist/`, then re-upload. |
 | `sveltekit_adapter_node_required` | SvelteKit needs the Node adapter | moonbase runs SvelteKit with `@sveltejs/adapter-node`. Switch `svelte.config.js` to that adapter and re-upload. |
-| `hardcoded_secret_detected` | Possible secret found in your upload | A possible key or credential was found in the files and the upload was stopped. Remove the credential from the uploaded files, use environment variables, and upload again. If the credential is real, rotate it with its provider. When all matches are in test or fixture files, the refusal suggests leaving them out of the ZIP or source after confirming that the app builds and runs without them. |
+| `hardcoded_secret_detected` | Possible secret found in your upload | A possible key or credential was found in the files and the upload was stopped. Remove the credential from the uploaded files, use environment variables, and upload again. If the credential is real, rotate it with its provider. When all matches are in test or fixture files, the refusal suggests leaving them out of the ZIP or source after confirming that the app builds and runs without them. A Firebase web config's `apiKey` (in an object with `authDomain` and `projectId`) is not refused; any other `AIza` Google key is, so move it to an environment variable read by server code. |
 | `malware_detected` | Upload blocked — malware detected | Something harmful was found. Remove it; false positive? Contact support with the TRK-ID. |
 | `scanner_unavailable` | Upload paused — scanner temporarily unavailable | Retry ✓ in a few minutes. |
 | `scan_incomplete` | Upload paused — scan didn't finish | Retry ✓ in a few minutes. |
@@ -207,6 +216,9 @@ Show the exact limit from the **structured fields** (`reason`, and
 | Code | Title | What it means → what to do |
 |---|---|---|
 | `deploy_in_progress` | A deploy is already running | One build per mission at a time. Retry ✓ after `retry_after_sec` seconds. |
+| `superseded_by_newer_version` (a `deploy_status` result code) | | Not an error. A newer deploy or upload of the same project replaced this one; deploy_status with the newer attempt_id shows its progress. |
+| `source_unavailable` (a `deploy_status` result code) | | moonbase could not read back the stored upload after maintenance, so this version was not published. The current live version is unchanged. Upload this version again. |
+| `deploy_queue_full` | Too many deploys waiting | The account (or moonbase as a whole, during a long maintenance window) already holds as many waiting deploys as it takes. Wait for one to finish (`deploy_status`), then try again; do not retry in a loop. |
 | `mission_downgrade_locked` | This project is locked because your plan ended | Your plan ended, and this project is over the Free plan's limit, so it's locked. It keeps working, but it can't be deployed, rolled back, resumed or renamed, and its password, environment variables and domains can't be changed. You can still pause, export, archive or delete it. Upgrade to unlock it. If you don't, it will be paused and later deleted; we'll email you before it's deleted. (`downgrade_state` is `locked` or `paused`.) Not retryable, and nothing in the code needs changing: only the owner can upgrade or delete missions so the account fits. |
 | `rate_limited` | Too many launches in a row | Too many deploys in a short time. Retry ✓ after `retry_after_sec` seconds. Don't loop. |
 | `consent_required` | This deploy needs your OK in moonbase | moonbase wants to change the build and needs the owner's OK. Open `consent_url`, deploy once from the browser and review the changes. Then tool deploys work again. |
@@ -230,7 +242,16 @@ it in Mission Control → **Password protection** (`mission-control.md`).
 |---|---|---|
 | `internal` | Something went wrong | Retry ✓ under the one retry policy (`api-and-ci.md`): bounded attempts, honour any `Retry-After`. Keeps happening? Support with the TRK-ID. |
 | `deployment_maintenance` | | New deployments are temporarily paused. Existing missions keep serving. Wait and retry later; do not change database settings or start duplicate deploys. |
+| `waiting_for_maintenance` (a `deploy` result phase, status `in_progress`) | | Not an error. moonbase is in a maintenance window and accepted this version instead of refusing it; it starts publishing it automatically when maintenance ends, and the current live version keeps serving until then. Tell the person it is waiting. Poll `deploy_status` with the `attempt_id` about once a minute; do not start duplicate deploys. A newer deploy of the same project replaces the waiting one. Past `expires_at` it is not published (`expired_during_maintenance`): deploy again. Only new versions of an existing project wait this way: a `deploy` with `files` or `zip_base64`, and, where moonbase has it switched on, a ZIP sent to a `create_upload` link or the app's upload screen (the upload answers HTTP 202 with this receipt). Other sources and new projects still get `deployment_maintenance`. |
 | `service_draining` | | moonbase is restarting. Retry ✓ under the same bounded policy (wait the server's delay first). |
+
+moonbase may also publish a service notice to its customers, such as planned
+maintenance or a known incident. It shows as a banner across the signed-in
+app until the time moonbase set, and with the connector `platform_status`
+returns it as `service_notice` (its `message` and `expires_at`). When there is
+one, tell the person what it says, as moonbase's words. Its `expires_at` is
+when the notice comes down, not a promise of when any work ends. The notice
+alone does not stop deploys; a refusal still says why in its own code.
 
 ## When nothing here fits
 

@@ -10,7 +10,11 @@ change is coming soon, contact support to change it.
 ## Security
 
 **Account → Security**:
-- **Password**: change it.
+- **Password**: change it. Changing it signs you out everywhere and, unless
+  you untick **Also turn off all my API keys**, turns off your API keys too. A
+  password reset or an email change always turns them off. moonbase tells you
+  in the security email and on screen; create new keys in **API keys**
+  (https://app.moonbase.cloud/api-keys) if your scripts or CI need them.
 - **Two-factor authentication** (an authenticator app, 6-digit codes). Turn
   it on, scan the code, type a 6-digit code. *You'll get recovery codes:
   save them somewhere safe.* Each one works once if you lose your phone.

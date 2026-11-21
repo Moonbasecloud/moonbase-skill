@@ -156,7 +156,12 @@ host is better served than one whose deploy "worked".
   a hardcoded credential (`hardcoded_secret_detected`), and a key that reached
   a repository is a key someone has to go and revoke.
 - Set them with `set_env` over the connector (remove one with `delete_env`), through the env API, or in
-  **Mission Control → Environment Variables**. The mechanics, the reserved
+  **Mission Control → Environment Variables**. `set_env` on a name that is
+  already saved replaces its value. A person can also type or replace a value
+  themselves: the `env_page` link that `list_env`, `set_env` and `delete_env`
+  return opens that screen for this project. For a secret value, such as an
+  API key, password or connection string, the person types it on that screen
+  through `env_page` rather than in chat. The mechanics, the reserved
   names and the `NEXT_PUBLIC_` warning are in
   `references/building-for-moonbase.md`.
 - Ship a `.env.example` with placeholders so the next person — or the next
