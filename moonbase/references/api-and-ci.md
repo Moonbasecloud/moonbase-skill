@@ -154,6 +154,8 @@ last ~20 lines — never paste the whole stream into a chat, a log or an artifac
 my build log by `TRK-…`" endpoint is a known gap, not something that exists now
 — don't promise it.)
 
+When moonbase itself stopped a deploy, moonbase_note says why in moonbase's own words. build_log_tail holds only the project's own output, not moonbase's text.
+
 ## Retries and approval: one state machine
 
 The same policy as `deploy-for-the-user.md`. Branch on `friendly.code` in the
