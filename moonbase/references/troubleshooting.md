@@ -12,6 +12,33 @@ title, an explanation, a next step and an **Error ID** (`TRK-…`; in API and
 tool results it is the `trace_id` field, or `trkId`). Prefer moonbase's words
 over guessing, and never delete a mission to "start fresh".
 
+## Deployment history and Error IDs
+
+`deploy_logs` reads an owned project's deployment history. Its `attempts`
+list keeps version records, including the stored `trace_id` (shown as Error ID),
+status and recorded explanation. `failed_attempts` is a separate list of
+recorded failures: each has `status` and `trace_id`. A failure recorded in
+Activity has `occurred_at`; a compatibility attempt without that Activity record
+has `attempt_created_at`, when the attempt record was created, not when the
+failure completed.
+Only compatibility attempts stored with outcome `failure` and a stored ID appear;
+partial and consent-required attempts are not labelled failed. Older attempts
+without a stored ID are left out so the same failure is not listed twice; older
+Activity records can still show `trace_id: null`. Duplicate stored IDs prefer
+the Activity record, and the merged list respects the requested limit. A failed
+attempt does not imply a new version was created. A missing older ID is `null`;
+there is no replacement ID to infer from the version or project name.
+
+A `trace_id`-only call looks up the caller's recorded failed attempt by its exact
+Error ID, including a first deploy whose project no longer exists. That lookup
+uses no slug or project reference; reusing a project's name does not attach old
+failures to the new project. It returns no build log, raw error or activity
+metadata. Preflight validation refusals (`upload_rejected`) are not attempted
+deployments and are outside this failure list; their response can still carry
+an Error ID. `attempt_id` still refers to the existing asynchronous deploy receipt;
+it is not an Error ID. Neither result proves which version is serving now;
+`deploy_status` provides the current status.
+
 ## "My deploy failed"
 
 1. Read the first red line in the deploy console, and copy the **Error ID**

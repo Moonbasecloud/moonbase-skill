@@ -293,3 +293,7 @@ requests do not each receive the same remaining allowance. An existing
 resource can recover without creating another allowance. A quota refusal is
 not permission to remove another database, backup or recovery record; follow
 the returned account guidance and ask support about unresolved resources.
+
+### Pending protection purge
+
+`mission_info` returns `protection_cache_purge.status` for the owner: `pending` means a protection purge is queued or in progress; `not_queued` means no pending job was found; `unknown` means the status could not be read. No pending job is not proof that every cached copy has been cleared.
