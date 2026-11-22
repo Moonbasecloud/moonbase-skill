@@ -37,7 +37,10 @@ How usage counts:
   (UTC), and reset on the 1st; on a plan with no included number, Usage
   shows the last 30 days. Visitors are counted per day: someone who visits
   on 5 different days counts as 5. They're **never capped**: missions stay
-  live past the plan's number.
+  live past the plan's number. `account_usage` lists the visitor count as a
+  plain usage line (`usage_notes`: "Visitors (this calendar month): N.
+  Counted for your information; visitors are never blocked."), never among
+  the limits reached.
 
 ## What happens at a limit
 
