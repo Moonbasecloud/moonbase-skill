@@ -15,7 +15,7 @@ refreshing or sharing that link keeps you on the same mission.
 |---|---|---|
 | **Live** | Online and serving visitors | Nothing. Share the link. |
 | **Asleep** | A free-plan dynamic mission resting after no visits | Nothing. The next visit wakes it. |
-| **Paused** | You paused it. Visitors see a "Mission Paused" page | Resume it from Mission Control |
+| **Paused** | You paused it. Visitors see a "This app is paused" page | Resume it from Mission Control |
 | **Deploying** | A new version is building | Wait. The old version keeps serving. |
 
 ## Sleep and wake (free plan)
@@ -24,14 +24,14 @@ refreshing or sharing that link keeps you on the same mission.
   about 30 minutes without visitors, to save resources.
 - **Static missions never sleep.**
 - The next visitor wakes it in a second or two, behind a short loading
-  screen ("Mission Warming Up" / "Loading…"). Nothing is broken.
+  screen ("Waking up your app"). Nothing is broken.
 - Explain it simply: "Your app takes a nap when nobody's around and wakes up
   as soon as someone knocks."
 
 ## Pause and resume
 
 You can pause a mission yourself from **Mission Control**. Visitors then see
-a branded **"Mission Paused"** page until you resume it, also from Mission
+a branded **"This app is paused"** page until you resume it, also from Mission
 Control.
 
 ## Environment variables (settings and secrets for the app)
@@ -119,10 +119,12 @@ Each mission can have its own password. Only the mission's owner can set it.
    *The card now shows **Active**. Visitors must type the password to see
    the mission.*
 
-- **Change it:** click **Change password**. Anyone already signed in to the
-  mission is signed out.
-- **Remove it:** switch it off and confirm **Remove**. Anyone with the link
-  can view the mission again.
+- **Change it:** click the saved password field, type the new one and
+  **Save**. Anyone already signed in to the mission is signed out.
+- **Turn it off:** switch it off. The password is kept, and switching on again
+  reuses it.
+- **Remove it:** click **Remove**. The saved password is deleted, and anyone
+  with the link can view the mission again.
 - moonbase never shows the saved password again (it stores it scrambled); you
   can only replace it.
 - In Mission Control's **Settings**, it can be set once the mission exists
@@ -142,8 +144,9 @@ Each mission can have its own password. Only the mission's owner can set it.
   server asks for it before the first version is published (the same
   static-file caching caveat applies). For an **existing**
   mission a `password` on a deploy is refused with
-  `password_protection_coming_soon`: set or change it in Mission Control (or
-  with `set_password`) instead.
+  `password_protection_coming_soon`: set it in Mission Control (or with
+  `set_password`, which refuses a mission that already has a saved password),
+  and change it in Mission Control.
 - **Through the connector:** `create_mission` and `create_upload` take
   `password`, or `generate_password: true` (moonbase makes one and returns it);
   `set_password` sets one on an existing mission. A visitor password keeps

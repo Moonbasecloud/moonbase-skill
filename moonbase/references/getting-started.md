@@ -18,17 +18,17 @@ account is ready. Wait for that confirmation before bringing up the connector.
 3. If moonbase asks you to check your email, follow Part 2.
 
 Already have an account? Open **https://app.moonbase.cloud/login** if you need
-to sign in. Choose **Forgot password?** if you need a new password. The person
+to sign in. Choose **Forgot password?** (on the new design: the password field's **Password options** menu → **Reset password**) if you need a new password. The person
 always enters their own password and verification codes.
 
 ## Part 2. Verify your email
 
 1. Open the email from moonbase. (Not there? Check spam, wait a minute.)
 2. Click the link inside. You can open it on any device.
-   If moonbase's page asks for a **Verification code**, type the code from
-   the email and click **Verify**.
-3. Didn't get it? On the "Check your inbox" page click **Resend code**.
-   Typed the wrong address? Click **Wrong email? Sign out and try again**.
+   The page you left open moves on by itself once the link is clicked.
+3. Didn't get it? On the "Verify your email" page click **Resend verification
+   email** (on the older design, **resend**). Typed the wrong address? Click
+   **Change email** (on the older design, **Wrong email? Sign out**).
 
 Verify the email before taking the app online.
 
@@ -72,7 +72,7 @@ Steps:
      hyphens, starting with a letter.
    - *You'll see "This address is available"* when it's free. If it's taken,
      try another (or click the button that makes a random name).
-4. Click the launch button (**Initiate launch sequence** or **Launch**).
+4. Click the launch button (**Launch my mission**).
    *A console shows each step: reserving the address, uploading, the
    security certificate, and a health check. For apps moonbase builds you
    also see unpacking, building and starting.*

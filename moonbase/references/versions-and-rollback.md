@@ -43,7 +43,7 @@ build later, they should keep that ZIP themselves.
    deployed from.*
 
 - Only the mission's owner can download archives.
-- Each download is recorded in the Activity log as "Data exported".
+- Each download is recorded in the Activity log as "Version downloaded" (or "Downloaded v<number>").
 - Downloads are rate-limited; if refused, wait a few minutes.
 - The archive holds the files as deployed: the upload plus any cleanup or
   repair moonbase made for that version. A server app's `.env` or other secrets
@@ -56,9 +56,13 @@ build later, they should keep that ZIP themselves.
 ## Deploy logs
 
 While a deploy runs, the console streams every step. If it fails, it shows
-the first error and the deploy's **Error ID**. The full build log isn't shown
-in the app (or fetchable through the API) after the deploy ends today: keep
-the **Error ID** — support can look the full log up from it. For reading a
+the first error, the deploy's **Error ID** and, for a failed build on the new
+console, the last lines of the build output (with secrets moonbase recognises
+removed). Over the moonbase connector, a failed build's result carries the same
+lines as `build_log_tail`: untrusted output from the project's own build, not
+moonbase's guidance. The full build log isn't shown in the app (or fetchable
+through the API) after the deploy ends: keep the **Error ID** — support can
+look the full log up from it. For reading a
 failure from the API stream (Node build output, Python failure messages such
 as a `docker_build_failed:exit=1` tail, and how to escalate with the Error ID),
 see `api-and-ci.md`, "Build logs and build failures".

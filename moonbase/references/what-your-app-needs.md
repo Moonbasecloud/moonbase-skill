@@ -34,8 +34,10 @@ code:
   most common reason an AI-built app goes live and nothing loads: the code
   carries `http://localhost:3000` or `127.0.0.1` — a database URL, an API base
   URL, a redirect target — and none of it exists on the mission. moonbase does
-  flag these, but only *after* the deploy and only as a medium-severity note,
-  so a person who stopped reading at "live" never sees it. Find them yourself
+  flag these: `check_project` reports them (`hardcoded_localhost`) before a
+  deploy, but the deploy itself reports them only afterwards and only as a
+  medium-severity note, so a person who stopped reading at "live" never sees
+  it. Find them yourself
   and replace them with a relative path or a configured variable. The same goes
   for absolute file paths from someone's own computer.
 

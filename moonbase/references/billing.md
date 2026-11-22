@@ -21,7 +21,7 @@ the user there.
 3. Pay in the Paddle checkout window.
 4. *Access unlocks right after payment.* No waiting on support.
 
-Change plans, cancel or update the payment method any time from **Billing**.
+Change plans on **Plans** (https://app.moonbase.cloud/upgrade), cancel with **End your plan** in **Account → Danger Zone**, and update the payment method on **Billing**, any time.
 
 ## Billing and usage pages
 

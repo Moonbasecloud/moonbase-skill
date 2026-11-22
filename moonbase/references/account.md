@@ -47,7 +47,7 @@ happen on your missions. Use it only if you have a server to receive them.
 
 **Activity** lists what happened in your account, newest first: deployments,
 mission changes, sign-ins and account changes. Filter it by type. Version
-downloads show up as "Data exported".
+downloads show up as "Version downloaded" (or "Downloaded v<number>").
 
 ## Settings
 
@@ -62,12 +62,16 @@ downloads show up as "Data exported".
 
 ## Download your data
 
-**Account → Danger Zone → Download data export** gives a JSON file with your
-profile, your missions and their deployment history, API key and webhook
-details, and account activity. It never contains passwords or secret values,
-and it doesn't contain mission files: download those per version with
-**Download archive** in Mission Log (`versions-and-rollback.md`). A limited
-number of exports can be made per day.
+**Account → Danger Zone → Export my data → Download everything** gives a zip
+of your account, every mission's settings and every version's files.
+Environment variable values are included only if you confirm it's you with
+your password (and your authenticator code when two-factor is on); that
+download works once, only in the browser that asked for it, within 24 hours.
+You can request one export a day. (On the older design, **Download data
+export** gives a JSON file with your profile, missions, deployment history,
+API key and webhook details and account activity, without secret values or
+mission files; download mission files per version with **Download archive** in
+Mission Log, `versions-and-rollback.md`.)
 
 ## Delete your account
 
@@ -81,5 +85,5 @@ sign in to download anything.
 3. Click **Delete account**.
 
 What happens: every mission is paused immediately and stops responding, you
-can't sign back in, and data is purged after a retention period. Within that
-period, support can recover the account (the page says how many days).
+can't sign back in, and it can't be undone: your account and data are kept for
+a retention period (the page says how many days), then purged.

@@ -6,8 +6,9 @@ need a custom domain to go live. A custom domain (like `example.com` or
 `app.example.com`) is an **optional, later** step: add it only **after** the
 mission already exists and is live, and it needs a **paid plan**.
 
-Explain DNS simply: "DNS is the internet's address book. You'll add one line
-to your domain's address book that says 'send visitors to moonbase'."
+Explain DNS simply: "DNS is the internet's address book. You'll add two lines
+to your domain's address book: one that says 'send visitors to moonbase', and
+one that proves the domain is yours."
 
 The user needs: a domain they already own, and access to where they bought
 it (the "registrar": GoDaddy, Namecheap, Cloudflare, etc.). moonbase
@@ -19,10 +20,10 @@ never changes anything at the registrar; the user adds the record.
 2. Click **Add domain**.
 3. Type the domain (`example.com` or `app.example.com`) and pick which
    mission it should show.
-   *moonbase shows the exact DNS record to add. Keep this page open.*
+   *moonbase shows the exact DNS records to add. Keep this page open.*
 4. In a new tab, sign in to your registrar and open the DNS settings for that
    domain.
-5. Add the record exactly as moonbase shows it:
+5. Add the records exactly as moonbase shows them:
    - **Main domain** (`example.com`, called "apex"): an **A** record.
      - Type: `A`
      - Name: `@` (or leave it blank)
@@ -36,9 +37,15 @@ never changes anything at the registrar; the user adds the record.
        `your-mission.moonbase.host` (never a `*.` wildcard: registrars reject
        it)
      - TTL: `300`
-6. Save the record at the registrar.
+   - **Ownership** (every domain): a **TXT** record.
+     - Type: `TXT`
+     - Name: the name shown on the Domains page (it starts with
+       `_moonbase-verify.`)
+     - Value: the value shown there (it starts with `moonbase-verification=`)
+   Add both: an A or CNAME record alone does not prove the domain is yours.
+6. Save the records at the registrar.
 7. Back in moonbase, click **Verify**.
-   *First the domain waits for DNS until moonbase sees your record. Then
+   *First the domain waits for DNS until moonbase sees both records. Then
    moonbase gets the HTTPS certificate (from Let's Encrypt), usually within a
    few minutes, and the domain shows as active.*
 
@@ -63,7 +70,7 @@ one from memory.
 ## If it won't verify
 
 1. Open the domain on **Domains** and compare the record letter by letter.
-2. A record for a main domain, CNAME for a subdomain.
+2. Both records are there: the TXT record (`_moonbase-verify.`…) and the A record for a main domain or CNAME for a subdomain.
 3. Make sure no other old record (another host's A or CNAME) is still there
    for the same name.
 4. Cloudflare: grey cloud.

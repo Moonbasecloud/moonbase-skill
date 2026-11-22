@@ -13,7 +13,7 @@ window explains this and offers an upgrade.
 |---|---|---|
 | **Can view** | View | See everything. Change nothing. |
 | **Can edit** | Edit | Deploy, roll back, change settings and environment variables. |
-| **Can manage** | Admin | Everything in Edit, plus domains and inviting people. |
+| **Can manage** | Admin | Everything in Edit, plus inviting people (as Can view or Can edit) and re-checking an existing domain (**Verify**). Adding, removing or changing a domain stays with the owner. |
 | | Owner | The account the mission belongs to. |
 
 Someone with View who tries to deploy gets "forbidden": ask the owner or an

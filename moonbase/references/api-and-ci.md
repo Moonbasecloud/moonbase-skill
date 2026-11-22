@@ -61,7 +61,8 @@ mission's id: ship a new version), `name` (address of a new mission),
 
 1. Check `Content-Type`.
    - `application/json`: refused before it started. Body:
-     `{"error": "<code>", "message", "title", "nextStep", "trkId"}` plus
+     `{"error": "<code>", "message", "title", "nextStep", "trkId"}` (a `429
+     rate_limited` carries only `error`, `message` and `retry_after_sec`) plus
      extra fields for some codes (`retry_after_sec`, `consent_url`,
      `reason`/`limit`/`current`). Take any number you show the user (a
      plan-limit's `limit`/`current`, a `retry_after_sec`) from these
@@ -94,10 +95,9 @@ A full tested curl script is in `deploy-for-the-user.md` (Step 4).
 
 What you get while the stream is open:
 
-- `build_log` lines carry **Node** build output (npm install / build). Python
-  builds (pip install, container start) do **not** stream `build_log` lines;
-  for a Python failure, the diagnosis is in the final `error` event, not a log
-  feed.
+- `build_log` lines carry the build's output for **Node and Python** apps (npm
+  or pip install, the build, container start). For a failure, the diagnosis is
+  in the final `error` event.
 - When a build or a container start fails, moonbase classifies it and gives
   you a **stable `friendly.code`** plus a `friendly.category`. **Branch on
   `friendly.code`** — it won't change wording under you the way a title or the
@@ -122,15 +122,26 @@ What you get while the stream is open:
     `missing_env_var` (set it in Mission Control → Environment Variables),
     `database_unreachable` (your app's own DB host/port/credentials —
     missions can reach a database directly now).
-  - Setup, not a build crash — `python_entrypoint_not_detected`,
+  - Setup, not a build crash (refused before the stream, as the JSON `error`
+    code, not `friendly.code`) — `python_entrypoint_not_detected`,
     `framework_unsupported:<framework>`, `astro_ssr_not_supported`,
     `sveltekit_adapter_node_required`.
-  - Genuinely moonbase's side — `deploy_timeout`, `moonserver_5xx`,
-    `moonserver_unreachable`, `pypi_unreachable`. These four are retryable **by
-    name** (they are the exact codes listed as retryable in the state machine
+  - Also `our_side` — `docker_build_limits_unavailable` (the build's safety
+    limits couldn't be confirmed; nothing deployed) and `migration_disk_low`
+    (the declared migration didn't start for lack of disk; the database is
+    unchanged). Their `friendly.nextSteps` say to try again in a few minutes.
+  - Retryable — `deploy_timeout` (the build hit the 5-minute limit; category
+    `user_build_error`, a cold first build can pass on retry), and genuinely
+    moonbase's side — `moonserver_5xx`, `moonserver_unreachable`,
+    `pypi_unreachable`. These four are retryable **by name** (they are the exact codes listed as retryable in the state machine
     below). Retry is keyed off those codes, never off `friendly.category` —
-    `our_side` is attribution, and other `our_side` codes are deterministic and
-    must NOT be retried (see the state machine). **The code wins:** when a
+    `our_side` is attribution, and other `our_side` codes are not in the retry
+    set: some are deterministic (`dependency_version_not_found`,
+    `moonserver_not_configured`, `managed_database_pilot_unavailable`), and some
+    ask the person to try again in a few minutes (`temporary_platform_error`,
+    the `docker_build_*` disk, image-size, scan and limits codes,
+    `migration_disk_low`): show their `friendly.nextSteps` (see the state
+    machine). **The code wins:** when a
     recognized `friendly.code` and the `friendly.category` disagree, route on
     the code — the category never overrides a code in the authoritative list.
     With a missing or unrecognized code, route UNKNOWN regardless of category;
@@ -165,7 +176,8 @@ Exactly one branch per attempt:
 
 - **Retryable — by explicit code only.** Before the stream: `429 rate_limited`,
   `409 deploy_in_progress`, `500 internal`, `503 service_draining`,
-  `scanner_unavailable`, `scan_incomplete`. In the stream: `friendly.code` is
+  `503 upload_check_busy`, `503 deployment_maintenance`, `scanner_unavailable`,
+  `scan_incomplete`. In the stream: `friendly.code` is
   one of `deploy_timeout`, `moonserver_5xx`, `moonserver_unreachable`,
   `pypi_unreachable`, or `deploy_in_progress` (it can arrive in-stream too) —
   the only build/runtime codes a retry may clear. The `our_side` category is
@@ -225,7 +237,9 @@ If the connection drops, check the status endpoint before uploading again.
 `MOONBASE_READINESS_PATH`) answered, so it is live; `false` = deployed and
 reachable but the app reported **not ready** (it needs configuration or is still
 warming up; `readiness.state` is `not_ready`, with the `path` and `http_status`
-probed); `null` or missing = readiness was not determined (no endpoint, a static-file
+probed); `false` also when the page's own files don't load (`asset_problem` in
+`done`, static missions too), which waiting won't fix: change the project
+(`scripts/parse-deploy-result.sh` exits `4`); `null` or missing = readiness was not determined (no endpoint, a static-file
 mission, an inconclusive probe), which is treated as live. The status endpoint shows
 the same thing: `status` is `"deployed_not_ready"` (distinct from `failed`) and
 `appReady` is `false`; it is re-checked on read and flips to `live` once the
@@ -374,8 +388,9 @@ jq -n '{env: {DATABASE_URL: env.DATABASE_URL, STRIPE_SECRET: env.STRIPE_SECRET}}
 Send an `env` object for a batch, or a single `key`/`value` pair. The write is
 **all-or-nothing**: every entry is validated before any is written, so one bad
 entry fails the whole call with a `400` that names the offending `key` and why
-— an invalid name, an empty value, an over-long value, or a moonbase-managed
-name — and nothing is stored. A value is stored encrypted and is **never
+— an invalid name, an empty value, an over-long value, a value with a line
+break, or a moonbase-managed name — and nothing is stored (a name sent twice,
+or two names that normalize to one, is a `409`). A value is stored encrypted and is **never
 returned or logged**; a success names only the keys it set (`set`, `count`).
 moonbase-managed names (the MOONBASE_ and MOONSERVER_ prefixes, and a
 \*_LIVE_URL) are refused — moonbase sets those itself.

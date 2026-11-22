@@ -852,8 +852,10 @@ ones before you tell the user it's ready:
 2. **Check whether it's protected — don't assume it is.** A mission *can* have
    a password, but don't claim one is private until you've checked: a new
    mission may have no password, leaving the link open to anyone. Request the
-   public URL and look at what comes back — moonbase's password gate (a `200`
-   that is the gate, not your app) means it's protected, so verify behind it;
+   public URL and look at what comes back — moonbase's password gate (a `302` to
+   `/__moonbase_password__/login`; a client that follows redirects ends on a
+   `200` login page, which is the gate, not your app) means it's protected, so
+   verify behind it;
    your app's own content rendering straight away means it's open. The status
    endpoint does not report protection, so this request is the check. Tell the
    owner plainly whether the mission is currently password-protected or open,
@@ -897,8 +899,9 @@ printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sS "https://app.
 ```
 
 Returns `id`, `slug`, `displayName`, `status`, `isPaused`, `isArchived`,
-`publicUrl`, `currentVersion`, `lastDeployedAt`, `deployInProgress` and
-`deployStartedAt`. To learn how a deploy ended without the stream: check every
+`publicUrl`, `currentVersion`, `lastDeployedAt`, `deployInProgress`,
+`deployStartedAt`, `appReady` (true when live and serving, false when deployed
+but not ready, null when paused, archived or not deployed) and `resumePending`. To learn how a deploy ended without the stream: check every
 few seconds until `deployInProgress` is `false`; if `currentVersion` went up,
 the new version is live at `publicUrl`. The reason for a failed build is only
 in the stream's `error` event.

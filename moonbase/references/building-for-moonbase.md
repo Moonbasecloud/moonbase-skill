@@ -81,11 +81,12 @@ command itself from the app object it finds. The only lever you have is
 
 1. **Django** — a root `manage.py` plus a `<project>/wsgi.py` that exposes
    `application` → started with gunicorn.
-2. **FastAPI / Starlette (ASGI)** — a root module (`app.py`, `main.py`,
-   `server.py`, `wsgi.py`, `asgi.py` or `application.py`) with a **top-level**
-   `app = FastAPI()` (or `Starlette(...)`) → started with uvicorn.
-3. **Flask (WSGI)** — the same root modules, with a top-level
-   `app = Flask(__name__)` → started with gunicorn.
+2–3. **FastAPI / Starlette (ASGI) or Flask (WSGI)** — the first root module,
+   in the order `app.py`, `main.py`, `server.py`, `wsgi.py`, `asgi.py`,
+   `application.py`, with a **top-level** `app = FastAPI()` (or
+   `Starlette(...)`) → started with uvicorn, or `app = Flask(__name__)` →
+   started with gunicorn. Inside one file, FastAPI / Starlette is checked
+   first.
 4. **Generic WSGI** — a root `wsgi.py` whose top level exposes `application`
    (or `app`) → gunicorn.
 5. **Generic ASGI** — a root `asgi.py` whose top level exposes `app` (or
@@ -117,11 +118,12 @@ app = Flask(__name__)        # moonbase starts: gunicorn app:app
   dependency must provide a prebuilt Linux wheel (manylinux) or be pure
   Python. A package that only ships an sdist needing compilation will fail the
   build — pin a version that publishes wheels.
-- A `requirements.txt` that **references a sibling file at the project root**
-  works: `-r requirements.lock` and `-c constraints.txt` both install (those
-  root-level files are packaged with the app). A **subdirectory** include such
-  as `-r requirements/base.txt` does **not** work yet — keep the referenced
-  file at the root.
+- A `requirements.txt` that **references a root-level file named
+  `requirements*.txt`, `requirements*.lock` or `constraints*.txt`** works:
+  `-r requirements.lock` and `-c constraints.txt` both install (those files
+  are packaged with the app). An include with another name, or in a
+  **subdirectory** such as `-r requirements/base.txt`, does **not** work yet —
+  keep the referenced file at the root with one of those names.
 - A hash-pinned `requirements.txt` installs (pip enforces `--require-hashes`:
   once any line has a hash, every dependency needs one).
 - Lockfiles from **poetry, pipenv or uv are not read**. Export to
@@ -186,8 +188,8 @@ old `.env`), and it runs an **automated gate** that *fails* the upload if
 anything forbidden is in the archive — rather than trusting a human to eye a
 `unzip -l`. Use the tool; don't hand-roll a shorter exclude list.
 
-Size: every plan has a per-upload limit, and nothing over 1 GB is accepted
-on any plan. Leaving out `node_modules` and build output keeps a normal app
+Size: every plan has a per-upload limit, and for now nothing over 425 MB
+(static) or 300 MB (a Node or Python app) is accepted on any plan. Leaving out `node_modules` and build output keeps a normal app
 far below that. If the project really is huge (videos, big datasets), say so
 before uploading.
 
@@ -205,9 +207,9 @@ before uploading.
   images. Never hardcode `http://localhost:3000` in the app's own code:
   moonbase can rewrite port wiring in build config and start scripts, but a
   `localhost` URL inside your own `fetch` calls is yours to fix.
-- Node version: moonbase uses Node.js 20 by default. If the app needs
-  another, declare it in `package.json` (`"engines": { "node": ">=18" }`) or
-  an `.nvmrc`.
+- Node version: moonbase uses Node.js 22 by default (18 and 20 are also
+  available). If the app needs another, declare it in `package.json`
+  (`"engines": { "node": ">=18" }`).
 
 ## Environment variables (settings and secrets)
 

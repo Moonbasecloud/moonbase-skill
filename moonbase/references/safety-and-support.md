@@ -15,7 +15,7 @@
 - A moonbase key works for **every mission on its account**. A leaked key is
   serious: delete it and make a new one.
 - The full key is shown **once** when created. After that only a masked form
-  like `mb_live_••••••••4f2a` is visible. Lost it? Delete the key and create a
+  like `mb_live_••••••••4F2A` is visible. Lost it? Delete the key and create a
   new one.
 - Deleting a key: on **API Keys**, delete it from its row and type `DELETE`
   to confirm. Anything using it stops working immediately. It can't be undone.
@@ -81,8 +81,7 @@ Contact support (https://moonbase.cloud/contact) when:
 - the mission is unreachable on its `moonbase.host` address and isn't
   paused or asleep;
 - you need the full build log (support can find it from the Error ID);
-- billing problems or a refund;
-- recovering a deleted account (within the retention period).
+- billing problems or a refund.
 
 Always include: the **Error ID** (`TRK-…`), the mission's name and address,
 when it started, and the exact message or browser error.
