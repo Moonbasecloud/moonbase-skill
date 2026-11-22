@@ -462,6 +462,15 @@ The id is also in the mission's page link in the app
 (`https://app.moonbase.cloud/missions/<id>`) and in the `done` event of the
 last deploy (`project_id`).
 
+**Keep the mission ID after the first deploy.** The parser prints it as
+`project_id: <id>` when a deploy succeeds. Save it, and set
+`MOONBASE_MISSION_ID` to it for every later deploy of the same project (in
+the shell, in the project's own deploy notes, or as the CI secret in
+`api-and-ci.md`). If `MOONBASE_MISSION_ID` is empty, the deploy creates a new
+project with a new address; it does not update the one the person already has.
+Before every deploy, check that `MOONBASE_MISSION_ID` is set unless you mean to
+create a new project.
+
 ## Step 4. Deploy and read the result
 
 **Read the result honestly.** The HTTP status is `200` even when the deploy
@@ -700,6 +709,9 @@ API="https://app.moonbase.cloud"
 # reconciled by "did currentVersion go up?" (Step 5). Empty for a new mission.
 set +x
 prev_version=""
+if [ -z "${MOONBASE_MISSION_ID:-}" ]; then
+  echo "WARNING: MOONBASE_MISSION_ID is not set, so this deploy will create a NEW project with a new address. To update the existing project, stop now, set MOONBASE_MISSION_ID to its project ID (Step 3), and run this again." >&2
+fi
 if [ -n "${MOONBASE_MISSION_ID:-}" ]; then
   prev_version="$(printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sS "$API/api/v1/sites/$MISSION_ADDRESS/status" \
     --header @- -H "User-Agent: my-agent/1.0" \
@@ -740,7 +752,9 @@ below: check the mission status (Step 5) before uploading again — never re-POS
 blindly on an uncertain result.
 
 For a **new** mission, remove the `redeployProjectId` line (add
-`-F "name=my-idea"` if the user chose an address).
+`-F "name=my-idea"` if the user chose an address). After it succeeds, keep the
+`project_id` it prints and set `MOONBASE_MISSION_ID` to it for every later
+deploy of this project (Step 3).
 
 Allow at least 10 minutes for a build before giving up on the stream. For a
 ZIP over about 90 MB, send the same request to
