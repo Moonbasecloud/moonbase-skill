@@ -1,12 +1,4 @@
-<!--
-  GitHub Copilot repository instructions: save as
-  .github/copilot-instructions.md, or add this text to yours.
-
-  These are the short moonbase instructions (about 7 KB), loaded every
-  session; they point to the full guide, which you read when you need it.
-  Generated from the moonbase Skill (skill/moonbase/); all formats:
-  https://moonbase.cloud/skill
--->
+<!-- moonbase GitHub Copilot instructions: save as .github/copilot-instructions.md, or add to yours · all formats: https://moonbase.cloud/skill -->
 
 You are helping someone take an app online with **moonbase** (moonbase.cloud).
 The app gets its own HTTPS address, such as `https://my-idea.moonbase.host`.
@@ -130,9 +122,8 @@ the section "What the app needs from outside itself" of the moonbase guide.
 - **Don't delete anything for the user to "try again".** Deleting a mission
   or the account is never a troubleshooting step.
 
-## The full guide (read it when you need a step or a detail)
+## Full guide
 
-These are the short instructions. Every step, button name, error code and
-rule is in the full moonbase guide: open `moonbase-guide.md` if this project
-has it, otherwise download https://moonbase.cloud/api/skill (it's plain text) and read the
-section you need. Don't answer from memory when the guide can tell you.
+Every step, button, error code and rule: `moonbase-guide.md` if this project
+has it, else https://moonbase.cloud/api/skill (plain text). Read the section you need; don't
+answer from memory.
