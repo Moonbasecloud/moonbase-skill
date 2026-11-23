@@ -53,6 +53,49 @@ build later, they should keep that ZIP themselves.
 - If a plan limits how many versions are kept, moonbase emails before older
   versions are removed.
 
+## Delete old versions (free up storage)
+
+Every stored version counts toward the plan's storage, so deleting old
+versions frees room.
+
+- **One version:** in **Mission Log**, click **Delete version** on its row
+  and type DELETE.
+- **Many at once:** under the list, set **Newest versions to keep** and click
+  **Delete older versions**. *moonbase shows how many versions will go and
+  how much storage that frees before the DELETE confirmation.*
+- Deleting is permanent: the version and its stored ZIP are removed, so it
+  can't be restored or downloaded afterwards. If the user may want it later,
+  they download it first.
+- The live version always stays. **Delete older versions** also leaves
+  backup points in place; deleting a backup point asks for its own
+  confirmation.
+- While a deploy or rollback of the mission is running, deleting is refused;
+  it works once that finishes.
+- The mission's database, environment variables and live files are not
+  changed.
+- The Usage page shows the freed storage once the deletion finishes. If a
+  stored ZIP can't be removed right away, the version is still deleted and
+  its storage stays counted until the removal completes.
+- Nothing is deleted on its own here: old versions go only when the user
+  deletes them (a plan that limits kept versions emails first, as above).
+
+With the connector, deleting takes two calls. `list_versions` gives the
+version numbers. The first `delete_versions` call takes either `versions`
+(those numbers) or `keep_latest` (the newest N stay) and deletes nothing: it
+returns the versions that would go, each with its date and size, the storage
+that would be freed, and a `confirm_token`. Show the person that list and
+get their yes to it. The second call carries only the project and that
+`confirm_token`, and deletes exactly that list. The token works once, for 10
+minutes; if the list changed in between (a new deploy, for example), nothing
+is deleted and the first call is made again. No other argument deletes
+anything. Backup points are deleted in the app only. `account_usage` shows
+the freed storage afterwards.
+
+The connection needs its own permission for this, shown on the consent
+screen as deleting old versions for good. A connection made before it existed
+doesn't have it: the tool's error says so, and the person disconnects the
+moonbase connector in their AI tool and connects it again, allowing it.
+
 ## Deploy logs
 
 While a deploy runs, the console streams every step. If it fails, it shows

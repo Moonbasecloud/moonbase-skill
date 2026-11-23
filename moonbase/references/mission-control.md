@@ -199,9 +199,9 @@ llms.txt is optional, and no AI assistant promises to read one.
 The check reports what a reader can see. It doesn't promise a ranking or a
 mention in any AI assistant's answers.
 
-## Managed database export (closed pilot)
+## Managed database export
 
-Database exports are part of the closed managed-database pilot, with no date for wider availability. A mission's page or the presence
+New export requests are turned on separately from database creation. A mission's page or the presence
 of a connector tool does not mean new export requests are available.
 
 If the connected moonbase tools include `export_database`, use it for a
@@ -240,7 +240,7 @@ A database export is separate from downloading a mission's source files or
 backing up those files. Returning a page link is not evidence that an export
 was created, downloaded, restored or captured by a scheduled backup.
 
-## Managed database status (closed pilot)
+## Managed database status
 
 Use `mission_info` or `deploy_status` with the owned project's `project_id` or
 `slug`. These existing read tools return `database`, `database_page` and
@@ -258,8 +258,8 @@ failed attempt. Unavailable evidence does not mean backups are disabled or
 successful. Stale or mismatched-generation backup evidence is unavailable.
 
 Backup evidence requires a configured, installed trusted feed for that
-project; default pilot eligibility and an explicit catalog rollout mode
-still require actual generation-bound enrollment. A connected database alone does not establish backup
+project, and each database still requires actual generation-bound enrollment, whatever the account's plan.
+A connected database alone does not establish backup
 enrollment, a successful backup, restore readiness or general availability.
 No retention or recovery guarantee follows from this status response.
 
@@ -271,26 +271,33 @@ never request them in chat, CLI or clipboard. Database status is read-only;
 use `export_database` and its separate export page for the owner export flow
 described above.
 
-## Managed database allowance and storage (closed pilot)
+## Managed database: one per Mission, inside the plan's storage
 
-Managed databases are a closed pilot: customers cannot create one today, and
-there is no date for wider availability. The planned allowance is one managed
-database in each paid plan. Actual availability and the configured allowance
-still govern creation; the presence of a tool or guide is not proof that a
-project is enrolled. Existing
-databases remain subject to their account's resource and storage limits.
+Every plan, Free included, can add one managed PostgreSQL database per
+Mission; it uses the plan's storage. It is created only when the project's
+`moonbase.json` asks for one, and there is no separate database allowance.
+moonbase decides per account when creation is open: `account_usage`'s Managed
+database line shows where this account stands. The presence of a tool or
+guide is not proof that a project is enrolled.
 
-Use `account_usage` for the account's storage report. Managed database bytes
-count together with live files and retained source archives. A missing, stale
-or unverified database measurement leaves storage unknown; do not report it
-as zero or claim that the account has spare capacity. An unknown total can
-refuse a new upload until moonbase can establish the storage measurement.
-This accounting does not introduce a new charge or change billing prices.
+Everything stored counts toward one storage allowance: files, versions,
+databases and backups. Use `account_usage` for the account's storage report;
+it shows the plan's storage and what is using it, part by part, where each
+part is measured. A missing, stale or unverified database measurement leaves
+storage unknown; do not report it as zero or claim that the account has spare
+capacity. A part reported as not measured is not zero either. An unknown
+total can refuse a new upload until moonbase can establish the storage
+measurement. This accounting does not introduce a new charge or change
+billing prices.
 
-Creation reserves the configured database allowance across all Missions in
-the account, including provisioning and failed resources. Two simultaneous
-requests do not each receive the same remaining allowance. An existing
-resource can recover without creating another allowance. A quota refusal is
+Backups are the same on every plan, Free included: daily backups, kept for 7
+days, counted in the plan's storage (`account_usage`'s Database backups line
+says the same). moonbase states no maximum data-loss window and no restore at
+any time, so promise the person neither.
+
+A Mission never holds two databases. An existing database recovers in place
+without creating another, and a Mission whose earlier database is still
+waiting to be removed is refused a new one until that finishes. A refusal is
 not permission to remove another database, backup or recovery record; follow
 the returned account guidance and ask support about unresolved resources.
 

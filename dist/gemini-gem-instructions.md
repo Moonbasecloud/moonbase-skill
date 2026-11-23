@@ -50,7 +50,7 @@ a connection or asking for a key.
   `wsgi.py`) and list deps in `requirements.txt`. See the section "Building for moonbase: a project that deploys first time" for the
   v1 limits.
 - **Not available today, say so plainly:** other backend languages (Ruby, Go, PHP…),
-  wildcard domains, managed databases (closed pilot) or permanent disk, or listing all
+  wildcard domains or permanent disk, or listing all
   missions through the API with an API key. The moonbase connector can list your missions.
 - **Keys and secrets stay out of the chat.** Never ask the user to paste an
   API key, password or secret into the conversation. Never commit or print

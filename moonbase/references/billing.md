@@ -30,9 +30,12 @@ Change plans on **Plans** (https://app.moonbase.cloud/upgrade), cancel with **En
 - **Usage**: storage, missions and visitors against your plan.
 
 How usage counts:
-- **Storage** = the live files of every mission **plus** the earlier versions
-  kept in each Mission Log. Versions count toward the limit but only live
-  files are billed.
+- **Storage**: everything you store counts toward one storage allowance:
+  files, versions, databases and backups. That is the live files of every
+  mission, the earlier versions kept in each Mission Log, a mission's managed
+  database and stored backups. `account_usage` shows the parts where each is
+  measured; a part it reports as not measured is not zero. Versions count
+  toward the limit but only live files are billed.
 - **Visitors** are counted across all missions together, per calendar month
   (UTC), and reset on the 1st; on a plan with no included number, Usage
   shows the last 30 days. Visitors are counted per day: someone who visits
@@ -46,7 +49,7 @@ How usage counts:
 
 - **Storage:** an upload that would go past the plan's storage is refused,
   and the message says how much room is needed. Free space (delete older
-  versions or missions) or move to a bigger plan. On the largest plan, live
+  versions or missions; see `versions-and-rollback.md`) or move to a bigger plan. On the largest plan, live
   files past the allowance are billed at the overage rate shown on the
   pricing page instead.
 - **Missions:** **New mission** is disabled until a mission is deleted or the

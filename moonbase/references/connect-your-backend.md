@@ -9,12 +9,13 @@ the app on moonbase. The public guides, to send the person to:
 - https://moonbase.cloud/docs/connect-firebase
 - https://moonbase.cloud/docs/connect-your-api
 
-**moonbase's own database.** moonbase has a managed PostgreSQL database in a
-closed pilot: customers can't create one today, and there is no date for wider
-availability. When a mission has one, `mission_info` returns its status and
-`database_page` (open that exact link for the person). The details are in
-`references/mission-control.md`. Don't offer it as a choice the person can
-make today; connect the service the app already uses.
+**moonbase's own database.** Every plan, Free included, can add one managed
+PostgreSQL database per mission; it uses the plan's storage. `account_usage`
+shows where this account stands. When a mission has one, `mission_info`
+returns its status and `database_page` (open that exact link for the person).
+The details are in `references/mission-control.md`. When the app already uses
+a service, connect that service; a moonbase database is a separate choice the
+person makes.
 
 ## Where the values go
 

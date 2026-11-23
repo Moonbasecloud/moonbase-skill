@@ -28,14 +28,15 @@ Recipe**). Details: `building-for-moonbase.md`.
 - **Dynamic missions** that moonbase builds and runs: Next.js, Vite, plain
   React, Create React App, Express, plain Node, Vue, Astro, SvelteKit, Nuxt,
   and Python web apps (Flask / Django / FastAPI that expose a standard
-  WSGI/ASGI app object, with a `requirements.txt`).
+  WSGI/ASGI app object, with a `requirements.txt`). Every plan, Free included,
+  can add one managed PostgreSQL database per Mission; it uses the plan's
+  storage (`account_usage` shows it). An app can instead connect an external
+  provider through an environment variable.
 - **v1 limits on the newer frameworks:** Astro deploys its static output
   (SSR mode is deferred); SvelteKit needs `@sveltejs/adapter-node`. moonbase
   says so honestly for a deferred sub-case instead of failing.
 - **Not yet:** other backend languages (Ruby, Go, Rust, PHP, Java) aren't
-  supported. moonbase doesn't provide a database; an app that needs one
-  connects to an external provider (for example Supabase) through an
-  environment variable.
+  supported.
 
 ## Plans
 
