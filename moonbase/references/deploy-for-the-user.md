@@ -10,13 +10,25 @@ in to connect it. With the connector, a project with images, fonts or other
 binary files, or over about 100 KB, publishes through `create_upload`: it
 returns a single-use upload link (10 minutes) and the one-line `curl` command
 that sends the ZIP from any shell that has it (the code sandbox, a device
-shell, or the person's terminal), with no API key. Its result lists, in
-order, what follows when the sandbox blocks the upload host ("403 from proxy
-after CONNECT"): the one-time setting per client that allows the host, then a
-browser-assisted upload on that project's Deploy new version screen (the agent
-opens the link; the person shares the ZIP with the session once), then the
-person dropping the ZIP on that same screen. A small text-only project can go
-inline as `files`. This guide is the API key path for a developer who asks to
+shell, or the person's terminal), with no API key. When the sandbox blocks
+the upload host ("403 from proxy after CONNECT"), the same project still goes
+through the connector itself: `upload_files` sends its files in batches (up to
+100 files and 4 MiB per call, each file as `path`, `content_base64` and its
+`sha256`), returns a `session_id` for the next batches, and `commit_upload`
+publishes them with the same checks as any deploy. A file too large to write
+out in one call, such as an image, goes in parts: the same `path` and
+whole-file `sha256` with `part_index` (from 0) and `part_count`, one part per
+entry, over as many calls as needed (up to 64 parts and 10 MiB per file);
+moonbase joins them and checks the joined file, and the result's `incomplete`
+list names the parts still missing. A retried batch changes nothing, a failed
+deploy keeps the session for a fix and a new commit, a session is published
+at most once, and `expected_files` on the commit refuses a version with a file
+missing. An account holds up to 3 upload sessions not yet published at once. The
+one-time setting per client that allows the upload host, and a
+browser-assisted upload on the project's Deploy new version screen, are the
+other ways. A small text-only project can go inline as `files`, and
+`source_url` takes a public https ZIP or a public GitHub repository URL that
+moonbase downloads itself. This guide is the API key path for a developer who asks to
 automate deploys from CI or their own scripts. An assistant without the
 connector does not ask for a key: the person adds the connector, or uploads
 the project ZIP on the project's Deploy new version screen. An assistant

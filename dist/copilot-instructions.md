@@ -35,11 +35,11 @@ can use:
 
    Confirm the project and that they want it online. Leave out
    credentials and `.env` files. With images or over about 100 KB:
-   `create_upload` gives one `curl` line, run in your sandbox, a device
-   shell or their terminal (no API key; single-use, 10 minutes); its
-   result lists fallbacks. Small text-only projects go inline as
-   `files`. A visitor password (`password` or `generate_password`) is
-   visible in the chat; the person decides. Check `app_ready` (or
+   `create_upload` gives one `curl` line for a shell (no API key;
+   single-use, 10 minutes). Host blocked: `upload_files`, then
+   `commit_upload`, over the connector. Small text-only projects go
+   inline as `files`. A visitor password (`password` or
+   `generate_password`) is visible in the chat; the person decides. Check `app_ready` (or
    `deploy_status`) before calling the app online.
 
 2. **A developer asks to automate deploys from CI or their own scripts.**
