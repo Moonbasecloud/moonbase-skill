@@ -1,14 +1,16 @@
-// Builds every format of the moonbase Skill from ONE source, skill/moonbase/
+// Builds every format of the moonbase Skill from ONE source, the moonbase/
+// folder next to this file
 // (SKILL.md + references/), so no copy can drift from another:
 //   - moonbase-guide.md: SKILL.md then every reference, in one file, for any
 //     chat that takes a single file;
-//   - the adapters in skill/adapters.json (AGENTS.md, Cursor rule, CLAUDE.md
+//   - the adapters in adapters.json (AGENTS.md, Cursor rule, CLAUDE.md
 //     snippet, Copilot instructions, ChatGPT and Gemini packs). Each is the
 //     same text with a short, tool-specific header; the chat packs use the
 //     "core" (the parts of SKILL.md between <!-- core --> markers) as their
 //     short instructions, with the guide as their knowledge file.
 // Vendor-specific wording lives only here, in each adapter's header.
-// Run by skill/package.sh; the drift test rebuilds and compares.
+// `node build.mjs` prints the guide; `node build.mjs kit <dir>` writes every
+// format into <dir>/moonbase-skill-kit/.
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,9 +26,46 @@ export const GPT_INSTRUCTIONS_MAX = 8000;
  */
 export const GEM_INSTRUCTIONS_MAX = 4000;
 
+const VERSION_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/**
+ * The skill's version and date, parsed from SKILL.md's "## Skill version" line
+ * (`**moonbase skill — revision r16, 2026-11-01.**`). This is the ONE source of
+ * truth: the download filenames and the /skill page label all derive from it,
+ * so bumping the revision in SKILL.md updates them with no second place to edit.
+ * The build writes the parsed result to version.json, which the moonbase.cloud
+ * /skill page and downloads read.
+ */
+export function skillVersion(dir = SKILL_DIR) {
+  const skillMd = readFileSync(path.join(dir, "SKILL.md"), "utf8");
+  // Only the "## Skill version" section is authoritative, so an earlier prose
+  // mention like "revision r2 did X" elsewhere in the file can't win silently.
+  const section = skillMd.split(/^## /m).find((s) => s.startsWith("Skill version"));
+  if (!section) throw new Error('SKILL.md has no "## Skill version" section');
+  const m = section.match(/revision\s+(r\d+),\s*(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) throw new Error('SKILL.md\'s "## Skill version" section has no "revision rN, YYYY-MM-DD" line');
+  const [, revision, y, mo, d] = m;
+  const month = Number(mo);
+  const day = Number(d);
+  if (month < 1 || month > 12 || day < 1 || day > 31) throw new Error(`SKILL.md version date is out of range: ${y}-${mo}-${d}`);
+  return {
+    revision,
+    date: `${y}-${mo}-${d}`,
+    label: `Version ${revision} · ${VERSION_MONTHS[month - 1]} ${day}, ${y}`,
+    skillFilename: `moonbase-skill-${revision}.skill`,
+    guideFilename: `moonbase-guide-${revision}.md`,
+    kitFilename: `moonbase-skill-kit-${revision}.zip`,
+  };
+}
+
+/** Expand {skillFile}/{guideFile} placeholders in adapters.json "use" text to the versioned download names. */
+export function expandUse(use, v) {
+  return use.replace(/\{skillFile\}/g, v.skillFilename).replace(/\{guideFile\}/g, v.guideFilename);
+}
+
 const GUIDE_HEADER = `<!--
-  The moonbase Skill, single-file version. Generated from skill/moonbase/ in
-  the moonbase repo; all formats: https://moonbase.cloud/skill
+  The moonbase Skill, single-file version. Generated from the moonbase Skill
+  folder; all formats: https://moonbase.cloud/skill
 -->
 `;
 
@@ -104,30 +143,29 @@ function coreSections(core, headings) {
 
 const CHAT_KNOWLEDGE = (where) => `## Your knowledge file
 
-${where} holds the whole moonbase guide (moonbase-guide.md): every step,
-button name, error code and limit rule. Look up the matching section before
-you answer any moonbase question, and follow its steps. If the answer isn't
-in it, say you're not sure and point to https://moonbase.cloud/docs.
+${where} holds the moonbase guide. Read the relevant section before answering.
+If the answer isn't there, point to https://moonbase.cloud/docs.
 
-You can only chat here: guide the user click by click through moonbase in
-their browser and help them prepare the ZIP. You can't deploy for them.
+Once their account is ready, use the moonbase connector if your chat has it
+(create_upload for a project with images or over about 100 KB). Otherwise,
+guide them through the browser upload.
 `;
 
 /** The one line that sends an always-loaded adapter to the full guide when it needs a detail. */
 export const FULL_GUIDE_URL = "https://moonbase.cloud/api/skill";
-const FULL_GUIDE_POINTER = `## The full guide (read it when you need a step or a detail)
+// The always-loaded files (AGENTS.md, CLAUDE.md, Copilot) have little room
+// under their limit, and the core instructions aren't where the bytes go: this
+// pointer and the header comment are. Both are as short as they can be while
+// saying the same thing.
+const FULL_GUIDE_POINTER = `## Full guide
 
-These are the short instructions. Every step, button name, error code and
-rule is in the full moonbase guide: open \`moonbase-guide.md\` if this project
-has it, otherwise download ${FULL_GUIDE_URL} (it's plain text) and read the
-section you need. Don't answer from memory when the guide can tell you.
+Every step, button, error code and rule: \`moonbase-guide.md\` if this project
+has it, else ${FULL_GUIDE_URL} (plain text). Read the section you need; don't
+answer from memory.
 `;
 
-const AGENT_HEADER = (lines) => `<!--
-${lines.map((l) => (l ? "  " + l : "")).join("\n")}
-  Generated from the moonbase Skill (skill/moonbase/); all formats:
-  https://moonbase.cloud/skill
--->
+/** One-line header comment for a generated adapter: what it is, and where every format lives. */
+const AGENT_HEADER = (line) => `<!-- ${line} · all formats: https://moonbase.cloud/skill -->
 
 `;
 
@@ -139,49 +177,36 @@ export function buildKit(dir = SKILL_DIR) {
   const description = readSkill(dir).frontmatter.match(/description: >-\n([\s\S]*?)\n---/)?.[1].replace(/\s+/g, " ").trim() ?? "";
   // Files a tool loads into EVERY session (AGENTS.md, CLAUDE.md, Copilot) get
   // only the short core plus a pointer to the full guide, which coding agents
-  // fetch when they need a detail -- never the whole guide (Argus N1, Luna's
-  // final ruling on #941). The Cursor rule is agent-requested (alwaysApply:
+  // fetch when they need a detail -- never the whole guide. The Cursor rule is agent-requested (alwaysApply:
   // false), loaded only when relevant, so it carries the whole guide.
-  const shortNote = [
-    `These are the short moonbase instructions (about ${Math.round((core.length + FULL_GUIDE_POINTER.length) / 1024)} KB), loaded every`,
-    "session; they point to the full guide, which you read when you need it.",
-  ];
-  const cursorNote = [
-    `This rule is the full moonbase guide (about ${Math.round(body.length / 1024)} KB). Cursor loads it only`,
-    "when the conversation is about hosting, deploying or moonbase.",
-  ];
   const kit = {
     "moonbase-guide.md": guide,
     "AGENTS.md":
-      AGENT_HEADER([
-        "moonbase instructions for AI coding agents (the AGENTS.md standard).",
-        "Put this file in the project's root folder, or add its text to the",
-        "AGENTS.md you already have.",
-        "",
-        ...shortNote,
-      ]) +
+      AGENT_HEADER("moonbase instructions for AI coding agents (AGENTS.md): put in the project root, or add to yours") +
       core +
       "\n" +
       FULL_GUIDE_POINTER,
     ".cursor/rules/moonbase.mdc":
       `---\ndescription: ${description.replace(/\n/g, " ")}\nglobs:\nalwaysApply: false\n---\n\n` +
-      AGENT_HEADER(["Cursor rule: save as .cursor/rules/moonbase.mdc.", "", ...cursorNote]) +
+      AGENT_HEADER("moonbase Cursor rule: save as .cursor/rules/moonbase.mdc (the full guide, loaded when relevant)") +
       body,
     "CLAUDE.md": `## moonbase\n\n` + `This project is hosted on moonbase (moonbase.cloud). When the user asks to\n` + `deploy, host, publish or share it, or asks anything about moonbase, follow\n` + `these instructions (or the moonbase skill, if it's installed).\n\n` + core + "\n" + FULL_GUIDE_POINTER,
     ".github/copilot-instructions.md":
-      AGENT_HEADER(["GitHub Copilot repository instructions: save as", ".github/copilot-instructions.md, or add this text to yours.", "", ...shortNote]) + core + "\n" + FULL_GUIDE_POINTER,
+      AGENT_HEADER("moonbase GitHub Copilot instructions: save as .github/copilot-instructions.md, or add to yours") + core + "\n" + FULL_GUIDE_POINTER,
     "chatgpt/instructions.txt": core + "\n" + CHAT_KNOWLEDGE("The file in this GPT's Knowledge"),
     "chatgpt/moonbase-guide.md": guide,
-    // A Gem is chat-only: the short opening, how to teach and the rules; the rest is in its knowledge file.
+    // A Gem gets the account-first opening, how to teach and the rules.
+    // The complete path for each tool is in its knowledge file.
     "gemini/gem-instructions.md":
       coreSections(core, ["", "How to teach (read this first)", "Rules you never break"]) + "\n" + CHAT_KNOWLEDGE("The knowledge file added to this Gem"),
     "gemini/moonbase-guide.md": guide,
   };
   const { adapters } = JSON.parse(readFileSync(path.join(HERE, "adapters.json"), "utf8"));
+  const v = skillVersion(dir);
   kit["README.md"] =
     "# The moonbase Skill kit\n\nThe same moonbase guide in every format. Pick the one for your tool.\n\n" +
     "| Tool | File | How to use it |\n|---|---|---|\n" +
-    adapters.map((a) => `| ${a.tools} | \`${a.kitPath}\` | ${a.use} |`).join("\n") +
+    adapters.map((a) => `| ${a.tools} | \`${a.kitPath}\` | ${expandUse(a.use, v)} |`).join("\n") +
     "\n\nAll formats, always current: https://moonbase.cloud/skill\n";
   return kit;
 }
@@ -209,8 +234,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
       writeFileSync(path.join(root, rel), text);
     };
-    write("public/skill/moonbase-guide.md", kit["moonbase-guide.md"]);
-    write("public/skill/build-for-moonbase/SKILL.md", kit["moonbase-guide.md"]);
+    // The downloadable guide lives OUTSIDE public/ so it is never served as a
+    // raw static file; only moonbase's versioned, counted download serves it.
+    mkdirSync(path.join(HERE, "dist"), { recursive: true });
+    writeFileSync(path.join(HERE, "dist", "moonbase-guide.md"), kit["moonbase-guide.md"]);
+    // version.json stays under public/: it is metadata, not a download.
+    write("public/skill/version.json", JSON.stringify(skillVersion(), null, 2) + "\n");
     for (const [kitPath, publicPath] of Object.entries(servedFiles())) write(publicPath, kit[kitPath]);
   } else {
     process.stdout.write(kit["moonbase-guide.md"]);

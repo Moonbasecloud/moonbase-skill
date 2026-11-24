@@ -155,16 +155,21 @@ Each mission can have its own password. Only the mission's owner can set it.
   decides. API keys and other credentials are different: they are typed only
   on moonbase's own page.
 
-## Launch check: search engines and AI assistants
+## Launch check (only where moonbase has turned it on)
 
-The **Launch check** in Mission Control reads the mission's live page the
-way search engines and AI assistants do, and lists what to change. It only
-reads; it changes nothing. It runs on missions where moonbase has turned the
-check on; elsewhere the connector answers `not_available`. That answer is
-not a fault in the mission, and waiting or deploying again does not change
-it.
+The Launch check is not available on most missions. moonbase turns it on
+mission by mission, so don't offer it, list it among what moonbase does, or
+promise it to the person. If they ask about it, say moonbase turns it on per
+mission and it may not be on for theirs. On a mission without it,
+`launch_check` answers `not_available`. That answer is not a fault in the
+mission, and waiting or deploying again does not change it. The mission's
+live state is in `deploy_status`, and you can open the live address and read
+it directly.
 
-Through the connector, `launch_check` returns the same report, plus
+Where it is on, the **Launch check** in Mission Control reads the mission's
+live page the way search engines and AI assistants do, and lists what to
+change. It only reads; it changes nothing. Through the connector,
+`launch_check` returns the same report, plus
 `review_url`, which opens the Launch check for this mission in moonbase. Give
 the person that link as it is; where the check sits on the page can differ
 between missions. Each address can be checked a few times per 10 minutes,
