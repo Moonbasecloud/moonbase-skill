@@ -24,7 +24,7 @@ Be honest about two things:
    builders put inside.
 3. Upload it to moonbase as a new mission (`getting-started.md`, Part 4), or
    have an agent that can run commands deploy it (`deploy-for-the-user.md`).
-4. Set the app's settings and secrets (the Supabase, Stripe or other keys it
+4. Set the app's settings and secrets (the payment, email or other keys it
    uses) in **Mission Control → Environment Variables**, then click
    **Deploy new version**. Don't put real secrets in the ZIP.
 5. Want your own domain? Add it from **Domains** (`custom-domains.md`).

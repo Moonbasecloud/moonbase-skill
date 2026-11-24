@@ -1,7 +1,10 @@
 # What the app needs from outside itself
 
-A mission runs the app's own code. It does not supply the things that code
-*talks to* — a database, another service's API, a mail or payments provider —
+A mission runs the app's own code, and moonbase provides its database: up to
+one managed PostgreSQL database per mission, on every plan where it is enabled
+for the account, created when the project's `moonbase.json` asks for one. It
+does not supply the other things that code
+*talks to* — another service's API, a mail or payments provider —
 and it does not carry over anything that only existed on the machine the app
 was built on. When one of those is missing the deploy still succeeds, the
 address still answers, and the app is still broken: the page loads and the
@@ -46,7 +49,7 @@ conversation:
 
 | Pile | Example | What it needs |
 |---|---|---|
-| **Must exist and be reachable** | a database, an API the app calls on every request | a real, internet-reachable service and its address |
+| **Must exist and be reachable** | a database, an API the app calls on every request | the mission's managed database, declared in `moonbase.json`; for an API, a real, internet-reachable service and its address |
 | **Must have a credential** | an API key, a token, a mail provider's key | the person's own key, set as a mission environment variable |
 | **Optional** | a feature flag, a label, a tuning number with a sane default | nothing; set it or leave it |
 
@@ -68,28 +71,35 @@ variable names:
 Then handle each one with them. Don't deploy "to see what happens" and come
 back with the problem.
 
-## 3. Where a service is needed, say so — and let them choose it
+## 3. The database is moonbase's; for any other service, say so and let them choose
+
+**The database: moonbase provides it, and you create it.** When the app keeps
+data, declare the managed PostgreSQL database in the project's `moonbase.json`
+and deploy; moonbase creates it and sets `DATABASE_URL` (how, in
+`references/building-for-moonbase.md`, *Data and storage*). The person signs
+up nowhere and types no connection string. Say it plainly:
+
+> Your app saves sign-ups to a database. Right now it's pointing at one on your
+> own computer, which the live version can't reach. moonbase gives your app its
+> own database, so I'll set that up as part of putting it online.
+
+For anything else the app talks to, such as email or payments:
 
 The rule is the same every time: **name the need, never the vendor.** You tell
-them the app needs a database set up; *they* decide where it lives. We never
+them the app needs an email service set up; *they* decide which one. We never
 tell anyone they have to open an account with a particular company.
 
-> Your app needs a database it can reach over the internet — the one on your
-> laptop won't do once it's online. Several hosted ones have a free tier; they
-> all give you a connection string, which is the one thing your app needs from
-> it.
-
 If they ask for options, name several in no particular order and leave the
-choice with them: for a database, Neon, MongoDB Atlas, Supabase, PlanetScale
-and Railway all work; for email, Mailgun, Resend, Amazon SES, Postmark and
+choice with them: for email, Mailgun, Resend, Amazon SES, Postmark and
 SendGrid all work. moonbase has no preference and no partner and does not
 benefit from their pick. **Never choose for them, and never imply moonbase
 requires a particular provider.** If they already have something, use it.
 
-**A connected database is not yet a working one.** Its tables have to exist.
+**A created database is not yet a working one.** Its tables have to exist.
 An app pointed at an empty database loads fine and shows nothing, which to the
-person who built it looks exactly like a broken app. So run the project's own
-migrations or schema setup against the database they chose, and confirm the
+person who built it looks exactly like a broken app. So make the `migrate`
+command in `moonbase.json` create the project's tables (its own migrations or
+schema setup), and confirm the
 tables are really there, before you call the deploy done. If the project seeds
 example data, decide with them whether the live version should have it.
 
@@ -106,14 +116,14 @@ one who can sign in there to do it, so tell them exactly what to add and where.
 Some of what an app needs is shaped by how a mission runs. These are facts
 about the platform, not preferences, and each has one practical consequence:
 
-- **The app can reach its own database directly.** A mission connects out to
-  any public service on any port — Postgres on 5432 or a 6543 pooler, MySQL
-  3306, Mongo 27017, Redis 6379, an HTTPS API on 443 — so a standard driver is
-  the right answer and you do **not** need an HTTPS data proxy. Only private,
-  internal and cloud-metadata addresses are blocked (`10/8`, `172.16/12`,
-  `192.168/16`, loopback, CGNAT, and the `169.254` range), which also means a
-  database reachable only on a private network, or an internal DNS resolver,
-  won't work. Pool settings and TLS are in `references/building-for-moonbase.md`.
+- **The app reaches its managed database with a standard driver.** moonbase
+  sets `DATABASE_URL`; the connection needs verified TLS and a small pool
+  (`references/mission-control.md`, *Managed database*). A mission can also
+  connect out to any public service on any port, such as an HTTPS API on 443.
+  Only private, internal and cloud-metadata addresses are blocked (`10/8`,
+  `172.16/12`, `192.168/16`, loopback, CGNAT, and the `169.254` range), so a
+  service reachable only on a private network, or an internal DNS resolver,
+  won't work.
 - **Mail goes through a provider, not a mail server.** Direct SMTP on port 25
   is blocked permanently as anti-spam. An email provider's HTTPS API works, and
   so does authenticated submission on 465 or 587 — use either.
@@ -121,7 +131,7 @@ about the platform, not preferences, and each has one practical consequence:
   every deploy and can be read-only (only a small `/tmp` is reliably
   writable), so anything the app writes to disk — uploaded images, generated
   PDFs, an SQLite file — fails or is gone next time. Files people upload belong in
-  external object storage over HTTPS.
+  object storage over HTTPS.
 - **Nothing scheduled runs by itself.** There is no cron and no background
   worker: one web process, and on the free plan it sleeps when idle, so
   in-process timers stop with it. A nightly job has to be an HTTPS endpoint on
@@ -178,11 +188,15 @@ job to the person who can't.
 - **Ask moonbase what's missing instead of guessing.** `list_env` returns the
   keys already set *and* the keys the uploaded code reads but hasn't got.
   Anything in that second list from pile 1 or 2 is a live, broken mission.
+  A key in the first list with source `engine` is one moonbase sets by
+  itself: for a mission with a managed database, `DATABASE_URL` and the two
+  names that carry its certificate file and server name. Nothing is missing
+  there and there is nothing to set.
 - **Open the live address and use the app.** Not the home page — the feature
   that depends on the database or the API. Submit the form, load the list,
   trigger the email, click sign in. Check the data really landed.
 - **If something fails, name the dependency and the fix.** "The sign-up form
-  can't reach the database yet — the connection string isn't set" is useful.
+  can't reach the database yet — the project doesn't declare one in `moonbase.json`" is useful.
   "Something went wrong" is not, and it reads as moonbase's fault when it isn't.
 - **Only then tell them it's live**, with the link, and say what you checked.
 

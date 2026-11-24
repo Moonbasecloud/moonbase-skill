@@ -21,8 +21,9 @@ deploy, not after.)
   - something that needs **WebSockets or other real-time / persistent
     connections**;
   - **heavy or GPU compute**;
-  - a required **persistent local disk or database** — moonbase's filesystem is
-    **ephemeral**, so data must live in an external DB.
+  - a required **persistent local disk** — moonbase's filesystem is
+    **ephemeral**, so data lives in the mission's managed database (see *Data
+    and storage* below), not in files.
 
   A static export is often the way around a near-miss. Keep it short and
   natural: a quick "here's what I see, and whether moonbase fits," then proceed
@@ -232,8 +233,8 @@ before uploading.
 
 ## Data and storage (where your data lives)
 
-moonbase **runs** the app; it does not store the app's data. There is **no
-built-in database** and **no permanent disk**. Every deploy builds a fresh
+moonbase **runs** the app and **provides its database**. There is **no
+permanent disk**. Every deploy builds a fresh
 container, so anything the app writes to local disk while it runs — an
 SQLite file, uploaded images, a `data/` folder — is **gone on the next
 deploy**. Don't count on writing to the app's own folder at all: the
@@ -241,110 +242,45 @@ filesystem can be read-only, and the only place to rely on for temporary files
 is a small `/tmp`, which can be cleared whenever the mission restarts or
 sleeps. Never treat local disk as the place the real data lives.
 
-To keep data between deploys, the app connects to an **external service** and
-gets its address from an environment variable (see *Environment variables*
-above — the connection string goes in Mission Control, never hardcoded):
+To keep data between deploys, the app keeps it in **the mission's managed
+PostgreSQL database**, which moonbase creates and runs:
 
-- **A database:** any hosted Postgres / MySQL / Mongo (for example Supabase,
-  Neon, Railway, PlanetScale, MongoDB Atlas). Put its connection string in a
-  variable like `DATABASE_URL`. A running mission can **open a normal outbound
-  connection straight to the database on its own port** — Postgres 5432 or a
-  6543 pooler, MySQL 3306, Mongo 27017 — so a standard driver works; you do
-  **not** need an HTTPS/REST data API (see *Limits and runtime* below for the
-  few blocked destinations). Use the provider's pooled endpoint where it offers
-  one — it's about connection limits, not reachability. A working example is in
-  *Connecting to a database* below.
-- **Uploaded files or media:** external object storage (for example Amazon S3,
-  Cloudflare R2, Supabase Storage) — credentials via environment variables.
+- **Every plan, Free included, can add one managed PostgreSQL database per
+  mission** (up to one), where it is enabled for the account. It uses the
+  plan's storage; there is no separate database allowance.
+  It needs a **dynamic** mission (one moonbase builds and runs): on a static
+  mission a `database` entry stops the deploy.
+- **You create it by declaring it.** Put a `database` entry in the
+  `moonbase.json` at the project's root, with the command that creates the
+  tables, and deploy:
+
+  ```json
+  { "database": { "engine": "postgresql", "migrate": "node migrate.js" } }
+  ```
+
+  On that deploy, when a managed database is enabled for the account,
+  moonbase creates the database, runs the migrate command before the new
+  version goes live and sets `DATABASE_URL` for the app. Nobody types a
+  connection string, and the person opens no account anywhere else. A
+  `DATABASE_URL` the person saved before is kept, and no managed database is
+  created over it. No app gets a database automatically.
+- **The app reads `DATABASE_URL` from the environment**, with a standard
+  PostgreSQL driver. Verified TLS is required and is the app's to configure
+  in its driver. The connection code, the migrate
+  command's rules, the limits and what the status tools report are in
+  `references/mission-control.md`, section *Managed database: one per Mission,
+  inside the plan's storage*. Read it before you write database code.
+- **Uploaded files or media** don't belong on the container's disk either:
+  keep them in object storage the app reaches over HTTPS, with its
+  credentials set as environment variables.
 
 So when the user asks "will my data survive a redeploy?", the answer is always
-the same: data in an external database or object store survives; the
+the same: data in the mission's managed database survives; the
 container's own filesystem does not. You do **not** need to ask the user about
-this — it is always true. Wire the app to an external store and tell the user
-which environment variable to fill. If the project has no external store and
-genuinely needs to keep data, that is the one thing to raise — point them at an
-external database, don't ask them whether moonbase has a disk.
-
-### Connecting to a database (a working example)
-
-Use a standard driver with a **small connection pool** — a mission has little
-memory, and the pool is shared across requests, so open it **once** at startup,
-not per request. Read the connection string from the environment; never
-hardcode it. Node, with the `postgres` client (built-in pool and transactions):
-
-```js
-// db.js — create the pooled client once for the whole app.
-import fs from "node:fs";
-import postgres from "postgres";
-
-export const sql = postgres(process.env.DATABASE_URL, {
-  max: 5,                 // keep the pool small: little memory per mission
-  idle_timeout: 20,
-  // Encrypt AND verify the server's identity. rejectUnauthorized:true fails
-  // the connection on a bad or unknown certificate — there is no silent
-  // downgrade. Supply the provider's CA bundle via DATABASE_CA_CERT when it
-  // isn't a public CA; omit `ca` to trust the system roots.
-  ssl: process.env.DATABASE_CA_CERT
-    ? { rejectUnauthorized: true, ca: fs.readFileSync(process.env.DATABASE_CA_CERT).toString() }
-    : { rejectUnauthorized: true },
-});
-```
-
-```js
-// Parameterised query (values are bound, never string-concatenated into SQL):
-const users = await sql`select id, email from users where id = ${userId}`;
-
-// A transaction — commits if the callback resolves, rolls back if it throws:
-await sql.begin(async (tx) => {
-  await tx`update accounts set balance = balance - ${amount} where id = ${fromId}`;
-  await tx`update accounts set balance = balance + ${amount} where id = ${toId}`;
-});
-```
-
-Python is the same shape, with psycopg (v3) and psycopg_pool:
-
-```python
-# db.py — one pool for the app, created once.
-import os
-from psycopg_pool import ConnectionPool
-
-# sslmode=verify-full encrypts AND proves the server's identity (CA chain +
-# hostname) — no fallback to a weaker mode. sslrootcert points at the
-# provider's CA bundle (or the system bundle). 6543 is Supabase's tx pooler.
-pool = ConnectionPool(
-    os.environ["DATABASE_URL"],
-    max_size=5,                                  # small: little memory per mission
-    kwargs={
-        "sslmode": "verify-full",
-        "sslrootcert": os.environ.get("DATABASE_CA_CERT", "/etc/ssl/certs/ca-certificates.crt"),
-    },
-)
-```
-
-```python
-# A query, then a transaction (commits on exit, rolls back on exception):
-with pool.connection() as conn:
-    rows = conn.execute("select id, email from users where id = %s", (user_id,)).fetchall()
-    with conn.transaction():
-        conn.execute("update accounts set balance = balance - %s where id = %s", (amount, from_id))
-        conn.execute("update accounts set balance = balance + %s where id = %s", (amount, to_id))
-```
-
-**TLS — and the server's identity — are the app's responsibility.** moonbase
-doesn't terminate or add TLS on outbound connections, so the driver must both
-encrypt *and verify the peer*: `sslmode=verify-full` (psycopg) or a Node `ssl`
-object with `rejectUnauthorized: true` (porsager `postgres`, or `pg`), pointed
-at the provider's CA when it isn't a public one. verify-full checks the CA chain
-and the hostname; plain `require` (or `ssl: "require"`) encrypts but does **not**
-verify identity, so it can't catch a man-in-the-middle. Use verify-full and
-**never** fall back to `prefer`/`disable` or `rejectUnauthorized: false` when
-validation fails — fix the CA or hostname instead. (libpq SSL modes:
-https://www.postgresql.org/docs/current/libpq-ssl.html.)
-
-Two tips that matter on a small container: keep the pool small (a handful of
-connections), and if the provider offers a **transaction pooler** (Supabase's
-6543, a PgBouncer endpoint), prefer it — it multiplexes many short-lived app
-connections onto few database ones, which suits a mission that sleeps and wakes.
+this — it is always true. If the project genuinely needs to keep data and has
+no database yet, declare the managed database and write the app against
+`DATABASE_URL`; don't ask the user whether moonbase has a disk, and don't send
+them to another provider for a database.
 
 ## Limits and runtime (know these before you build)
 
@@ -354,10 +290,8 @@ then asking moonbase about it.
 
 - **Outbound network reaches public services on any port** (the live policy as
   of 2026-10-30; verified in production). The app can make normal outbound
-  connections to the public internet — a database on its own port (Postgres
-  5432 / 6543, MySQL 3306, Mongo 27017, Redis 6379), an HTTPS API on 443,
-  anything public — plus DNS. A plain SQL driver works; you do not need an
-  HTTPS/REST data proxy. Only two kinds of destination are blocked, and always
+  connections to the public internet — an HTTPS API on 443, a service on its
+  own port, anything public — plus DNS. Only two kinds of destination are blocked, and always
   will be: **private, internal and cloud-metadata addresses** (RFC1918
   `10/172.16/192.168`, loopback, and the `169.254.x` metadata range — this
   protects moonbase and other missions), and **direct SMTP on port 25**
@@ -374,7 +308,7 @@ then asking moonbase about it.
   request open for minutes.
 - **Request and upload size is modest** — a request body, including a file
   upload, above roughly sixteen megabytes is rejected. For large files, upload
-  straight from the browser to external object storage instead of through the
+  straight from the browser to object storage instead of through the
   app.
 - **Resources per mission are small and fixed** — about half a gigabyte of
   memory, a fraction of a CPU core, and a capped number of processes. A
@@ -399,17 +333,23 @@ The **Compatibility Engine** checks the project and repairs it on a copy.
 
 - **Fixed automatically (safe):** for example a missing environment variable
   that can safely be empty, most port problems, and small project problems
-  like a broken `.gitignore`. When moonbase fixed something by itself, it
-  tells you (in the API, the `done` event's `self_repair_notice`).
+  like a broken `.gitignore`. When moonbase changed the copy it deployed (a
+  project file, or how the project is installed, built or started), it says
+  what it changed: in the API and in a connector deploy's result, the `done`
+  event's `self_repair_notice`. Its own run settings, such as the port it
+  gives the app, are in the Deployment Recipe and not in that notice.
 - **Asks first (build-level changes):** setting an environment variable,
   setting the start script, rewriting the port, setting the Node version,
   regenerating the lockfile. In the browser each one is proposed with a plain
   explanation and the user approves or declines. Deploys made with an API
-  key accept these automatically; in the rare case moonbase still needs the
-  owner's OK, it answers `consent_required` with a link.
+  key or through the connector accept these automatically, and
+  `self_repair_notice` then names each change moonbase made to the copy,
+  for example the start command it added to `package.json`. Make the same change in the project's
+  source, so the next upload matches what is live. In the rare case moonbase
+  still needs the owner's OK, it answers `consent_required` with a link.
 - **Writes everything down:** the **Deployment Recipe** records what moonbase
   detected and changed, so nothing is silent.
-- **Doesn't do:** fix bugs in the app's own logic, provide a database, or
+- **Doesn't do:** fix bugs in the app's own logic or
   turn an unsupported framework into a supported one.
 
 ## Before you call it done (checklist)
@@ -422,9 +362,9 @@ The **Compatibility Engine** checks the project and repairs it on a copy.
       have failed the upload otherwise.
 - [ ] No real secrets in the ZIP; every variable is listed in `.env.example`.
 - [ ] No `localhost` URLs in the app's own code.
-- [ ] Any database or stored file is reached with its connection string in a
-      variable set in Mission Control (a direct DB port is fine — see
-      *Connecting to a database*), not hardcoded.
+- [ ] Data the app keeps goes to the mission's managed database, declared in
+      `moonbase.json` and read from `DATABASE_URL` (see *Data and storage*),
+      never to the container's disk and never through a hardcoded address.
 
 **Node / JS projects:**
 - [ ] The lockfile is included if there is one.

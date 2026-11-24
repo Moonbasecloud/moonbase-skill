@@ -30,10 +30,10 @@ Change plans on **Plans** (https://app.moonbase.cloud/upgrade), cancel with **En
 - **Usage**: storage, missions and visitors against your plan.
 
 How usage counts:
-- **Storage**: everything you store counts toward one storage allowance:
-  files, versions, databases and backups. That is the live files of every
-  mission, the earlier versions kept in each Mission Log, a mission's managed
-  database and stored backups. `account_usage` shows the parts where each is
+- **Storage**: files, versions and databases count toward one storage
+  allowance. That is the live files of every
+  mission, the earlier versions kept in each Mission Log and a mission's managed
+  database. `account_usage` shows the parts where each is
   measured; a part it reports as not measured is not zero. Versions count
   toward the limit but only live files are billed.
 - **Visitors** are counted across all missions together, per calendar month
@@ -44,6 +44,15 @@ How usage counts:
   plain usage line (`usage_notes`: "Visitors (this calendar month): N.
   Counted for your information; visitors are never blocked."), never among
   the limits reached.
+- **What `account_usage` shows is the account, not only the plan.** Each
+  limit line is what this account has today. An account can have its own
+  number of missions, apart from its plan's standard number; the Missions
+  line then says so and names what the plan includes by itself, and the next
+  plan's entry lists where its standard number is lower than what the
+  account has now. Say the plan by its name (the `plan` field). The plan id
+  beside it, and the plan named inside the upgrade link, are moonbase's own
+  identifiers and mean nothing to the person. The storage number given in
+  bytes is the same amount as the Storage line shows as used.
 
 ## What happens at a limit
 

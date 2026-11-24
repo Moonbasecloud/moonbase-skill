@@ -15,7 +15,12 @@ the upload host ("403 from proxy after CONNECT"), the same project still goes
 through the connector itself: `upload_files` sends its files in batches (up to
 100 files and 4 MiB per call, each file as `path`, `content_base64` and its
 `sha256`), returns a `session_id` for the next batches, and `commit_upload`
-publishes them with the same checks as any deploy. A file too large to write
+publishes them with the same checks as any deploy. Both tools belong to every
+connection that has `create_upload`. An AI tool keeps the list of tools it
+loaded when it connected, so a connection made before they were added does
+not show them until that list is loaded again; disconnecting the moonbase
+connector and connecting it again does that. Name a moonbase tool to the
+person only when it is in the list of tools you actually have. A file too large to write
 out in one call, such as an image, goes in parts: the same `path` and
 whole-file `sha256` with `part_index` (from 0) and `part_count`, one part per
 entry, over as many calls as needed (up to 64 parts and 10 MiB per file);
@@ -900,9 +905,9 @@ ones before you tell the user it's ready:
    point the owner at **Mission Control → Environment Variables** when you can't
    reach the env API. Distinguish plainly: *source deployed* (done) vs
    *configured and ready* (secrets set, redeployed).
-4. **Persistence is wired, if the app needs it.** Confirm data goes to an
-   external database or object store (reached directly with its connection
-   string — see *Data and storage*), not the container disk that's wiped each
+4. **Persistence is wired, if the app needs it.** Confirm data goes to the
+   mission's managed database (declared in `moonbase.json`, read from
+   `DATABASE_URL` — see *Data and storage*), not the container disk that's wiped each
    deploy.
 5. **No public default account.** If the app has sign-in, don't leave a
    default/admin login open to the world — enroll the owner privately and

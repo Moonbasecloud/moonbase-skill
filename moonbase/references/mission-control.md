@@ -160,7 +160,9 @@ Each mission can have its own password. Only the mission's owner can set it.
 The **Launch check** in Mission Control reads the mission's live page the
 way search engines and AI assistants do, and lists what to change. It only
 reads; it changes nothing. It runs on missions where moonbase has turned the
-check on; elsewhere the connector answers `not_available`.
+check on; elsewhere the connector answers `not_available`. That answer is
+not a fault in the mission, and waiting or deploying again does not change
+it.
 
 Through the connector, `launch_check` returns the same report, plus
 `review_url`, which opens the Launch check for this mission in moonbase. Give
@@ -247,8 +249,11 @@ PostgreSQL server reachable on the internet) can move it into the mission's
 managed database through the connector. The mission needs its managed
 database first; it gets one at a deploy that declares it.
 
-If the connected moonbase tools include `import_database`, it takes three
-calls. The connection needs the database import permission; a connection
+Moving a database in is not switched on everywhere yet. `import_database`
+and `import_status` are in the connection's tools only where it is; where
+they are not listed, this move is not available through the assistant, and
+reconnecting does not change that. Where `import_database` is listed, it
+takes three calls. The connection needs the database import permission; a connection
 without it is refused and says how to reconnect with it.
 
 1. **Call it with the project only.** It returns `import_id` and
@@ -349,8 +354,7 @@ moonbase decides per account when creation is open: `account_usage`'s Managed
 database line shows where this account stands. The presence of a tool or
 guide is not proof that a project is enrolled.
 
-Everything stored counts toward one storage allowance: files, versions,
-databases and backups. Use `account_usage` for the account's storage report;
+Files, versions and databases count toward one storage allowance. Use `account_usage` for the account's storage report;
 it shows the plan's storage and what is using it, part by part, where each
 part is measured. A missing, stale or unverified database measurement leaves
 storage unknown; do not report it as zero or claim that the account has spare
@@ -359,16 +363,80 @@ total can refuse a new upload until moonbase can establish the storage
 measurement. This accounting does not introduce a new charge or change
 billing prices.
 
-Backups are the same on every plan, Free included: daily backups, kept for 7
-days, counted in the plan's storage (`account_usage`'s Database backups line
-says the same). moonbase states no maximum data-loss window and no restore at
-any time, so promise the person neither.
+For a mission's managed database, do not infer a backup schedule, retention
+period, maximum data-loss window or restore capability from plan eligibility
+or from a tool being present. Report only the backup status evidence returned
+for that database and point its owner to the Database page.
 
 A Mission never holds two databases. An existing database recovers in place
 without creating another, and a Mission whose earlier database is still
 waiting to be removed is refused a new one until that finishes. A refusal is
 not permission to remove another database, backup or recovery record; follow
 the returned account guidance and ask support about unresolved resources.
+
+### Creating it and connecting to it
+
+Declare the database in the `moonbase.json` at the project's root and deploy.
+This needs a dynamic mission, one moonbase builds and runs; on a static
+mission (plain files, no build step, no server) the declaration stops the
+deploy. A `DATABASE_URL` the person saved before the mission ever had a
+managed database is kept, and no managed database is created over it.
+
+```json
+{ "database": { "engine": "postgresql", "migrate": "node migrate.js" } }
+```
+
+On that deploy, where a managed database is enabled for the account,
+moonbase creates the database, runs the migrate command and
+gives the migrate command and the running app the same three environment
+variables. Nobody types a connection string.
+
+- `DATABASE_URL`: user, password, host, port and database. It carries no TLS
+  settings. Use it exactly as given: **do not add `sslmode`** or any other
+  parameter to it. moonbase manages it and refreshes it at each deploy.
+- `PILOT_DB_CA_FILE`: the path of a certificate file (PEM), the authority
+  that signed the database server's certificate.
+- `PILOT_DB_SERVER_NAME`: the name on the database server's certificate.
+  Verify against this name; the host inside `DATABASE_URL` can be different.
+
+This is the required connection recipe, and the app has to apply it: the
+variables alone configure no driver. The managed database refuses a
+connection that is not encrypted. With Node
+and the `pg` package, in the migration script and in the app:
+
+```js
+const fs = require("node:fs");
+const tls = require("node:tls");
+const { Pool } = require("pg");
+
+const serverName = process.env.PILOT_DB_SERVER_NAME;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 3,
+  ssl: {
+    ca: fs.readFileSync(process.env.PILOT_DB_CA_FILE, "utf8"),
+    servername: serverName,
+    checkServerIdentity: (_host, cert) => tls.checkServerIdentity(serverName, cert),
+    rejectUnauthorized: true,
+  },
+});
+```
+
+For every language and driver: give the driver the CA file and the server
+name through its own TLS options, with full verification, and never turn
+verification off. An ORM or migration tool that only takes a URL needs the
+same TLS options in its own configuration, not in the URL. The app's database
+login allows 4 connections at once and stops a statement after 5 seconds, so
+keep the pool at 3 or fewer.
+
+The migrate command runs once per deploy, inside the built app, before the
+new version goes live, and the whole command has 30 seconds. It must exit 0
+on success and non-zero on failure, and be safe to run again on a database
+that already has the tables. If it fails, the previous version stays live.
+A failed migration can leave changes in the database even though the new
+version is not published, so keep migrations compatible with the version
+still running. With the connector, `get_build_guide` returns
+this section with the account's own storage limit and what happens past it.
 
 ### Pending protection purge
 
