@@ -209,7 +209,10 @@ before uploading.
   `localhost` URL inside your own `fetch` calls is yours to fix.
 - Node version: moonbase uses Node.js 22 by default (18 and 20 are also
   available). If the app needs another, declare it in `package.json`
-  (`"engines": { "node": ">=18" }`).
+  (`"engines": { "node": "^20" }`). A range runs on the newest available
+  version it allows: `">=18"` and `"18 || 20 || 22"` run on Node 22, `"^20"`
+  and `"20.x"` on Node 20, and only an exact `"18"` (or `"^18"`) runs on
+  Node 18, which is past its end of life.
 
 ## Environment variables (settings and secrets)
 
@@ -246,7 +249,7 @@ To keep data between deploys, the app keeps it in **the mission's managed
 PostgreSQL database**, which moonbase creates and runs:
 
 - **Every plan, Free included, can add one managed PostgreSQL database per
-  mission** (up to one), where it is enabled for the account. It uses the
+  mission** (up to one). It uses the
   plan's storage; there is no separate database allowance.
   It needs a **dynamic** mission (one moonbase builds and runs): on a static
   mission a `database` entry stops the deploy.
@@ -258,8 +261,7 @@ PostgreSQL database**, which moonbase creates and runs:
   { "database": { "engine": "postgresql", "migrate": "node migrate.js" } }
   ```
 
-  On that deploy, when a managed database is enabled for the account,
-  moonbase creates the database, runs the migrate command before the new
+  On that deploy, moonbase creates the database, runs the migrate command before the new
   version goes live and sets `DATABASE_URL` for the app. Nobody types a
   connection string, and the person opens no account anywhere else. A
   `DATABASE_URL` the person saved before is kept, and no managed database is

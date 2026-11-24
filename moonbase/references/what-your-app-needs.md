@@ -1,8 +1,8 @@
 # What the app needs from outside itself
 
 A mission runs the app's own code, and moonbase provides its database: up to
-one managed PostgreSQL database per mission, on every plan where it is enabled
-for the account, created when the project's `moonbase.json` asks for one. It
+one managed PostgreSQL database per mission, on every plan, Free included,
+created when the project's `moonbase.json` asks for one. It
 does not supply the other things that code
 *talks to* — another service's API, a mail or payments provider —
 and it does not carry over anything that only existed on the machine the app
@@ -191,7 +191,10 @@ job to the person who can't.
   A key in the first list with source `engine` is one moonbase sets by
   itself: for a mission with a managed database, `DATABASE_URL` and the two
   names that carry its certificate file and server name. Nothing is missing
-  there and there is nothing to set.
+  there and there is nothing to set. Before a new version, `check_project`
+  with the project's `project_id` or `slug` does the same: with a ready
+  managed database, those names are in `env_vars_provided_by_moonbase`, not
+  in `env_vars_needed`.
 - **Open the live address and use the app.** Not the home page — the feature
   that depends on the database or the API. Submit the form, load the list,
   trigger the email, click sign in. Check the data really landed.

@@ -1,11 +1,11 @@
 # moonbase skill
 
 **AI built your app. moonbase runs everything else.**
-Hosting, database, domains, analytics, rollbacks, team access — all in one platform, all run by your AI agent.
+Hosting, database, domains, analytics, rollbacks, team access — and more. All in one platform, all run by your AI agent.
 
-This repository is the **moonbase Skill**: instructions that teach any AI coding agent how to work with moonbase. With it, your agent can deploy a project, read why a deploy failed, set environment variables, connect a custom domain, roll back to an earlier version, invite teammates, read visitor stats, and download a mission's source. Each mission can have a managed PostgreSQL database (up to one per mission, where enabled).
+This repository is the **moonbase Skill**: instructions that teach any AI coding agent how to work with moonbase. With it, your agent can deploy a project, read why a deploy failed, set environment variables, connect a custom domain, roll back to an earlier version, invite teammates, read visitor stats, and download a mission's source. Each mission can have a managed PostgreSQL database (up to one per mission, on every plan, Free included).
 
-**Current revision:** `r69` (2026-11-24) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
+**Current revision:** `r74` (2026-11-24) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
 
 ### → [moonbase.cloud](https://moonbase.cloud/?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)
 

@@ -1,6 +1,8 @@
 # What moonbase is
 
-moonbase (https://moonbase.cloud) is hosting for things people build with AI.
+moonbase (https://moonbase.cloud) runs everything an app built with AI needs:
+hosting, database, domains, analytics, rollbacks, team access, and more. All in
+one platform, all run by your AI agent.
 You built something with an AI chat, an AI coding tool, an app builder, or by
 hand. moonbase puts it online as a **mission** with its own address,
 `https://<address>.moonbase.host`, with HTTPS from the first deploy. No
@@ -29,8 +31,7 @@ Recipe**). Details: `building-for-moonbase.md`.
   React, Create React App, Express, plain Node, Vue, Astro, SvelteKit, Nuxt,
   and Python web apps (Flask / Django / FastAPI that expose a standard
   WSGI/ASGI app object, with a `requirements.txt`). Every plan, Free included,
-  can add one managed PostgreSQL database per Mission (up to one), where it
-  is enabled for the account; it uses the plan's storage (`account_usage`
+  can add one managed PostgreSQL database per Mission (up to one); it uses the plan's storage (`account_usage`
   shows it).
 - **v1 limits on the newer frameworks:** Astro deploys its static output
   (SSR mode is deferred); SvelteKit needs `@sveltejs/adapter-node`. moonbase

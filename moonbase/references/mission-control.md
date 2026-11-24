@@ -100,11 +100,11 @@ day**.
 Traffic is per mission, not per custom domain. Visitors are counted, never
 capped, on every plan.
 
-## The "Hosted by moonbase" badge
+## The "Powered by moonbase" badge
 
-Missions can show a small "hosted by moonbase" badge. On the free plan it's
+Missions can show a small "powered by moonbase" badge. On the free plan it's
 always shown. On paid plans the owner can turn it off in the mission's
-**Badge** setting (**Show the hosted badge**). Only the owner can change it,
+**Badge** setting (**Show the moonbase badge**). Only the owner can change it,
 and it applies right away.
 
 ## Password protection (only people with the password can open it)
@@ -391,8 +391,7 @@ managed database is kept, and no managed database is created over it.
 { "database": { "engine": "postgresql", "migrate": "node migrate.js" } }
 ```
 
-On that deploy, where a managed database is enabled for the account,
-moonbase creates the database, runs the migrate command and
+On that deploy, moonbase creates the database, runs the migrate command and
 gives the migrate command and the running app the same three environment
 variables. Nobody types a connection string.
 
