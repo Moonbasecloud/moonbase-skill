@@ -84,6 +84,4 @@ sign in to download anything.
 2. Type the confirmation phrase shown and your **Password**.
 3. Click **Delete account**.
 
-What happens: every mission is paused immediately and stops responding, you
-can't sign back in, and it can't be undone: your account and data are kept for
-a retention period (the page says how many days), then purged.
+What happens: Every project starts being paused straight away, and you're signed out. If you deleted the account yourself, you can reactivate it from the sign-in page for the number of days the delete dialog shows, with a one-time link sent to its email address and two-factor verification if enabled. If you still have confirmed time left on an existing paid plan, reactivation keeps that plan until the end of that paid period; otherwise, the account is on the free plan. Reactivation does not withdraw your cancellation request or resume projects. The account moves to the free plan when the confirmed remaining paid period ends. When the reactivation window ends, permanent deletion begins.
