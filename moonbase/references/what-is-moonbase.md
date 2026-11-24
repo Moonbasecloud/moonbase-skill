@@ -49,7 +49,7 @@ Recipe**). Details: `building-for-moonbase.md`.
 - On the free plan, **dynamic** missions go to sleep when nobody visits for a
   while and wake on the next visit (static missions never sleep). See
   `mission-control.md`.
-- No single upload can ever be bigger than 1 GB, on any plan.
+- Each upload can be up to your plan's per-deploy size. The limit applies to the ZIP you upload. Your plan's storage also applies to the unpacked total.
 
 **Never quote prices or plan numbers from memory.** They live in moonbase's
 plan data and can change. The current table is at

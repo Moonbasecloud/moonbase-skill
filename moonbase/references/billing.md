@@ -55,8 +55,7 @@ How usage counts:
 - **Missions:** **New mission** is disabled until a mission is deleted or the
   plan is upgraded. Shipping a new version of an existing mission still works.
 - **One upload's size:** each plan has a per-upload limit, separate from
-  total storage, and nothing over 1 GB on any plan. moonbase's message says
-  the exact number.
+  total storage. Each upload can be up to your plan's per-deploy size. The limit applies to the ZIP you upload. Your plan's storage also applies to the unpacked total. Check `account_usage` for your plan's current per-deploy size.
 
 ## Refunds
 

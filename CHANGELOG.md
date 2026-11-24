@@ -3,6 +3,10 @@
 All notable changes to the moonbase skill are documented here. Versions track
 the live moonbase skill's revision (rNN).
 
+## r64 — 2026-11-23
+
+Synced to the live moonbase skill, revision r64.
+
 ## r60 — 2026-11-23
 
 Synced to the live moonbase skill, revision r60.

@@ -188,8 +188,7 @@ old `.env`), and it runs an **automated gate** that *fails* the upload if
 anything forbidden is in the archive — rather than trusting a human to eye a
 `unzip -l`. Use the tool; don't hand-roll a shorter exclude list.
 
-Size: every plan has a per-upload limit, and for now nothing over 425 MB
-(static) or 300 MB (a Node or Python app) is accepted on any plan. Leaving out `node_modules` and build output keeps a normal app
+Size: every plan has a per-upload limit. Each upload can be up to your plan's per-deploy size. The limit applies to the ZIP you upload. Your plan's storage also applies to the unpacked total. Leaving out `node_modules` and build output keeps a normal app
 far below that. If the project really is huge (videos, big datasets), say so
 before uploading.
 

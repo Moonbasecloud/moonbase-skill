@@ -240,6 +240,75 @@ A database export is separate from downloading a mission's source files or
 backing up those files. Returning a page link is not evidence that an export
 was created, downloaded, restored or captured by a scheduled backup.
 
+## Moving an existing database in
+
+A person who already has a PostgreSQL database with another provider (any
+PostgreSQL server reachable on the internet) can move it into the mission's
+managed database through the connector. The mission needs its managed
+database first; it gets one at a deploy that declares it.
+
+If the connected moonbase tools include `import_database`, it takes three
+calls. The connection needs the database import permission; a connection
+without it is refused and says how to reconnect with it.
+
+1. **Call it with the project only.** It returns `import_id` and
+   `import_page`, the mission's Database page
+   (`/missions/<project_id>/database`) at its import card. Open the exact
+   `import_page` URL for the person. They sign
+   in and enter the source database's connection string on that screen
+   themselves. The connection string holds a password: never ask for it,
+   read it back or paste it in chat, a terminal or a file. If your client
+   cannot open URLs, say so and give the exact link.
+2. **Call it with `import_id`** once the person says it is entered. It
+   returns a preview (the source's PostgreSQL version, tables, estimated rows
+   and size), `storage` (whether that fits the storage the mission has left
+   on its plan), how the connection to the source is protected, and a
+   `confirm_token`. Show the person the preview and say plainly that the
+   import replaces everything in the mission's moonbase database and that
+   the app can't use its database while it runs. When `tls` is
+   **encrypted_unverified**, tell them the source server's certificate could
+   not be verified. When **skipped_schemas** is not empty, tell them those
+   provider service schemas are not copied.
+3. **Call it with `confirm_token` alone** after the person's yes to that
+   preview. The token works once and expires at `confirm_token_expires_at`.
+   The import then runs in the background.
+
+Follow it with `import_status`. A finished import reports the source and the
+mission side by side: tables, exact row counts and a sentinel (every row of
+one table compared). That is all that is checked.
+
+When the state is **done_with_warnings**, the import is not complete: the
+mission's database refused some statements. **warnings** gives the real
+number, and **refused_objects** names them (up to 25; **list_truncated** says
+when there are more). These are usually security policies, foreign keys,
+indexes, views or extensions tied to the other provider. Never tell the
+person such an import matches the source. Say what was checked, how many
+statements were not applied, and name them. The common case from Supabase:
+row-level security is on for a table but its policies were refused, so the
+app reads no rows from that table, with no error. The fix is a database
+migration in the next deploy that adds what is missing (new policies, or
+row-level security turned off on those tables), or a roll back.
+
+moonbase takes a safety copy of the mission's database before replacing
+anything, and puts it back by itself when the tables, rows or sentinel do not
+match the source; a failed import then leaves the database as it was. The
+source database is only read and is left as it is.
+
+While **rollback_available** is true, the import can be rolled back:
+`import_database` with `import_id` and `rollback: true` returns a
+`confirm_token` for the roll back, and a call with that token starts it.
+Changes made in the database after the import are lost by a roll back; say
+so before the person agrees.
+
+The source has to offer an encrypted (TLS) connection, and a connection
+through a transaction pooler is refused with **source_snapshot_unavailable**:
+the provider's direct or session connection string works. **does_not_fit**
+and **import_exceeds_storage** mean the source is larger than the storage
+left on the plan; `account_usage` shows it. **import_unavailable** means
+imports are not open on this moonbase right now. After an import the app
+keeps the `DATABASE_URL` moonbase already sets; nothing has to be changed in
+its environment values.
+
 ## Managed database status
 
 Use `mission_info` or `deploy_status` with the owned project's `project_id` or
@@ -263,8 +332,8 @@ A connected database alone does not establish backup
 enrollment, a successful backup, restore readiness or general availability.
 No retention or recovery guarantee follows from this status response.
 
-When human action needs the database card, **open the exact `database_page`**
-(`/missions/<project_id>#database`) for the person. If the client cannot open
+When human action needs the database screen, **open the exact `database_page`**
+(`/missions/<project_id>/database`, the project's Database page, for its owner) for the person. If the client cannot open
 URLs, explain that limitation and provide the exact returned link. Only say
 it is open after opening it. The person enters secrets directly in moonbase;
 never request them in chat, CLI or clipboard. Database status is read-only;

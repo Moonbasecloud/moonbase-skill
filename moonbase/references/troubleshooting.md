@@ -237,7 +237,7 @@ it.
 
 | Code | Title | What it means → what to do |
 |---|---|---|
-| `plan_limit_exceeded` (`reason`: `max_deploy_size`) | Deploy size limit reached | Over the plan's per-upload size. Make it smaller or upgrade. |
+| `plan_limit_exceeded` (`reason`: `max_deploy_size`) | Deploy size limit reached | Over the plan's per-upload size. Each upload can be up to your plan's per-deploy size. Make the ZIP smaller and check your plan's current per-deploy size. |
 | `plan_limit_exceeded` (`reason`: `max_sites`) | Mission limit reached | No free mission slot. Ship a new version of an existing mission, delete one, or upgrade. |
 | `plan_limit_exceeded` (`reason`: `max_storage`) | Storage limit reached | Would pass total storage. Delete older versions or missions, or upgrade. |
 | `plan_limit_exceeded` (a connector tool error or `deploy_status` result code) | Plan limit reached | This deploy would go past a limit of this account's plan (number of projects, storage, or size per deploy), so it was not published. For an upload, its reason field names the limit; a tool error's message names it too. account_usage shows each limit and its use. upgrade_link returns the plans page. |
