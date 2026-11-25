@@ -12,6 +12,19 @@ title, an explanation, a next step and an **Error ID** (`TRK-…`; in API and
 tool results it is the `trace_id` field, or `trkId`). Prefer moonbase's words
 over guessing, and never delete a mission to "start fresh".
 
+## Connector access and setup links
+
+An `insufficient_scope` error includes `required_scope`, `granted_scopes`,
+`fix` and `action_url`. The link opens Account → Security, where the person
+can review their connected apps. It does not grant a permission. A new
+connection can grant the missing permission only when the assistant requests
+it and the person approves it; reconnecting alone does not add permissions.
+`get_build_guide` stays available without that permission.
+
+A deploy tool's setup refusal can also include `action_url`, pointing to the
+page for the setup step named in its message. Open the returned link rather
+than guessing an account or onboarding URL.
+
 ## Deployment history and Error IDs
 
 `deploy_logs` reads an owned project's deployment history. Its `attempts`
@@ -155,7 +168,7 @@ variable. Make the app work from the root of its address, then upload it again.
 | Symptom | Cause → fix |
 |---|---|
 | "Waking up your app" / loading screen | A sleeping free-plan mission waking up. Wait a second or two. |
-| Changed an environment variable but nothing changed | Changes apply on the next deploy. Click **Deploy new version**. |
+| Changed an environment variable but nothing changed | Changes apply on the next deploy. With the connector, after the person approves the live change, call `redeploy` to rebuild the active stored archive with the saved values. It keeps the same version number and requires a usable active archive. Check an unconfirmed outcome with `deploy_status` before another attempt. |
 | Domain won't verify | Record must match exactly; A for main domain, CNAME for subdomain; Cloudflare grey cloud; wait up to 48h; click **Verify** again. |
 | Adding a domain says another account added it but never proved it (`domain_held_unverified`) | Add the TXT record moonbase shows (name and value) at the DNS provider, then add the domain again. Over the connector, open the returned `domain_page` link for the person. See `custom-domains.md`. |
 | Traffic numbers don't load | A missing data source, not a broken mission. Try later. |
@@ -293,13 +306,16 @@ Show the exact limit from the **structured fields** (`reason`, and
 A visitor password can be given only with a new project's first launch: the
 `password` form field, or `password` / `generate_password` on create_mission
 and create_upload. A new version can't carry one. A project with no password
-gets it from set_password; an existing password is changed in the moonbase app
-(Mission Control → **Password protection**, `mission-control.md`).
+gets it from set_password; change a saved password with set_password and
+`replace: true`, after the person confirms. Replacement keeps protection on or off
+as it was. `password_changed: true` confirms the change without reporting the
+current protection state. Mission Control → **Password protection** also changes it
+(`mission-control.md`).
 
 | Code | Title | What it means → what to do |
 |---|---|---|
-| `password_protection_coming_soon` | Set the password in Mission Control | A visitor password can be given only with a project's first launch, not with a new version. Deploy the new version without a password, then use set_password if the project has no password yet; an existing password is changed on the project's page in the moonbase app. |
-| `password_protection_disabled` | Password protection is switched off right now | moonbase has switched off new password protection for the moment, so a launch with a password, a create_upload with a password and set_password are refused, and nothing was published or changed. Existing passwords keep working and can still be changed or removed. Try again later; launch without a password only if the person agrees the project need not be protected from its first version. |
+| `password_protection_coming_soon` | Set the password in Mission Control | A visitor password can be given only with a project's first launch, not with a new version. Deploy the new version without a password, then use set_password if the project has no password yet. To change a saved password, ask the person to confirm and call set_password with replace: true; this keeps protection on or off as it was. |
+| `password_protection_disabled` | Password protection is switched off right now | moonbase has switched off new password protection for the moment, so a launch with a password, a create_upload with a password and set_password without replace: true are refused, and nothing was published or changed. Existing passwords keep working and can still be changed or removed. Try again later; launch without a password only if the person agrees the project need not be protected from its first version. |
 | `password_protection_unavailable` | We couldn't protect the mission | The password couldn't be turned on before launch, so nothing was published. If moonbase couldn't confirm the password is off the address again, the address stays reserved to your account as a failed project until it is checked. Tell the person the version isn't live and the password isn't on. Deploy again in a minute. If the address now shows as a failed project in your account, it keeps its password: ship a new version to that project (deploy with its slug; API: redeployProjectId), without a password, and it goes live protected. A new launch with the same name is refused as name_taken. Otherwise, if the person agrees the first version may be public for a moment, deploy without a password, then use set_password. If it keeps failing, they can contact moonbase support with the error ID from this result (trace_id; the app shows it as Error ID). |
 | `invalid_password` | Password isn't valid | A visitor password is at least moonbase's minimum length (4 characters today) and at most 128 characters, after spaces at the ends are removed, and create_upload also needs it on one line. A create_upload link made with a password gives this code too when the request sends no valid password. Choose a password in that range, or launch without one if the person agrees; for a link made with a password, send the same password, or get a new link without one from create_upload. |
 

@@ -39,6 +39,16 @@ Verify the email before taking the app online.
    choose the guide for that tool. If it asks for an address, use
    **https://app.moonbase.cloud/mcp**. Sign in and review what the connector
    can do. Once it is connected, ask "Take my app online with moonbase."
+   - A desktop coding app: add moonbase **inside that app** (its own MCP or
+     connector settings, or its add button on https://moonbase.cloud/connect),
+     not on the vendor's web dashboard. In moonbase's test on 25 November 2026,
+     one such app added on the dashboard showed Connected with 0 tools in the
+     desktop app, and its web agents asked for a paid plan.
+   - moonbase's sign-in screen shows an **Unverified** notice for an app that
+     returns to `localhost` on the person's own computer. That is expected
+     there when the person started the connection themselves.
+   - If a browser asks whether to open a desktop app after **Allow**, choosing
+     to open it finishes the connection.
 2. API keys are for developers' own automation, such as CI or a script.
    See `api-and-ci.md`. The key is kept in a secret manager or environment
    variable and is never pasted into a chat.

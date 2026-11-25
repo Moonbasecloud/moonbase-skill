@@ -1,5 +1,11 @@
 # Mission Control: status, sleep, pause, password, environment variables, analytics, database export
 
+After saving environment variables, the running app changes on its next
+deploy. If `redeploy` is in the connected tool list, it rebuilds this
+account’s active stored archive with the saved values after the person
+approves the live change. It keeps the same version number. See
+`references/mission-control.md` for archive refusals and unconfirmed outcomes.
+
 **Mission Control** is the page each mission opens to. Open it from
 **Missions** (the list of all your missions, with status, latest version,
 size and recent visitors) or by clicking a mission on the **Dashboard**.
@@ -41,8 +47,14 @@ Control.
 3. Add each name (like `OPENAI_API_KEY`) and its value, and save.
    *Values are write-only: after saving, only the names are shown, never the
    values. They're stored encrypted.*
-4. Click **Deploy new version** (the same ZIP is fine). **Changes only take
-   effect on the next deploy.**
+4. **Changes take effect on the next deploy.** With the connector, after the
+   person approves the live change, call `redeploy` with the project_id or
+   slug to rebuild its active stored archive with the current saved values.
+   This keeps the same version number and needs no file upload. It requires
+   a live stored version; `no_active_deployment` or `archive_parity_pending`
+   means there is no usable archive for this path. A new upload can deploy
+   the project instead. An unconfirmed outcome is checked with `deploy_status`
+   before another attempt. In the app, the person can deploy a new version.
 
 **Replacing or deleting a saved value.** Each saved name has **Replace** and
 **Delete**. **Replace** opens an empty field: the old value is never shown or
@@ -145,11 +157,12 @@ Each mission can have its own password. Only the mission's owner can set it.
   static-file caching caveat applies). For an **existing**
   mission a `password` on a deploy is refused with
   `password_protection_coming_soon`: set it in Mission Control (or with
-  `set_password`, which refuses a mission that already has a saved password),
-  and change it in Mission Control.
+  `set_password` without `replace`, which refuses a mission that already has a saved password).
+  To change a saved password, call `set_password` with `replace: true` or change it in Mission Control.
+  Replacement keeps protection on or off as it was; `password_changed: true` confirms the change and does not report the current protection state.
 - **Through the connector:** `create_mission` and `create_upload` take
   `password`, or `generate_password: true` (moonbase makes one and returns it);
-  `set_password` sets one on an existing mission. A visitor password keeps
+  `set_password` sets the first password on an existing mission; `replace: true` changes a saved password while preserving whether protection is on or off. Ask the person to confirm the replacement before calling it. A visitor password keeps
   people out of the mission; it is not an account secret, so it may go
   through the chat. Its value is visible in the conversation, and the person
   decides. API keys and other credentials are different: they are typed only

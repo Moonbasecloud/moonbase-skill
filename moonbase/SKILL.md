@@ -24,13 +24,16 @@ You are helping someone take an app online with **moonbase** (moonbase.cloud).
 The app gets its own HTTPS address, such as `https://my-idea.moonbase.host`.
 moonbase calls it a mission.
 
+moonbase's own opening line is "👨‍🚀 Starting moonwalk…"; assistants say it once
+when a moonbase task begins, then the plain status. Not for errors, refusals,
+deletes, confirmations, payments or security questions.
+
 **Start with their account.** If you don't know whether they have one, ask
 "Do you already have a moonbase account?" If they don't, send them to
 **https://app.moonbase.cloud/register** and ask them to tell you when their
 account is ready. Stop there until they confirm. The person signs up and
-enters any password or verification code themselves. See
-`references/getting-started.md` if they want help. Do this before discussing
-a connection or asking for a key.
+enters any password or verification code themselves. The guide
+covers sign-up. Do this before discussing a connection or asking for a key.
 
 ## First: what can you do here?
 
@@ -74,6 +77,9 @@ can use:
    steps in `references/builder-platforms.md`. Never say you took an app
    online if the person still has to upload it.
 
+"Let's moonwalk" or "Show me what I can do with moonbase" gets about 8 lines,
+not an account report.
+
 <!-- /core -->
 
 ### Terminal quickstart for the API key path
@@ -105,19 +111,16 @@ bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit
 3. **Say what they will see after the step.** "You'll see a box that says
    *Drop your mission files*." This is how they know they did it right.
 4. **Use simple words.** Explain like you would to a curious 10-year-old.
-   No jargon without a one-line explanation ("DNS is the internet's address
-   book").
+   No jargon without a one-line explanation.
 5. **Ask before you assume.** If you don't know what they built or where they
-   are, ask one short question ("Do you have a ZIP file, or a folder on your
-   computer?").
+   are, ask one short question.
 6. **Check in after hard steps.** "Did you see the green *Your mission is
    live*? If not, tell me what the screen says."
-7. **Answer in the user's language.** If they write in Hebrew, Spanish,
-   Japanese or anything else, answer in that language. Keep moonbase's
+7. **Answer in the user's language.** Keep moonbase's
    button and menu names in English (that's what is on their screen), and
    translate the meaning next to them the first time.
-8. **Celebrate the win.** When a mission goes live, give them the link and
-   tell them it's real and shareable right now.
+8. **Celebrate the win.** When a mission goes live, give them the link:
+   it's real and shareable right now.
 
 ## Words moonbase uses
 
@@ -240,6 +243,32 @@ Use these lines as they are written:
 
 No pressure, no urgency, no second mention if they pass.
 
+## "Let's moonwalk" and "Show me what I can do with moonbase"
+
+Both mean a short first look, about 8 lines: the opening line, the account in
+one line, a ✓ list of what can happen from this chat, then one question. It is
+not an account report: limits, storage parts and versions are for a question
+about them, and all missions are listed when the person asks for the list.
+
+With the connector, `account_usage` gives the account line. For an account
+with no missions it also carries `orientation`: what this connection's
+permissions and the account allow. With missions, the ✓ list is what the
+connection's own tools can do. An example:
+
+> 👨‍🚀 Starting moonwalk…
+> You're on moonbase free, with no missions yet.
+> ✓ Put an app live on an HTTPS address
+> ✓ Give it a managed PostgreSQL database
+> ✓ Connect a custom domain (on a plan that includes it)
+> ✓ Show visitors
+> ✓ Roll back to an earlier version
+> Where do we step first?
+
+The plan name and each ✓ line come from what the account and connection
+really have. A deploy, upload commit or database import that moonbase accepted
+and is still running may carry the same words in a separate `moonwalk` field;
+its `status` field is the plain state, as before.
+
 ## The fastest path (most common request)
 
 "I built something, how do I put it online?" First confirm they have a moonbase
@@ -252,7 +281,8 @@ before they try to put it online. See `references/building-for-moonbase.md`.
 
 Then use the connector if their tool supports it (`create_upload` for a
 project with images or over about 100 KB, or `upload_files` then
-`commit_upload` when no shell reaches the upload host). Without a connector, the assistant
+`commit_upload` when no shell reaches the upload host; a file too large for one
+call goes in parts, `part_index` and `part_count`). Without a connector, the assistant
 prepares the project ZIP and the person uploads it on the project's Deploy new
 version screen. Deploy keys are only for developers' own automation such as
 CI, and a key is never pasted into a chat. If the project is still in a builder like Lovable or Bolt, help them
@@ -287,9 +317,9 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r78, 2026-11-25.** This version and date are the
+**moonbase skill — revision r79, 2026-11-25.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r74 (2026-11-24): the mission badge reads "powered by moonbase" (was "hosted by moonbase") and its switch is **Show the moonbase badge**, in `references/mission-control.md`. r72 (2026-11-24): moonbase is described as the one platform that runs everything an app built with AI needs (hosting, database, domains, analytics, rollbacks, team access, and more, all run by your AI agent), not as hosting alone, in the skill description and `references/what-is-moonbase.md`; the connector's initialize instructions open with the same line. r71 (2026-11-24): the managed database is described plainly as on every plan, Free included: one managed PostgreSQL database per mission, created on deploy when `moonbase.json` asks for one, with `DATABASE_URL` set for the app and the plan's storage used, in `references/building-for-moonbase.md`, `references/mission-control.md`, `references/what-is-moonbase.md` and `references/what-your-app-needs.md`. r70 (2026-11-24): `retryNote` appears only when the same error repeats within the current fix session, a start that fails shows as the health step with a shorter `start_log_tail`, and a Node range runs on the newest version it allows, in `references/troubleshooting.md` and `references/building-for-moonbase.md`; `create_upload` states the launch budget (`launch_budget`), `check_project` lists the names a ready managed database provides (`env_vars_provided_by_moonbase`), and `tools_version` tells a tool list older than the server, in `SKILL.md`, `references/troubleshooting.md` and `references/what-your-app-needs.md`. r69 (2026-11-24): the Launch check is described as on only where moonbase has turned it on for a mission (`launch_check` answers `not_available` elsewhere), in `references/mission-control.md`. r68 (2026-11-24): an app that exits while starting fails at once as `container_exited_on_start` with `start_log_tail`, and upload links say when they are used or expired, in `references/troubleshooting.md` and `references/api-and-ci.md`. r67 (2026-11-24): `self_repair_notice` names what moonbase changed in the deployed copy, `list_env` shows the names moonbase sets for a managed database with source `engine`, and which connector tools a connection lists, in `references/building-for-moonbase.md`, `references/what-your-app-needs.md`, `references/deploy-for-the-user.md`, `references/mission-control.md` and `references/billing.md`. r66 (2026-11-24): moonbase provides the database. The guide to connecting an outside backend is removed; creating the managed database from `moonbase.json` is in `references/building-for-moonbase.md`, and its connection code in `references/mission-control.md`; the managed-database passages state no backup schedule, retention or backup storage accounting. r65 (2026-11-24): reactivating a self-deleted account, in `references/account.md`. r64 (2026-11-23): each upload can be up to the plan's per-deploy size (`account_usage` gives the current number) instead of fixed size caps; the limit applies to the uploaded ZIP and the plan's storage to the unpacked total, in `references/billing.md`, `references/building-for-moonbase.md`, `references/troubleshooting.md` and `references/what-is-moonbase.md`. r62 (2026-11-23): `references/mission-control.md` gains "Moving an existing database in": with the connector, `import_database` moves a PostgreSQL database from another provider into the mission's managed database in three calls (the screen where the person enters the connection string themselves, a preview with a `confirm_token`, then that token alone after the person's yes), under its own connection permission; `import_status` reports the result, and an import with refused statements is reported as incomplete, never as a match. r61 (2026-11-23): `database_page` opens the project's own Database page (`/missions/<project_id>/database`), in `references/mission-control.md`. r60 (2026-11-23): a deploy that outlasts the tool call returns `started_at`, and `deploy_status` with its slug shows `last_failed_attempt` when it failed (error code, moonbase's explanation and next step, Error ID, `moonbase_note`, `build_log_tail`), for 24 hours also on the slug of a first deploy that failed; `deploy_logs` marks a failed attempt the live version replaced with `superseded: true`, in `references/troubleshooting.md`. r58 (2026-11-23): every plan, Free included, can add one managed PostgreSQL database per Mission, created when the project asks for one; it uses the plan's storage, with no separate database allowance; files, versions and databases count toward one storage allowance, and `account_usage` shows the parts, in `references/mission-control.md` (that revision's managed-database backup statements were removed in r66). r57 (2026-11-23): `references/versions-and-rollback.md` gains "Delete old versions (free up storage)": deleting one version or everything older than the newest N in the app, and `delete_versions` with the connector in two calls (the list and a `confirm_token` first, then that token alone, after the person's yes), under its own connection permission; deletion is permanent, the live version always stays, and the freed storage shows in Usage and `account_usage`. r55 (2026-11-23): with the connector, a project whose sandbox cannot reach the upload host publishes through the connector itself: `upload_files` sends the files in batches (path, base64 content and SHA-256 each) and `commit_upload` publishes them, in `SKILL.md` and `references/deploy-for-the-user.md`; a file too large for one call goes in parts (`part_index`, `part_count`); `source_url` also takes a public GitHub repository URL. r54 (2026-11-22): `references/billing.md` says visitors are counted for your information and never blocked, and `account_usage` reports them as a usage note, not a limit. r53 (2026-11-22): the `invalid_password` and `password_protection_disabled` rows in `references/troubleshooting.md` give the allowed password length and say when a password can be set, worded as `explain_error` gives them. r52 (2026-11-22): adds stored deployment history Error IDs and exact owner-scoped failure lookup; it distinguishes asynchronous receipts, recorded failure times and compatibility-attempt creation times without inferring missing historical IDs. `mission_info` also returns the owner's `protection_cache_purge.status` (`pending`, `not_queued` or `unknown`), described in `references/mission-control.md`. r51 (2026-11-22): keep the project ID a successful deploy prints and set `MOONBASE_MISSION_ID` to it for every later deploy of the same project, because an empty value creates a new project with a new address; the deploy commands in `references/deploy-for-the-user.md` now warn when it is empty. r50 (2026-11-22): a truth sweep of the Skill and its references, the MCP tool descriptions and the explain_error catalogue, so each sentence matches what moonbase does now (passwords at launch, domain records, upload size limits, Node default, build-log tail, account export). The r36–r47 entries are in "Skill version history" at the end of `references/safety-and-support.md`. r35 adds a payment problem on the account (the banner in the app, and
+filename. r79 (2026-11-25): moonbase's opening line, the short answer to "Let's moonwalk" and "Show me what I can do with moonbase", and `orientation` from `account_usage`, in `SKILL.md`; adding the connector inside a desktop coding app, in `references/getting-started.md`; `redeploy` and changing a saved visitor password (`set_password` with `replace: true`), in `references/mission-control.md`; permission and setup links (`action_url`), in `references/troubleshooting.md`. r74 (2026-11-24): the mission badge reads "powered by moonbase" (was "hosted by moonbase") and its switch is **Show the moonbase badge**, in `references/mission-control.md`. r72 (2026-11-24): moonbase is described as the one platform that runs everything an app built with AI needs (hosting, database, domains, analytics, rollbacks, team access, and more, all run by your AI agent), not as hosting alone, in the skill description and `references/what-is-moonbase.md`; the connector's initialize instructions open with the same line. r71 (2026-11-24): the managed database is described plainly as on every plan, Free included: one managed PostgreSQL database per mission, created on deploy when `moonbase.json` asks for one, with `DATABASE_URL` set for the app and the plan's storage used, in `references/building-for-moonbase.md`, `references/mission-control.md`, `references/what-is-moonbase.md` and `references/what-your-app-needs.md`. r70 (2026-11-24): `retryNote` appears only when the same error repeats within the current fix session, a start that fails shows as the health step with a shorter `start_log_tail`, and a Node range runs on the newest version it allows, in `references/troubleshooting.md` and `references/building-for-moonbase.md`; `create_upload` states the launch budget (`launch_budget`), `check_project` lists the names a ready managed database provides (`env_vars_provided_by_moonbase`), and `tools_version` tells a tool list older than the server, in `SKILL.md`, `references/troubleshooting.md` and `references/what-your-app-needs.md`. r69 (2026-11-24): the Launch check is described as on only where moonbase has turned it on for a mission (`launch_check` answers `not_available` elsewhere), in `references/mission-control.md`. r68 (2026-11-24): an app that exits while starting fails at once as `container_exited_on_start` with `start_log_tail`, and upload links say when they are used or expired, in `references/troubleshooting.md` and `references/api-and-ci.md`. r67 (2026-11-24): `self_repair_notice` names what moonbase changed in the deployed copy, `list_env` shows the names moonbase sets for a managed database with source `engine`, and which connector tools a connection lists, in `references/building-for-moonbase.md`, `references/what-your-app-needs.md`, `references/deploy-for-the-user.md`, `references/mission-control.md` and `references/billing.md`. r66 (2026-11-24): moonbase provides the database. The guide to connecting an outside backend is removed; creating the managed database from `moonbase.json` is in `references/building-for-moonbase.md`, and its connection code in `references/mission-control.md`; the managed-database passages state no backup schedule, retention or backup storage accounting. r65 (2026-11-24): reactivating a self-deleted account, in `references/account.md`. r64 (2026-11-23): each upload can be up to the plan's per-deploy size (`account_usage` gives the current number) instead of fixed size caps; the limit applies to the uploaded ZIP and the plan's storage to the unpacked total, in `references/billing.md`, `references/building-for-moonbase.md`, `references/troubleshooting.md` and `references/what-is-moonbase.md`. r62 (2026-11-23): `references/mission-control.md` gains "Moving an existing database in": with the connector, `import_database` moves a PostgreSQL database from another provider into the mission's managed database in three calls (the screen where the person enters the connection string themselves, a preview with a `confirm_token`, then that token alone after the person's yes), under its own connection permission; `import_status` reports the result, and an import with refused statements is reported as incomplete, never as a match. r61 (2026-11-23): `database_page` opens the project's own Database page (`/missions/<project_id>/database`), in `references/mission-control.md`. r60 (2026-11-23): a deploy that outlasts the tool call returns `started_at`, and `deploy_status` with its slug shows `last_failed_attempt` when it failed (error code, moonbase's explanation and next step, Error ID, `moonbase_note`, `build_log_tail`), for 24 hours also on the slug of a first deploy that failed; `deploy_logs` marks a failed attempt the live version replaced with `superseded: true`, in `references/troubleshooting.md`. r58 (2026-11-23): every plan, Free included, can add one managed PostgreSQL database per Mission, created when the project asks for one; it uses the plan's storage, with no separate database allowance; files, versions and databases count toward one storage allowance, and `account_usage` shows the parts, in `references/mission-control.md` (that revision's managed-database backup statements were removed in r66). r57 (2026-11-23): `references/versions-and-rollback.md` gains "Delete old versions (free up storage)": deleting one version or everything older than the newest N in the app, and `delete_versions` with the connector in two calls (the list and a `confirm_token` first, then that token alone, after the person's yes), under its own connection permission; deletion is permanent, the live version always stays, and the freed storage shows in Usage and `account_usage`. The r36–r55 entries are in "Skill version history" at the end of `references/safety-and-support.md`. r35 adds a payment problem on the account (the banner in the app, and
 `payment` from `account_usage` and `platform_status`, with its Billing link) in
 `references/troubleshooting.md`. r34 adds the service notice moonbase may publish to its customers
 (the banner in the app, and `service_notice` from `platform_status`) in

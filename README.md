@@ -9,7 +9,7 @@ This repository is the **moonbase Skill**: instructions that teach any AI coding
 
 **Quick install:** add the connector `https://app.moonbase.cloud/mcp` to your AI tool ([setup per tool](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)), or get the Skill file for your tool at [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch). Details in [Install the Skill](#install-the-skill).
 
-**Current revision:** `r78` (2026-11-25) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
+**Current revision:** `r79` (2026-11-25) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
 
 ### → [moonbase.cloud](https://moonbase.cloud/?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)
 
