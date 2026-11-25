@@ -47,7 +47,7 @@ Your client sends the permissions it wants; you approve them in the browser, and
 
 - **Easiest:** [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch) has the right file for your tool.
 - **From this repo:** take the file for your tool from `dist/`, or drop the whole `moonbase/` folder into a Claude-compatible assistant:
-  - `AGENTS.md`: the cross-tool standard
+  - `AGENTS.md`: the cross-tool standard, for Codex and other agents that read it
   - `moonbase.mdc`: Cursor rule
   - `CLAUDE-snippet.md`: Claude Code
   - `copilot-instructions.md`: GitHub Copilot
