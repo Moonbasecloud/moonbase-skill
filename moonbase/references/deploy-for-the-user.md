@@ -23,12 +23,40 @@ connector and connecting it again does that. Name a moonbase tool to the
 person only when it is in the list of tools you actually have. A file too large to write
 out in one call, such as an image, goes in parts: the same `path` and
 whole-file `sha256` with `part_index` (from 0) and `part_count`, one part per
-entry, over as many calls as needed (up to 64 parts and 10 MiB per file);
-moonbase joins them and checks the joined file, and the result's `incomplete`
-list names the parts still missing. A retried batch changes nothing, a failed
-deploy keeps the session for a fix and a new commit, a session is published
-at most once, and `expected_files` on the commit refuses a version with a file
-missing. An account holds up to 3 upload sessions not yet published at once. The
+entry, over as many calls as needed (up to 64 parts and 10 MiB per file).
+Optional `part_sha256` is the SHA-256 of that part's bytes alone; moonbase
+checks it on arrival. The whole-file `sha256` still applies to the joined
+file. The result's `incomplete` list names the parts still missing.
+`remove_paths` on `upload_files` lists staged paths to drop from that same
+session, including a file whose parts are incomplete. It does not delete a
+published version. `expected_files` on `commit_upload` checks the complete
+staged file list and any checksums you supply before publication.
+
+A repeated batch can be sent after an interrupted upload. If a deploy is
+confirmed not to have happened, the session can be corrected and committed
+again. When `commit_upload` returns `status: "unknown"`, do not replay that
+session's commit. Check `deploy_status` with the returned slug to observe the
+mission's current state. An unknown outcome can be an older claim whose
+deploy may still finish, or a terminal uncertain outcome; staged bytes are
+not guaranteed to remain. Checking status does not release a claim or prove
+that this attempt never started, and `not_found` does not prove it never
+started. Every new session needs its own full set of required project files,
+including unchanged files. Creating one can still be blocked by the account's
+upload-session limit.
+
+The existing limit of 3 active uploads also counts retained stale claims
+whose publish outcome is unresolved. When `upload_files` refuses with
+`upload_sessions_unresolved`, follow `next_tool: "deploy_status"` for the
+slugs in `unresolved_sessions`. `unresolved_session_count` gives the actual
+number of retained unresolved sessions; the list contains at most 3
+`session_id`/`slug` pairs, and `unresolved_sessions_truncated` says whether
+more were omitted. `open_session_ids` lists the other open sessions and
+`max_open_sessions` gives the limit. A status check observes the target; it
+does not release or retry the claim. Wait and try later, or contact support
+if the refusal continues. Do not promise an exact cleanup time or repeatedly
+create new sessions to work around the refusal.
+
+The
 one-time setting per client that allows the upload host, and a
 browser-assisted upload on the project's Deploy new version screen, are the
 other ways. A small text-only project can go inline as `files`, and
@@ -777,6 +805,8 @@ Allow at least 10 minutes for a build before giving up on the stream. For a
 ZIP over about 90 MB, send the same request to
 `https://upload.moonbase.cloud/api/projects/upload/stream` (same key, same
 fields).
+
+When runtime_selection is present, it reports the Node.js major confirmed by the deployment server for the uploaded engines.node range and how to choose another supported major.
 
 ### How to react to the outcome (one classification + retry policy)
 

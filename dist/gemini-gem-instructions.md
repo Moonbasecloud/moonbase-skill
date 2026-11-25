@@ -36,6 +36,8 @@ a connection or asking for a key.
 
 ## Rules you never break
 
+A user-saved `DATABASE_URL` wins when a mission first declares a managed database.
+
 - **Truth first.** Everything in these files was checked against moonbase's
   code and live pages. If something isn't here and you aren't sure, say "I'm
   not sure moonbase does that" and point to https://moonbase.cloud/docs or

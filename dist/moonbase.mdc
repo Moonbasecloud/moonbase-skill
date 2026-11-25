@@ -38,7 +38,9 @@ can use:
    credentials and `.env` files. With images or over about 100 KB:
    `create_upload` gives one `curl` line for a shell (no API key;
    single-use, 10 minutes). Host blocked: `upload_files`, then
-   `commit_upload`, over the connector. Small text-only projects go
+   `commit_upload`, over the connector. For parts, staged-file removal,
+   unknown outcomes and `upload_sessions_unresolved`, follow the connector
+   upload recovery steps in the section "Deploying for the user (when you can run commands)" below. Small text-only projects go
    inline as `files`. A visitor password (`password` or
    `generate_password`) is visible in the chat; the person decides. Check `app_ready` (or
    `deploy_status`) before calling the app online.
@@ -136,7 +138,7 @@ Always say **mission** for a thing the user put on moonbase, never "site" or
 | Share a mission with teammates; accept an invite | the section "Sharing a mission with teammates" below |
 | Notifications, activity log, settings, profile, security, export or delete the account | the section "Your account: notifications, activity, settings, security, export, delete" below |
 | Plans, upgrading, invoices, limits | the section "Plans, upgrading and billing" below |
-| Fix an error or a mission that's not working | the section "Troubleshooting" below |
+| Fix an error or a mission that's not working | the section "Troubleshooting" below, the section "Queued deploy plan refusals" below |
 | Stay safe with keys and secrets; reach support | the section "Safety and support" below |
 
 ## Before you deploy
@@ -147,6 +149,8 @@ while the app stays broken. Settle these, then open the live link and use it:
 the section "What the app needs from outside itself" below.
 
 ## Rules you never break
+
+A user-saved `DATABASE_URL` wins when a mission first declares a managed database.
 
 - **Truth first.** Everything in these files was checked against moonbase's
   code and live pages. If something isn't here and you aren't sure, say "I'm
@@ -267,7 +271,7 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r74, 2026-11-24.** This version and date are the
+**moonbase skill — revision r78, 2026-11-25.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
 filename. r74 (2026-11-24): the mission badge reads "powered by moonbase" (was "hosted by moonbase") and its switch is **Show the moonbase badge**, in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below. r72 (2026-11-24): moonbase is described as the one platform that runs everything an app built with AI needs (hosting, database, domains, analytics, rollbacks, team access, and more, all run by your AI agent), not as hosting alone, in the skill description and the section "What moonbase is" below; the connector's initialize instructions open with the same line. r71 (2026-11-24): the managed database is described plainly as on every plan, Free included: one managed PostgreSQL database per mission, created on deploy when `moonbase.json` asks for one, with `DATABASE_URL` set for the app and the plan's storage used, in the section "Building for moonbase: a project that deploys first time" below, the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below, the section "What moonbase is" below and the section "What the app needs from outside itself" below. r70 (2026-11-24): `retryNote` appears only when the same error repeats within the current fix session, a start that fails shows as the health step with a shorter `start_log_tail`, and a Node range runs on the newest version it allows, in the section "Troubleshooting" below and the section "Building for moonbase: a project that deploys first time" below; `create_upload` states the launch budget (`launch_budget`), `check_project` lists the names a ready managed database provides (`env_vars_provided_by_moonbase`), and `tools_version` tells a tool list older than the server, in `SKILL.md`, the section "Troubleshooting" below and the section "What the app needs from outside itself" below. r69 (2026-11-24): the Launch check is described as on only where moonbase has turned it on for a mission (`launch_check` answers `not_available` elsewhere), in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below. r68 (2026-11-24): an app that exits while starting fails at once as `container_exited_on_start` with `start_log_tail`, and upload links say when they are used or expired, in the section "Troubleshooting" below and the section "The deploy API, CI and GitHub Actions" below. r67 (2026-11-24): `self_repair_notice` names what moonbase changed in the deployed copy, `list_env` shows the names moonbase sets for a managed database with source `engine`, and which connector tools a connection lists, in the section "Building for moonbase: a project that deploys first time" below, the section "What the app needs from outside itself" below, the section "Deploying for the user (when you can run commands)" below, the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below and the section "Plans, upgrading and billing" below. r66 (2026-11-24): moonbase provides the database. The guide to connecting an outside backend is removed; creating the managed database from `moonbase.json` is in the section "Building for moonbase: a project that deploys first time" below, and its connection code in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below; the managed-database passages state no backup schedule, retention or backup storage accounting. r65 (2026-11-24): reactivating a self-deleted account, in the section "Your account: notifications, activity, settings, security, export, delete" below. r64 (2026-11-23): each upload can be up to the plan's per-deploy size (`account_usage` gives the current number) instead of fixed size caps; the limit applies to the uploaded ZIP and the plan's storage to the unpacked total, in the section "Plans, upgrading and billing" below, the section "Building for moonbase: a project that deploys first time" below, the section "Troubleshooting" below and the section "What moonbase is" below. r62 (2026-11-23): the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below gains "Moving an existing database in": with the connector, `import_database` moves a PostgreSQL database from another provider into the mission's managed database in three calls (the screen where the person enters the connection string themselves, a preview with a `confirm_token`, then that token alone after the person's yes), under its own connection permission; `import_status` reports the result, and an import with refused statements is reported as incomplete, never as a match. r61 (2026-11-23): `database_page` opens the project's own Database page (`/missions/<project_id>/database`), in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below. r60 (2026-11-23): a deploy that outlasts the tool call returns `started_at`, and `deploy_status` with its slug shows `last_failed_attempt` when it failed (error code, moonbase's explanation and next step, Error ID, `moonbase_note`, `build_log_tail`), for 24 hours also on the slug of a first deploy that failed; `deploy_logs` marks a failed attempt the live version replaced with `superseded: true`, in the section "Troubleshooting" below. r58 (2026-11-23): every plan, Free included, can add one managed PostgreSQL database per Mission, created when the project asks for one; it uses the plan's storage, with no separate database allowance; files, versions and databases count toward one storage allowance, and `account_usage` shows the parts, in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below (that revision's managed-database backup statements were removed in r66). r57 (2026-11-23): the section "Versions and rollback" below gains "Delete old versions (free up storage)": deleting one version or everything older than the newest N in the app, and `delete_versions` with the connector in two calls (the list and a `confirm_token` first, then that token alone, after the person's yes), under its own connection permission; deletion is permanent, the live version always stays, and the freed storage shows in Usage and `account_usage`. r55 (2026-11-23): with the connector, a project whose sandbox cannot reach the upload host publishes through the connector itself: `upload_files` sends the files in batches (path, base64 content and SHA-256 each) and `commit_upload` publishes them, in `SKILL.md` and the section "Deploying for the user (when you can run commands)" below; a file too large for one call goes in parts (`part_index`, `part_count`); `source_url` also takes a public GitHub repository URL. r54 (2026-11-22): the section "Plans, upgrading and billing" below says visitors are counted for your information and never blocked, and `account_usage` reports them as a usage note, not a limit. r53 (2026-11-22): the `invalid_password` and `password_protection_disabled` rows in the section "Troubleshooting" below give the allowed password length and say when a password can be set, worded as `explain_error` gives them. r52 (2026-11-22): adds stored deployment history Error IDs and exact owner-scoped failure lookup; it distinguishes asynchronous receipts, recorded failure times and compatibility-attempt creation times without inferring missing historical IDs. `mission_info` also returns the owner's `protection_cache_purge.status` (`pending`, `not_queued` or `unknown`), described in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below. r51 (2026-11-22): keep the project ID a successful deploy prints and set `MOONBASE_MISSION_ID` to it for every later deploy of the same project, because an empty value creates a new project with a new address; the deploy commands in the section "Deploying for the user (when you can run commands)" below now warn when it is empty. r50 (2026-11-22): a truth sweep of the Skill and its references, the MCP tool descriptions and the explain_error catalogue, so each sentence matches what moonbase does now (passwords at launch, domain records, upload size limits, Node default, build-log tail, account export). The r36–r47 entries are in "Skill version history" at the end of the section "Safety and support" below. r35 adds a payment problem on the account (the banner in the app, and
 `payment` from `account_usage` and `platform_status`, with its Billing link) in
@@ -492,12 +496,40 @@ connector and connecting it again does that. Name a moonbase tool to the
 person only when it is in the list of tools you actually have. A file too large to write
 out in one call, such as an image, goes in parts: the same `path` and
 whole-file `sha256` with `part_index` (from 0) and `part_count`, one part per
-entry, over as many calls as needed (up to 64 parts and 10 MiB per file);
-moonbase joins them and checks the joined file, and the result's `incomplete`
-list names the parts still missing. A retried batch changes nothing, a failed
-deploy keeps the session for a fix and a new commit, a session is published
-at most once, and `expected_files` on the commit refuses a version with a file
-missing. An account holds up to 3 upload sessions not yet published at once. The
+entry, over as many calls as needed (up to 64 parts and 10 MiB per file).
+Optional `part_sha256` is the SHA-256 of that part's bytes alone; moonbase
+checks it on arrival. The whole-file `sha256` still applies to the joined
+file. The result's `incomplete` list names the parts still missing.
+`remove_paths` on `upload_files` lists staged paths to drop from that same
+session, including a file whose parts are incomplete. It does not delete a
+published version. `expected_files` on `commit_upload` checks the complete
+staged file list and any checksums you supply before publication.
+
+A repeated batch can be sent after an interrupted upload. If a deploy is
+confirmed not to have happened, the session can be corrected and committed
+again. When `commit_upload` returns `status: "unknown"`, do not replay that
+session's commit. Check `deploy_status` with the returned slug to observe the
+mission's current state. An unknown outcome can be an older claim whose
+deploy may still finish, or a terminal uncertain outcome; staged bytes are
+not guaranteed to remain. Checking status does not release a claim or prove
+that this attempt never started, and `not_found` does not prove it never
+started. Every new session needs its own full set of required project files,
+including unchanged files. Creating one can still be blocked by the account's
+upload-session limit.
+
+The existing limit of 3 active uploads also counts retained stale claims
+whose publish outcome is unresolved. When `upload_files` refuses with
+`upload_sessions_unresolved`, follow `next_tool: "deploy_status"` for the
+slugs in `unresolved_sessions`. `unresolved_session_count` gives the actual
+number of retained unresolved sessions; the list contains at most 3
+`session_id`/`slug` pairs, and `unresolved_sessions_truncated` says whether
+more were omitted. `open_session_ids` lists the other open sessions and
+`max_open_sessions` gives the limit. A status check observes the target; it
+does not release or retry the claim. Wait and try later, or contact support
+if the refusal continues. Do not promise an exact cleanup time or repeatedly
+create new sessions to work around the refusal.
+
+The
 one-time setting per client that allows the upload host, and a
 browser-assisted upload on the project's Deploy new version screen, are the
 other ways. A small text-only project can go inline as `files`, and
@@ -1246,6 +1278,8 @@ Allow at least 10 minutes for a build before giving up on the stream. For a
 ZIP over about 90 MB, send the same request to
 `https://upload.moonbase.cloud/api/projects/upload/stream` (same key, same
 fields).
+
+When runtime_selection is present, it reports the Node.js major confirmed by the deployment server for the uploaded engines.node range and how to choose another supported major.
 
 #### How to react to the outcome (one classification + retry policy)
 
@@ -3890,6 +3924,29 @@ Say you're not sure, point to https://moonbase.cloud/docs/troubleshooting and
 https://moonbase.cloud/docs/deploy-wont-work, and to support with the Error ID
 (the section "Safety and support"). A confident wrong answer is worse than "let's ask
 support".
+
+---
+
+## Queued deploy plan refusals
+
+A queued deploy can be refused by a plan limit after the first tool call returns.
+`deploy_status` with its `attempt_id`, or the project's slug, returns the failed
+receipt. When that attempt recorded enough plan-limit context and the current effective
+limit and measurements still match the refusal, the receipt also
+includes `next_tool`, `upgrade_url`, and any `deep_link` or `human_action`, using
+the same plan guidance as a synchronous refusal.
+
+The refusal stays attached to that attempt. Its recorded measurements describe
+that attempt; the plan names, availability and links in the guidance are checked
+against the owner's current account information when the receipt is read. The
+guidance does not retry the deploy or change the plan. The person opens any
+purchase link while signed in and chooses there; the connector cannot buy it.
+
+Older receipts without the required context, changed or unmeasured limits and
+usage, persistent overrides on the refused limit, unavailable plan data, or a
+receipt whose plan guidance cannot be read, keep their original response. Missing historical measurements
+are not reported as zero. A running, successful or uncertain attempt does not
+receive plan-refusal guidance.
 
 ---
 

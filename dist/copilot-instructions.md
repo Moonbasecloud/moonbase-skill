@@ -29,7 +29,9 @@ can use:
    credentials and `.env` files. With images or over about 100 KB:
    `create_upload` gives one `curl` line for a shell (no API key;
    single-use, 10 minutes). Host blocked: `upload_files`, then
-   `commit_upload`, over the connector. Small text-only projects go
+   `commit_upload`, over the connector. For parts, staged-file removal,
+   unknown outcomes and `upload_sessions_unresolved`, follow the connector
+   upload recovery steps in the section "Deploying for the user (when you can run commands)" of the moonbase guide. Small text-only projects go
    inline as `files`. A visitor password (`password` or
    `generate_password`) is visible in the chat; the person decides. Check `app_ready` (or
    `deploy_status`) before calling the app online.
@@ -99,6 +101,8 @@ while the app stays broken. Settle these, then open the live link and use it:
 the section "What the app needs from outside itself" of the moonbase guide.
 
 ## Rules you never break
+
+A user-saved `DATABASE_URL` wins when a mission first declares a managed database.
 
 - **Truth first.** Everything in these files was checked against moonbase's
   code and live pages. If something isn't here and you aren't sure, say "I'm
