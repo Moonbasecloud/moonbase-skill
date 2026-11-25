@@ -1,0 +1,50 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "moonbase",
+  "version": "1.80.0",
+  "description": "Deploy and run AI-built apps on moonbase: hosting, PostgreSQL, domains, rollbacks, analytics.",
+  "author": {
+    "name": "moonbase",
+    "url": "https://moonbase.cloud"
+  },
+  "homepage": "https://moonbase.cloud/docs/deploy-from-ai-chat",
+  "repository": "https://github.com/Moonbasecloud/moonbase-skill",
+  "license": "MIT",
+  "keywords": [
+    "moonbase",
+    "deploy",
+    "hosting",
+    "publish",
+    "custom domain",
+    "postgresql",
+    "rollback",
+    "analytics",
+    "mcp"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "moonbase",
+        "shortDescription": "Deploy and run AI-built apps",
+        "longDescription": "Put an app you built with AI online and keep running it from the chat: deploy, read why a deploy failed, connect a custom domain, set environment variables, roll back to an earlier version, invite teammates and read visitor stats. moonbase can create a managed PostgreSQL database for the app. You need a moonbase account and sign in to it in the browser; no API key is used. Some tools are available only on accounts or projects where moonbase has switched them on.",
+        "developerName": "moonbase",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "websiteURL": "https://moonbase.cloud",
+        "supportURL": "https://moonbase.cloud/contact",
+        "privacyPolicyURL": "https://moonbase.cloud/privacy",
+        "termsOfServiceURL": "https://moonbase.cloud/terms",
+        "defaultPrompt": [
+          "Put this app online with moonbase.",
+          "Why did my last moonbase deploy fail?",
+          "Connect my own domain to my moonbase app."
+        ],
+        "composerIcon": "./assets/logo-400.png",
+        "logo": "./assets/logo-400.png"
+      }
+    }
+  }
+}

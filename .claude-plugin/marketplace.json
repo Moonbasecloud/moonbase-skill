@@ -1,0 +1,17 @@
+{
+  "name": "moonbase",
+  "owner": {
+    "name": "moonbase"
+  },
+  "metadata": {
+    "description": "The moonbase plugin: the moonbase Skill and the moonbase connector."
+  },
+  "plugins": [
+    {
+      "name": "moonbase",
+      "source": "./",
+      "description": "Deploy and run AI-built apps on moonbase: hosting, PostgreSQL, domains, rollbacks, analytics.",
+      "category": "deployment"
+    }
+  ]
+}

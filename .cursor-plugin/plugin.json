@@ -1,0 +1,26 @@
+{
+  "name": "moonbase",
+  "version": "1.80.0",
+  "description": "Deploy and run AI-built apps on moonbase: hosting, PostgreSQL, domains, rollbacks, analytics.",
+  "displayName": "moonbase",
+  "author": {
+    "name": "moonbase"
+  },
+  "homepage": "https://moonbase.cloud/docs/deploy-from-ai-chat",
+  "repository": "https://github.com/Moonbasecloud/moonbase-skill",
+  "license": "MIT",
+  "logo": "assets/logo-400.png",
+  "keywords": [
+    "moonbase",
+    "deploy",
+    "hosting",
+    "publish",
+    "custom domain",
+    "postgresql",
+    "rollback",
+    "analytics",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./mcp.json"
+}

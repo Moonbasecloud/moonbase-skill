@@ -22,8 +22,9 @@ it and the person approves it; reconnecting alone does not add permissions.
 `get_build_guide` stays available without that permission.
 
 A deploy tool's setup refusal can also include `action_url`, pointing to the
-page for the setup step named in its message. Open the returned link rather
-than guessing an account or onboarding URL.
+page for the setup step named in its message. `deep_link` is the same page,
+and `human_action`, when present, says what the person does there. Open the
+returned link rather than guessing an account or onboarding URL.
 
 ## Deployment history and Error IDs
 
@@ -188,7 +189,7 @@ safe to try again after waiting.
 |---|---|---|
 | `auth_required` | Sign in required | Not signed in (API: no `Authorization` header). Sign in, or send `Authorization: Bearer mb_live_…`. |
 | `email_not_verified` | Verify your email first | The person's email address isn't verified yet, so nothing was deployed. Give the person the link in this error's message to verify it, then try again. |
-| `identity_required` | Finish setting up your account | The person hasn't finished setting up their moonbase account, so nothing was deployed. Give the person the link in this error's message to finish it, then try again. |
+| `identity_required` | Finish setting up your account | One step is left before the first deploy. Open the link in this error's message to finish it, then ask again. |
 | `terms_reconsent_required` | Terms of Service updated | moonbase's terms changed since the person last accepted them, so nothing was deployed. Give the person the link in this error's message to accept the current terms, then try again. |
 | `user_not_found` | Account not found | moonbase couldn't find the account this request belongs to. Ask the person to reconnect moonbase with their current account (in the assistant's connector settings, or with a new API key or create_upload link), then try again. If the person deleted the account themselves recently, they can reactivate it from the moonbase sign-in page (a one-time link goes to the account's email); otherwise they need to sign up again. |
 | `forbidden` | | Signed in as someone the mission is shared with as View. Ask the owner or an admin for Edit access. |

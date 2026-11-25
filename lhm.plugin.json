@@ -1,0 +1,16 @@
+{
+  "identifier": "moonbasecloud-moonbase-skill",
+  "name": "moonbase",
+  "version": "1.0.0",
+  "description": "Deploy and run AI-built apps on moonbase: hosting, PostgreSQL, domains, rollbacks, analytics.",
+  "author": "moonbase",
+  "authorUrl": "https://moonbase.cloud",
+  "category": "developer",
+  "cloudEndpoint": "https://app.moonbase.cloud/mcp",
+  "homepage": "https://github.com/Moonbasecloud/moonbase-skill",
+  "tags": [
+    "deploy",
+    "hosting",
+    "postgresql"
+  ]
+}

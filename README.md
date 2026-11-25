@@ -7,9 +7,9 @@ Hosting, database, domains, analytics, rollbacks, team access — and more. All 
 
 This repository is the **moonbase Skill**: instructions that teach any AI coding agent how to work with moonbase. With it, your agent can deploy a project, read why a deploy failed, set environment variables, connect a custom domain, roll back to an earlier version, invite teammates, read visitor stats, and download a mission's source. Each mission can have a managed PostgreSQL database (up to one per mission, on every plan, Free included).
 
-**Quick install:** add the connector `https://app.moonbase.cloud/mcp` to your AI tool ([setup per tool](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)), or get the Skill file for your tool at [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch). Details in [Install the Skill](#install-the-skill).
+**Quick install:** add the connector `https://app.moonbase.cloud/mcp` to your AI tool ([setup per tool](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)), or get the Skill file for your tool at [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch). Details in [Install](#install).
 
-**Current revision:** `r79` (2026-11-25) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
+**Current revision:** `r80` (2026-11-25) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
 
 ### → [moonbase.cloud](https://moonbase.cloud/?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)
 
@@ -43,7 +43,48 @@ Step-by-step setup for the connector: Claude, ChatGPT, Cursor, VS Code with GitH
 
 Your client sends the permissions it wants; you approve them in the browser, and you can review connected apps in your account. An assistant that asks for nothing gets only the first three rows, plus the build guide. Some tools are available only on accounts or projects where moonbase has switched them on. Other abilities, such as deleting old versions for good or importing a database, are separate permissions too.
 
+## Install
+
+This repository is also a plugin package: the Skill plus the moonbase connector, in one install. Pick your tool. On first use you sign in to moonbase in the browser and approve access; there is no API key to paste.
+
+**Claude Code** (inside a session):
+
+```text
+/plugin marketplace add Moonbasecloud/moonbase-skill
+/plugin install moonbase@moonbase
+```
+
+**Codex CLI**: run this, then open `/plugins` and install moonbase.
+
+```bash
+codex plugin marketplace add Moonbasecloud/moonbase-skill
+```
+
+**Gemini CLI:**
+
+```bash
+gemini extensions install https://github.com/Moonbasecloud/moonbase-skill
+```
+
+**Kiro:** Powers panel, Add Custom Power, Import power from a repository URL, then enter `https://github.com/Moonbasecloud/moonbase-skill`.
+
+**Cursor:** a team admin can import this repository as a team marketplace (Dashboard, Plugins & MCPs, Add Marketplace, Import from Repo). For one person, add the connector: [connect Cursor](https://moonbase.cloud/docs/connect-cursor?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch).
+
+**Cline:** ask Cline to set up the moonbase MCP server from this repository; the steps it needs are in [`llms-install.md`](llms-install.md).
+
+**Claude and ChatGPT in the browser, VS Code and others:** add the connector `https://app.moonbase.cloud/mcp`, as in [Deploy from any AI chat](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch).
+
+What was tested: on 2026-11-25 a local copy of this package passed `claude plugin validate` and installed with Claude Code 2.1.251 (the Skill and the connector were both listed; sign-in was not part of that test). The Codex, Gemini CLI, Kiro, Cursor and Cline steps follow each tool's published documentation read on that date and have not been run by us yet.
+
+### What the plugin connects to
+
+- **One remote server:** `https://app.moonbase.cloud/mcp`, run by moonbase, with OAuth sign-in. What it may do is in [What the connector can do](#what-the-connector-can-do-and-what-it-may-touch).
+- **Nothing else runs on install:** no hooks, no install scripts, no local server, no telemetry in the plugin. The Skill's two helper scripts run only when your agent runs them.
+- [Privacy](https://moonbase.cloud/privacy) · [Terms](https://moonbase.cloud/terms) · [Contact](https://moonbase.cloud/contact)
+
 ## Install the Skill
+
+The Skill alone, without the plugin:
 
 - **Easiest:** [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch) has the right file for your tool.
 - **From this repo:** take the file for your tool from `dist/`, or drop the whole `moonbase/` folder into a Claude-compatible assistant:
@@ -71,13 +112,15 @@ If its `revision` is higher than yours, download the new files from [moonbase.cl
 ## What's in this repo
 
 - **`moonbase/`**: the Skill: `SKILL.md` plus `references/` (what moonbase is, getting started, deploying for you, building for moonbase, what your app needs, builder platforms, API and CI, custom domains, versions and rollback, sharing and team access, Mission Control, account, billing, troubleshooting, safety and support) and the helper `scripts/`.
+- **`skills/moonbase/`**: the same Skill, in the folder plugin formats read. Generated at each release; identical to `moonbase/`.
+- **Plugin manifests** (version `1.80.0`, from the Skill revision): `plugin.json` and `mcp.json` ([Agent Plugins](https://agent-plugins.org)), `.agents/`, `.claude-plugin/`, `.cursor-plugin/`, `gemini-extension.json`, `lhm.plugin.json`, with `llms-install.md` and `assets/`.
 - **`dist/`**: ready-made files per tool, generated from `moonbase/` for each release.
 - **`moonbase-guide.md`**: the whole Skill as one file, for chats that take a single file.
 - **`build.mjs` / `adapters.json`**: the build that makes every format from `moonbase/` (`node build.mjs kit <folder>`).
 
 ## Safe by default
 
-This repo is documentation, helper scripts and a build script. It holds no secrets. When the helper script packages a project, `.env` files, `node_modules` and `.git` are always left out.
+This repo is documentation, plugin manifests, helper scripts and a build script. It holds no secrets. When the helper script packages a project, `.env` files, `node_modules` and `.git` are always left out.
 
 ## More
 
