@@ -1,0 +1,40 @@
+name: Bug report
+description: Something in this repository is broken or a fact is wrong.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. For account or mission help, use [Support](https://moonbase.cloud/support). For security issues, don't use this form: see [SECURITY.md](https://github.com/Moonbasecloud/.github/blob/main/SECURITY.md).
+        Never paste API keys, tokens or other secrets here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: File, page, connector tool or version (for example, the Skill revision in VERSION).
+  - type: input
+    id: agent
+    attributes:
+      label: AI agent or tool
+      description: For example Claude, ChatGPT, Cursor, GitHub Actions.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Logs, screenshots or an error reference. Remove anything secret first.
