@@ -26,6 +26,23 @@ This repository is the **moonbase Skill**: instructions that teach any AI coding
 
 An API key is only for your own automation, such as CI or a script that calls the moonbase API. Keep it in a secret manager or an environment variable. Never paste it into a chat.
 
+## Tools with a setup guide
+
+Step-by-step setup for the connector: Claude, ChatGPT, Cursor, VS Code with GitHub Copilot, Gemini CLI and Devin Desktop (formerly Windsurf), in [Deploy from any AI chat](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch). Codex and other agents that read `AGENTS.md` can use the Skill file from `dist/`.
+
+## What the connector can do, and what it may touch
+
+| Permission | What it covers | Tools |
+|---|---|---|
+| Read (granted by default) | See projects, versions, logs, domains, members, status | `list_missions` `mission_info` `deploy_status` `check_project` `list_versions` `list_env` `domain_status` `deploy_logs` `explain_error` `visitor_stats` `launch_check` `list_members` `platform_status` |
+| Write (granted by default) | Deploy, change settings, domains, variables, members, password protection; export the database | `create_mission` `deploy` `create_upload` `rollback` `set_env` `delete_env` `add_domain` `verify_domain` `remove_domain` `pause_mission` `resume_mission` `set_password` `remove_password` `invite_member` `set_member_role` `remove_member` `export_database` |
+| Account (granted by default) | Plan and usage, read-only | `account_usage` `upgrade_link` |
+| Delete a project (asked for separately) | Starts a deletion; the person finishes it in the moonbase app | `delete_mission` |
+| Download source (asked for separately) | The raw source ZIP, which may contain secrets | `download_source` |
+| No permission | The build guide | `get_build_guide` |
+
+Your client sends the permissions it wants; you approve them in the browser, and you can review connected apps in your account. An assistant that asks for nothing gets only the first three rows, plus the build guide. Other abilities, such as deleting old versions for good or importing a database, are separate permissions too.
+
 ## Install the Skill
 
 - **Easiest:** [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch) has the right file for your tool.
