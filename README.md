@@ -39,7 +39,7 @@ An API key is only for your own automation, such as CI or a script that calls th
 - **From a release:** each [release](https://github.com/Moonbasecloud/moonbase-skill/releases) carries the `.skill` bundle, the kit ZIP and the single-file guide.
 - **For agent builders:** the discovery index is at `https://moonbase.cloud/.well-known/agent-skills/index.json`.
 
-Example prompt: *"Deploy this project to moonbase and give me the link."*
+Example: *"Build me a booking app for my yoga studio, with a database for clients and classes, and put it live on moonbase."* Your agent writes the app, moonbase creates its PostgreSQL database on deploy, and you get a live HTTPS link. Then keep going in the same chat: *"Add a page for monthly passes."* *"Connect my domain."* *"Roll back to yesterday's version."*
 
 ## Staying up to date
 
