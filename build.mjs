@@ -144,6 +144,7 @@ function coreSections(core, headings) {
 const CHAT_KNOWLEDGE = (where) => `## Your knowledge file
 
 ${where} holds the moonbase guide. Read the relevant section before answering.
+Its "Connector tools" section lists every tool.
 If the answer isn't there, point to https://moonbase.cloud/docs.
 
 Once their account is ready, use the moonbase connector if your chat has it
@@ -159,7 +160,8 @@ export const FULL_GUIDE_URL = "https://moonbase.cloud/api/skill";
 // saying the same thing.
 const FULL_GUIDE_POINTER = `## Full guide
 
-Every step, button, error code and rule: \`moonbase-guide.md\` if this project
+Every tool ("Connector tools"), step, button, error code and rule:
+\`moonbase-guide.md\` if this project
 has it, else ${FULL_GUIDE_URL} (plain text). Read the section you need; don't
 answer from memory.
 `;

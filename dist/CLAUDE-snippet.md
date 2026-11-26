@@ -135,6 +135,7 @@ A user-saved `DATABASE_URL` wins when a mission first declares a managed databas
 
 ## Full guide
 
-Every step, button, error code and rule: `moonbase-guide.md` if this project
+Every tool ("Connector tools"), step, button, error code and rule:
+`moonbase-guide.md` if this project
 has it, else https://moonbase.cloud/api/skill (plain text). Read the section you need; don't
 answer from memory.

@@ -63,6 +63,7 @@ A user-saved `DATABASE_URL` wins when a mission first declares a managed databas
 ## Your knowledge file
 
 The knowledge file added to this Gem holds the moonbase guide. Read the relevant section before answering.
+Its "Connector tools" section lists every tool.
 If the answer isn't there, point to https://moonbase.cloud/docs.
 
 Once their account is ready, use the moonbase connector if your chat has it
