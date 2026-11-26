@@ -22,7 +22,7 @@ deploy, not after.)
     connections**;
   - **heavy or GPU compute**;
   - a required **persistent local disk** — moonbase's filesystem is
-    **ephemeral**, so data lives in the mission's managed database (see *Data
+    **ephemeral**, so data lives in the project's managed database (see *Data
     and storage* below), not in files.
 
   A static export is often the way around a near-miss. Keep it short and
@@ -33,7 +33,7 @@ deploy, not after.)
 
 - **Static:** a ready-to-serve `index.html` at the root, no build step, and
   no Node server in `package.json`. moonbase serves the files as they are. A
-  ZIP with just one `index.html` works. Static missions never sleep.
+  ZIP with just one `index.html` works. Static projects never sleep.
 - **Dynamic:** a `package.json` with a Node server (Express, plain Node), or a
   project that needs building (Vite, Next.js, React, Create React App).
   moonbase installs, builds and runs it.
@@ -135,7 +135,7 @@ WebSockets (see *Limits and runtime*), and anything that needs a native build
 toolchain to install.
 
 **Verify a Python deploy really works** (not just that it went live): open the
-mission's intended route and confirm the app answers with real content, not a
+project's intended route and confirm the app answers with real content, not a
 server-error page. A missing dependency or an import error lets the container
 start and then crash on the first request, so a deploy that reports `done`
 still needs this check. See *Before you call it done*.
@@ -189,7 +189,7 @@ old `.env`), and it runs an **automated gate** that *fails* the upload if
 anything forbidden is in the archive — rather than trusting a human to eye a
 `unzip -l`. Use the tool; don't hand-roll a shorter exclude list.
 
-Size: every plan has a per-upload limit. Each upload can be up to your plan's per-deploy size. The limit applies to the ZIP you upload. Your plan's storage also applies to the unpacked total. Leaving out `node_modules` and build output keeps a normal app
+Size: one ZIP can be up to the per-deploy size, currently the same on every plan (`account_usage` shows the live value). The limit applies to the ZIP you upload, and your plan's storage also applies to the unpacked total. Leaving out `node_modules` and build output keeps a normal app
 far below that. If the project really is huge (videos, big datasets), say so
 before uploading.
 
@@ -242,17 +242,17 @@ container, so anything the app writes to local disk while it runs — an
 SQLite file, uploaded images, a `data/` folder — is **gone on the next
 deploy**. Don't count on writing to the app's own folder at all: the
 filesystem can be read-only, and the only place to rely on for temporary files
-is a small `/tmp`, which can be cleared whenever the mission restarts or
+is a small `/tmp`, which can be cleared whenever the project restarts or
 sleeps. Never treat local disk as the place the real data lives.
 
-To keep data between deploys, the app keeps it in **the mission's managed
+To keep data between deploys, the app keeps it in **the project's managed
 PostgreSQL database**, which moonbase creates and runs:
 
 - **Every plan, Free included, can add one managed PostgreSQL database per
-  mission** (up to one). It uses the
+  project** (up to one). It uses the
   plan's storage; there is no separate database allowance.
-  It needs a **dynamic** mission (one moonbase builds and runs): on a static
-  mission a `database` entry stops the deploy.
+  It needs a **dynamic** project (one moonbase builds and runs): on a static
+  project a `database` entry stops the deploy.
 - **You create it by declaring it.** Put a `database` entry in the
   `moonbase.json` at the project's root, with the command that creates the
   tables, and deploy:
@@ -270,14 +270,14 @@ PostgreSQL database**, which moonbase creates and runs:
   PostgreSQL driver. Verified TLS is required and is the app's to configure
   in its driver. The connection code, the migrate
   command's rules, the limits and what the status tools report are in
-  `references/mission-control.md`, section *Managed database: one per Mission,
+  `references/mission-control.md`, section *Managed database: one per project,
   inside the plan's storage*. Read it before you write database code.
 - **Uploaded files or media** don't belong on the container's disk either:
   keep them in object storage the app reaches over HTTPS, with its
   credentials set as environment variables.
 
 So when the user asks "will my data survive a redeploy?", the answer is always
-the same: data in the mission's managed database survives; the
+the same: data in the project's managed database survives; the
 container's own filesystem does not. You do **not** need to ask the user about
 this — it is always true. If the project genuinely needs to keep data and has
 no database yet, declare the managed database and write the app against
@@ -286,7 +286,7 @@ them to another provider for a database.
 
 ## Limits and runtime (know these before you build)
 
-A running mission is one small web container. These limits are always true;
+A running project is one small web container. These limits are always true;
 build within them instead of shipping something that fails for the user and
 then asking moonbase about it.
 
@@ -296,7 +296,7 @@ then asking moonbase about it.
   own port, anything public — plus DNS. Only two kinds of destination are blocked, and always
   will be: **private, internal and cloud-metadata addresses** (RFC1918
   `10/172.16/192.168`, loopback, and the `169.254.x` metadata range — this
-  protects moonbase and other missions), and **direct SMTP on port 25**
+  protects moonbase and other projects), and **direct SMTP on port 25**
   (anti-spam). Authenticated mail submission on **465 and 587 is allowed**, so
   send through your email provider's submission port or its HTTPS API, not a
   raw port-25 mail server.
@@ -312,19 +312,19 @@ then asking moonbase about it.
   upload, above roughly sixteen megabytes is rejected. For large files, upload
   straight from the browser to object storage instead of through the
   app.
-- **Resources per mission are small and fixed** — about half a gigabyte of
+- **Resources per project are small and fixed** — about half a gigabyte of
   memory, a fraction of a CPU core, and a capped number of processes. A
   memory-hungry app (large in-memory datasets, heavy image or video
   processing) can be killed; keep the working set small.
 - **One web process, no background runtime.** There is no separate worker,
-  cron, or job-queue service, and a free mission sleeps when idle (below), so
+  cron, or job-queue service, and a free project sleeps when idle (below), so
   in-process timers and schedulers stop. For scheduled or background work,
   trigger it from an outside scheduler that calls an HTTPS endpoint on the
-  mission.
-- **Free missions sleep when idle.** A dynamic mission on the free plan stops
+  project.
+- **Free projects sleep when idle.** A dynamic project on the free plan stops
   after about thirty minutes with no traffic and wakes automatically on the
   next request, so the first request after it slept is slow (a cold start of a
-  few seconds); after that it is fast again. Paid missions stay running. That
+  few seconds); after that it is fast again. Paid projects stay running. That
   is the answer to "why was the first load slow?" and "does my app stay up?" —
   free sleeps and cold-starts, paid stays warm.
 
@@ -364,7 +364,7 @@ The **Compatibility Engine** checks the project and repairs it on a copy.
       have failed the upload otherwise.
 - [ ] No real secrets in the ZIP; every variable is listed in `.env.example`.
 - [ ] No `localhost` URLs in the app's own code.
-- [ ] Data the app keeps goes to the mission's managed database, declared in
+- [ ] Data the app keeps goes to the project's managed database, declared in
       `moonbase.json` and read from `DATABASE_URL` (see *Data and storage*),
       never to the container's disk and never through a hardcoded address.
 

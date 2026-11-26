@@ -1,10 +1,10 @@
 # Custom domains
 
-Every mission is **automatically** live at `<mission>.moonbase.host` with HTTPS
+Every project is **automatically** live at `<mission>.moonbase.host` with HTTPS
 the moment it deploys — that is its shareable address right away, so you never
 need a custom domain to go live. A custom domain (like `example.com` or
 `app.example.com`) is an **optional, later** step: add it only **after** the
-mission already exists and is live, and it needs a **paid plan**.
+project already exists and is live, and it needs a **paid plan**.
 
 Explain DNS simply: "DNS is the internet's address book. You'll add two lines
 to your domain's address book: one that says 'send visitors to moonbase', and
@@ -16,10 +16,10 @@ never changes anything at the registrar; the user adds the record.
 
 ## Step by step
 
-1. In moonbase, open **Domains** (in the sidebar, or from the mission's Mission Control).
+1. In moonbase, open **Domains** (in the sidebar, or from the project's Mission Control).
 2. Click **Add domain**.
 3. Type the domain (`example.com` or `app.example.com`) and pick which
-   mission it should show.
+   project it should show.
    *moonbase shows the exact DNS records to add. Keep this page open.*
 4. In a new tab, sign in to your registrar and open the DNS settings for that
    domain.
@@ -33,7 +33,7 @@ never changes anything at the registrar; the user adds the record.
    - **Subdomain** (`www.example.com`, `app.example.com`): a **CNAME** record.
      - Type: `CNAME`
      - Name: `www` (or `app`, etc.)
-     - Value: your mission's own address shown on the Domains page, like
+     - Value: your project's own address shown on the Domains page, like
        `your-mission.moonbase.host` (never a `*.` wildcard: registrars reject
        it)
      - TTL: `300`
@@ -95,7 +95,7 @@ custom domains, it names the cheapest plan that does: upgrade
 ## Honest limits
 
 - Wildcard domains (`*.example.com`) aren't supported.
-- Traffic is measured per mission, not per domain.
+- Traffic is measured per project, not per domain.
 - Custom domains are on paid plans only (see `billing.md`).
 
 moonbase may send notifications such as "DNS verification pending", "Domain

@@ -1,15 +1,15 @@
 # Versions and rollback
 
-Every upload to a mission is a new **version**. The address stays the same,
+Every upload to a project is a new **version**. The address stays the same,
 and settings and environment variables carry over.
 
 ## Ship a new version (browser)
 
-1. Open the mission's **Mission Control** (from **Missions**, or click the
-   mission on the **Dashboard**).
+1. Open the project's **Mission Control** (from **Missions**, or click the
+   project on the **Dashboard**).
 2. Click **Deploy new version**.
    *A window opens to drop the new ZIP, folder or files. It says it's a new
-   version of your mission's address.*
+   version of your project's address.*
 3. Drop the files and launch.
 4. *While it builds, the old version keeps serving visitors.* When the new
    one is ready, it takes over.
@@ -30,7 +30,7 @@ deployed, its size and framework, with the live one marked.
 3. *moonbase redeploys that version's stored ZIP (no upload needed), and it
    becomes the live version.*
 
-The honest limit: moonbase keeps the stored ZIP for each mission's most
+The honest limit: moonbase keeps the stored ZIP for each project's most
 recent versions and always for the live one. Older versions stay
 listed but can't be restored or downloaded. If the user may want an old
 build later, they should keep that ZIP themselves.
@@ -42,14 +42,14 @@ build later, they should keep that ZIP themselves.
 3. *You get `<mission>-v<number>.zip`, exactly the ZIP that version was
    deployed from.*
 
-- Only the mission's owner can download archives.
+- Only the project's owner can download archives.
 - Each download is recorded in the Activity log as "Version downloaded" (or "Downloaded v<number>").
 - Downloads are rate-limited; if refused, wait a few minutes.
 - The archive holds the files as deployed: the upload plus any cleanup or
   repair moonbase made for that version. A server app's `.env` or other secrets
   from the upload are in it too. Environment variables set in moonbase are
   **not** in it.
-- Works whether the mission is live, asleep or paused.
+- Works whether the project is live, asleep or paused.
 - If a plan limits how many versions are kept, moonbase emails before older
   versions are removed.
 
@@ -69,9 +69,9 @@ versions frees room.
 - The live version always stays. **Delete older versions** also leaves
   backup points in place; deleting a backup point asks for its own
   confirmation.
-- While a deploy or rollback of the mission is running, deleting is refused;
+- While a deploy or rollback of the project is running, deleting is refused;
   it works once that finishes.
-- The mission's database, environment variables and live files are not
+- The project's database, environment variables and live files are not
   changed.
 - The Usage page shows the freed storage once the deletion finishes. If a
   stored ZIP can't be removed right away, the version is still deleted and

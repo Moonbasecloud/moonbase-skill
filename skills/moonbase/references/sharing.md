@@ -1,8 +1,8 @@
-# Sharing a mission with teammates
+# Sharing a project with teammates
 
-You can invite people to a mission so they can see it, deploy it, or manage
-it. This is about working **on** a mission together. (To show the finished
-mission to anyone, just send them its link; no invite needed.)
+You can invite people to a project so they can see it, deploy it, or manage
+it. This is about working **on** a project together. (To show the finished
+project to anyone, just send them its link; no invite needed.)
 
 Sharing is available on **paid plans**. On the free plan the **Share**
 window explains this and offers an upgrade.
@@ -14,14 +14,14 @@ window explains this and offers an upgrade.
 | **Can view** | View | See everything. Change nothing. |
 | **Can edit** | Edit | Deploy, roll back, change settings and environment variables. |
 | **Can manage** | Admin | Everything in Edit, plus inviting people (as Can view or Can edit) and re-checking an existing domain (**Verify**). Adding, removing or changing a domain stays with the owner. |
-| | Owner | The account the mission belongs to. |
+| | Owner | The account the project belongs to. |
 
 Someone with View who tries to deploy gets "forbidden": ask the owner or an
 admin for Edit access.
 
 ## Invite someone (owner or admin)
 
-1. Open the mission and click **Share**.
+1. Open the project and click **Share**.
    *A "Share mission" window opens.*
 2. Under **Invite people**, type their **Email address**.
 3. Pick their **Access** (Can view / Can edit / Can manage).
@@ -34,7 +34,7 @@ Managing people, in the same window:
   shows "Expired").
 - Change someone's role from the menu next to their name.
 - **Remove** someone: they lose access immediately.
-- Each plan allows a maximum number of people per mission (pending invites
+- Each plan allows a maximum number of people per project (pending invites
   count too). moonbase says so when it's reached.
 
 ## Manage people from an AI agent (connector)
@@ -91,7 +91,7 @@ window, with the same rules (owner or admin, paid plan):
 | "Verify your email first" | Verify that address (check the inbox), then come back. |
 | "This invitation has expired" | Ask the person who invited you to send it again. |
 | "This invitation isn't valid" | It was cancelled, already accepted, or replaced by a newer one. Ask for a new one. |
-| "Sharing isn't available for this mission right now" | The mission's owner needs a paid plan to share it. |
+| "Sharing isn't available for this mission right now" | The project's owner needs a paid plan to share it. |
 | "This mission already has the most people it can have" | Ask the inviter to make room, then try again. |
 
 If you weren't expecting an invite, you can ignore it. Nothing changes until

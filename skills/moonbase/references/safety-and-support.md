@@ -12,7 +12,7 @@
   `0600` secrets file kept **outside** the repo and never committed — e.g. a
   curl `--config`/`-H @file` header file (see `api-and-ci.md`); a secret
   manager or a stdin pipe is better still.
-- A moonbase key works for **every mission on its account**. A leaked key is
+- A moonbase key works for **every project on its account**. A leaked key is
   serious: delete it and make a new one.
 - The full key is shown **once** when created. After that only a masked form
   like `mb_live_••••••••4F2A` is visible. Lost it? Delete the key and create a
@@ -43,8 +43,8 @@
 
 ## Files moonbase does not serve, and default headers
 
-- On every mission, static or app, moonbase answers **404** for these paths,
-  whatever the mission's own code does: `.env` and `.env.*`, folders such as
+- On every project, static or app, moonbase answers **404** for these paths,
+  whatever the project's own code does: `.env` and `.env.*`, folders such as
   `.git/` and `.svn/`, credential files such as `.npmrc`, `.htpasswd` and
   `.aws/`, database files and dumps (`.sql`, `.sqlite`, `.db`), backup
   leftovers (`.bak`, `.old`, `.orig`, `~`, `*backup*.zip`), private keys
@@ -54,15 +54,15 @@
 - A static upload also leaves out the `.env` family, `.git/` folders, SSH key
   files and any text or JSON file holding a private key. They are listed in
   `skipped_entries` after the deploy.
-- When the mission does not send them itself, moonbase adds
+- When the project does not send them itself, moonbase adds
   `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: strict-origin-when-cross-origin` and a
   `frame-ancestors` policy. A header the app sends is kept as the app sent
   it. If the app sends `X-Frame-Options` or its own `frame-ancestors`,
   moonbase adds no `frame-ancestors`, so the app's framing rule applies, even
-  if the Mission Control preview then cannot show the mission. Missions are served
+  if the Mission Control preview then cannot show the project. Projects are served
   over HTTPS only; plain HTTP redirects to HTTPS.
-- These are protections on moonbase's side. They do not check the mission's own
+- These are protections on moonbase's side. They do not check the project's own
   code for security problems.
 
 ## Account safety
@@ -78,12 +78,12 @@ Contact support (https://moonbase.cloud/contact) when:
   `mission_slug_unusable`, a suspected false `malware_detected`,
   `scan_too_large`);
 - a deploy keeps failing and the project builds fine on your computer;
-- the mission is unreachable on its `moonbase.host` address and isn't
+- the project is unreachable on its `moonbase.host` address and isn't
   paused or asleep;
 - you need the full build log (support can find it from the Error ID);
 - billing problems or a refund.
 
-Always include: the **Error ID** (`TRK-…`), the mission's name and address,
+Always include: the **Error ID** (`TRK-…`), the project's name and address,
 when it started, and the exact message or browser error.
 
 Status of moonbase itself: the "Status" and "Incident History" links in the
@@ -105,11 +105,11 @@ What r7 carried forward from r6:
 - One classification + retry policy for deploys: branch on the stable machine
   code, retry only the named provider-side faults (never the `our_side`
   category), count the first attempt, and never retry an unknown outcome.
-- Setting a mission's secrets over the env API is the documented step (set,
+- Setting a project's secrets over the env API is the documented step (set,
   verify the key names, redeploy), sent on stdin so no value hits the command
   line; the API reference now lists that route, and the write is one atomic,
   cap-checked transaction that holds the per-mission cap under concurrency.
 - Database examples verify the server's TLS identity (`verify-full` / verify
   the peer), not just encrypt the connection.
-- Check a mission's password state before calling it private, and treat the
+- Check a project's password state before calling it private, and treat the
   packaging gate as a filename filter, not a secrets scanner.

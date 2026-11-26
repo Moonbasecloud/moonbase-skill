@@ -1,16 +1,16 @@
 # Troubleshooting
 
-First rule: **a failed deploy never takes a working mission offline.** If the
-mission already had a live version, that version keeps serving while you fix
+First rule: **a failed deploy never takes a working project offline.** If the
+project already had a live version, that version keeps serving while you fix
 the new one — stay calm and tell the user that. On a **first** deploy it's
 different: there's no earlier version to fall back to, so a failed first deploy
-means the mission isn't up yet. Don't reassure the user that "the old version
+means the project isn't up yet. Don't reassure the user that "the old version
 is still live" when there isn't one.
 
 Second rule: read moonbase's own message first. Every failure shows a plain
 title, an explanation, a next step and an **Error ID** (`TRK-…`; in API and
 tool results it is the `trace_id` field, or `trkId`). Prefer moonbase's words
-over guessing, and never delete a mission to "start fresh".
+over guessing, and never delete a project to "start fresh".
 
 ## Connector access and setup links
 
@@ -155,26 +155,26 @@ variable. Make the app work from the root of its address, then upload it again.
 
 ## "My mission is offline"
 
-1. Open the mission's `<mission>.moonbase.host` address in a new tab.
+1. Open the project's `<mission>.moonbase.host` address in a new tab.
 2. Works there but not on your domain? It's the domain: check the DNS record
    and status on **Domains** (`custom-domains.md`).
 3. Neither works? Open **Mission Control**: is it **Paused** (resume it) or
    **Asleep** (the first visit wakes it in a second or two)?
 4. Try another network, to rule out your connection.
-5. Still down? Contact support with the mission's name, address, when it
-   started and the exact browser error. Don't delete the mission.
+5. Still down? Contact support with the project's name, address, when it
+   started and the exact browser error. Don't delete the project.
 
 ## Other symptoms
 
 | Symptom | Cause → fix |
 |---|---|
-| "Waking up your app" / loading screen | A sleeping free-plan mission waking up. Wait a second or two. |
+| "Waking up your app" / loading screen | A sleeping free-plan project waking up. Wait a second or two. |
 | Changed an environment variable but nothing changed | Changes apply on the next deploy. With the connector, after the person approves the live change, call `redeploy` to rebuild the active stored archive with the saved values. It keeps the same version number and requires a usable active archive. Check an unconfirmed outcome with `deploy_status` before another attempt. |
 | Domain won't verify | Record must match exactly; A for main domain, CNAME for subdomain; Cloudflare grey cloud; wait up to 48h; click **Verify** again. |
 | Adding a domain says another account added it but never proved it (`domain_held_unverified`) | Add the TXT record moonbase shows (name and value) at the DNS provider, then add the domain again. Over the connector, open the returned `domain_page` link for the person. See `custom-domains.md`. |
-| Traffic numbers don't load | A missing data source, not a broken mission. Try later. |
+| Traffic numbers don't load | A missing data source, not a broken project. Try later. |
 | A script or CI job stopped authenticating | Its API key was probably deleted. Check **API Keys**; create a new key and update the secret. |
-| moonbase's own error page (not your mission's) | Part of the app failed to load. Use the way back it offers; missions aren't affected. Repeated? Contact support. |
+| moonbase's own error page (not your project's) | Part of the app failed to load. Use the way back it offers; projects aren't affected. Repeated? Contact support. |
 | A shared invite won't accept | See the table in `sharing.md`. |
 
 ## Every error moonbase can show at deploy time
@@ -192,7 +192,7 @@ safe to try again after waiting.
 | `identity_required` | Finish setting up your account | One step is left before the first deploy. Open the link in this error's message to finish it, then ask again. |
 | `terms_reconsent_required` | Terms of Service updated | moonbase's terms changed since the person last accepted them, so nothing was deployed. Give the person the link in this error's message to accept the current terms, then try again. |
 | `user_not_found` | Account not found | moonbase couldn't find the account this request belongs to. Ask the person to reconnect moonbase with their current account (in the assistant's connector settings, or with a new API key or create_upload link), then try again. If the person deleted the account themselves recently, they can reactivate it from the moonbase sign-in page (a one-time link goes to the account's email); otherwise they need to sign up again. |
-| `forbidden` | | Signed in as someone the mission is shared with as View. Ask the owner or an admin for Edit access. |
+| `forbidden` | | Signed in as someone the project is shared with as View. Ask the owner or an admin for Edit access. |
 | `confirmation_required` (from `invite_member` or `set_member_role`) | Waiting for a confirmation in moonbase | Not an error: nothing was sent or changed yet. A person signed in to moonbase confirms it in the Share window at `confirm_url`; the link expires at `confirm_expires_at`, within 30 minutes of the call. Open that link for them. If it has expired, call the tool again for a new link. See `sharing.md`. |
 | `forbidden` (a connector team tool error) | Not allowed for this role | This account's role on the project doesn't allow this change (for example, managing people needs the owner or Can manage access, and the owner's own access can't be changed); the message says which. list_members shows this account's role and the people on the project. |
 
@@ -212,7 +212,7 @@ it.
 | `invalid_key` | API key not accepted | Wrong, revoked or no deploy scope. A password reset, a password change or an email change on the account can turn off all its API keys as a precaution. Ask the person to create a new key in **API keys** (https://app.moonbase.cloud/api-keys), open that link for them, and have them put the key in the CI secret store, not in the chat. |
 | `key_expired` | API key expired | Ask the person to create a new key in **API keys** (https://app.moonbase.cloud/api-keys) and use it. |
 | `no_key` | | Status endpoint called without a key. Send `Authorization: Bearer mb_live_…`. |
-| `not_found` | | Status endpoint: no mission with this address on the key's account. Check the address and the account. |
+| `not_found` | | Status endpoint: no project with this address on the key's account. Check the address and the account. |
 
 ### The upload itself
 
@@ -248,17 +248,17 @@ it.
 | `scan_incomplete` | Upload paused — scan didn't finish | Retry ✓ in a few minutes. |
 | `scan_too_large` | Upload paused — file too large to scan | Make it smaller, or contact support. |
 
-### Names and missions
+### Names and projects
 
 | Code | Title | What it means → what to do |
 |---|---|---|
 | `invalid_name` | Mission name isn't valid | Use 3–32 lowercase letters, numbers and single hyphens, starting with a letter. |
-| `name_taken` | Name already taken | Pick another name. To update **your own** mission at that address, ship a new version (API: `redeployProjectId`). |
-| `name_recently_used` | Name recently used | Belonged to a recently deleted mission and is on hold. Pick another. |
-| `mission_slug_unusable` | | This mission's address is too short to deploy to now. Contact support to rename it. |
+| `name_taken` | Name already taken | Pick another name. To update **your own** project at that address, ship a new version (API: `redeployProjectId`). |
+| `name_recently_used` | Name recently used | Belonged to a recently deleted project and is on hold. Pick another. |
+| `mission_slug_unusable` | | This project's address is too short to deploy to now. Contact support to rename it. |
 | `mission_slug_unusable` (a connector tool error or `deploy_status` result code) | Project address can't be used | This project's current address is too short for moonbase to publish to anymore, so this version was not published and the live version is unchanged. Nothing in the code needs changing. The person can contact moonbase support to get the project renamed, then deploy again. |
-| `project_not_found` | Mission not found | The mission you're updating isn't found or isn't yours. Pick the right mission (API: look up the id with the status endpoint). |
-| `upload_token_slug_mismatch` | | Internal upload token used for another mission. API users: use the API key. |
+| `project_not_found` | Mission not found | The project you're updating isn't found or isn't yours. Pick the right project (API: look up the id with the status endpoint). |
+| `upload_token_slug_mismatch` | | Internal upload token used for another project. API users: use the API key. |
 | `upload_token_slug_mismatch` (an upload link's response) | Upload link is for another project | This upload link belongs to a different project. Get a new link from create_upload for this project. |
 | `not_found` (a connector tool error or `deploy_status` result code) | Not found | The project, version, domain, deploy attempt or person asked for doesn't exist or isn't this account's; a tool error's message says which. list_missions shows this account's projects, and list_versions a project's versions. |
 
@@ -267,8 +267,8 @@ it.
 | Code | Title | What it means → what to do |
 |---|---|---|
 | `plan_limit_exceeded` (`reason`: `max_deploy_size`) | Deploy size limit reached | Over the plan's per-upload size. Each upload can be up to your plan's per-deploy size. Make the ZIP smaller and check your plan's current per-deploy size. |
-| `plan_limit_exceeded` (`reason`: `max_sites`) | Mission limit reached | No free mission slot. Ship a new version of an existing mission, delete one, or upgrade. |
-| `plan_limit_exceeded` (`reason`: `max_storage`) | Storage limit reached | Would pass total storage. Delete older versions or missions, or upgrade. |
+| `plan_limit_exceeded` (`reason`: `max_sites`) | Mission limit reached | No free project slot. Ship a new version of an existing project, delete one, or upgrade. |
+| `plan_limit_exceeded` (`reason`: `max_storage`) | Storage limit reached | Would pass total storage. Delete older versions or projects, or upgrade. |
 | `plan_limit_exceeded` (a connector tool error or `deploy_status` result code) | Plan limit reached | This deploy would go past a limit of this account's plan (number of projects, storage, or size per deploy), so it was not published. For an upload, its reason field names the limit; a tool error's message names it too. account_usage shows each limit and its use. upgrade_link returns the plans page. |
 | `weight_overage` | Storage upgrade needed | Would pass the free storage. Upgrade or free up storage. |
 | `upgrade_required` | Upgrade required | This needs a paid plan. Upgrade. |
@@ -281,7 +281,7 @@ Show the exact limit from the **structured fields** (`reason`, and
 
 | Code | Title | What it means → what to do |
 |---|---|---|
-| `deploy_in_progress` | A deploy is already running | One build per mission at a time. Retry ✓ after `retry_after_sec` seconds. |
+| `deploy_in_progress` | A deploy is already running | One build per project at a time. Retry ✓ after `retry_after_sec` seconds. |
 | `superseded_by_newer_version` (a `deploy_status` result code) | Replaced by a newer version | Not an error. A newer deploy or upload of the same project replaced this one; deploy_status with the newer attempt_id shows its progress. |
 | `source_unavailable` (a `deploy_status` result code) | Stored upload could not be read | moonbase could not read back the stored upload after maintenance, so this version was not published. The current live version is unchanged. Upload this version again. |
 | `expired_during_maintenance` (a `deploy_status` result code) | Waited past its maintenance deadline | This version was still waiting at its expires_at and was not published. The live version is unchanged. Deploy again: for a queued deploy, with a new idempotency_key; for an upload link, with a new link from create_upload. |
@@ -293,7 +293,7 @@ Show the exact limit from the **structured fields** (`reason`, and
 | `deploy_failed` | Deploy failed | This deploy did not finish normally, and the new version may or may not be live. Check deploy_status before deploying again (with the attempt ID if the deploy returned one); deploy_logs for the project lists recent failed attempts. |
 | `queue_expired` | Queued deploy never started | This deploy waited in the queue for 15 minutes without starting and was not published. The live version is unchanged. Deploy again with a new idempotency_key; if it keeps happening, check platform_status. |
 | `deploy_queue_full` | Too many deploys waiting | This account, or moonbase as a whole, already has as many deploys waiting as moonbase holds at once. Wait a few minutes, then try again; deploy_status for a project shows its waiting deploy. |
-| `mission_downgrade_locked` | This project is locked because your plan ended | Your plan ended, and this project is over the Free plan's limit, so it's locked. It keeps working, but it can't be deployed, rolled back, resumed or renamed, and its password, environment variables and domains can't be changed. You can still pause, export, archive or delete it. Upgrade to unlock it. If you don't, it will be paused and later deleted; we'll email you before it's deleted. (`downgrade_state` is `locked` or `paused`.) Not retryable, and nothing in the code needs changing: only the owner can upgrade or delete missions so the account fits. |
+| `mission_downgrade_locked` | This project is locked because your plan ended | Your plan ended, and this project is over the Free plan's limit, so it's locked. It keeps working, but it can't be deployed, rolled back, resumed or renamed, and its password, environment variables and domains can't be changed. You can still pause, export, archive or delete it. Upgrade to unlock it. If you don't, it will be paused and later deleted; we'll email you before it's deleted. (`downgrade_state` is `locked` or `paused`.) Not retryable, and nothing in the code needs changing: only the owner can upgrade or delete projects so the account fits. |
 | `upload_check_busy` | Couldn't check this upload just now | moonbase is busy and couldn't check this upload just now. Nothing was published. Try again in a minute. |
 | `rate_limited` | Too many launches in a row | Too many deploys in a short time. Retry ✓ after `retry_after_sec` seconds. Don't loop. With an upload link, `upload_link` says what happened to it: `kept` means the same command works after the wait (while the link's 10 minutes last); `spent` means get a new link from create_upload. Over the connector, `create_upload` states the budget up front in `launch_budget`: `launches_remaining`, `next_launch_frees_at` and how many failed builds or failed starts still give their launch back (`failed_deploy_refunds_remaining`). A deploy that fails in the project's own build or start (`container_exited_on_start`, for example) gives its launch back, within that small budget. |
 | `upload_link_used` (an upload link's response) | This upload link was already used | An upload link works for one upload, and this one has already been used. Nothing was uploaded by this request. Get a new link with create_upload, then send the upload with the new link. Signing in does not help. |
@@ -328,7 +328,7 @@ current protection state. Mission Control → **Password protection** also chang
 | `internal` | Something went wrong | Something went wrong on moonbase's side, and this version is not live. Try again; if it keeps happening, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or its attempt_id; if no ID is shown, contact moonbase support. |
 | `migration_disk_low` | We couldn't run your database migration | moonbase's build server didn't have enough free disk space to run the migration, so it didn't start and made no changes to the database's tables or data. This is on moonbase's side, not the migration. Deploy again in a few minutes; if it keeps happening, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id; the app shows it as Error ID), or its attempt_id; if no ID is shown, contact moonbase support. |
 | `docker_build_limits_unavailable` | We couldn't start your build | moonbase couldn't confirm the safety limits on its build machine, so the build didn't start and nothing was deployed; a version that was already live is still live. This is on moonbase's side. Deploy again in a few minutes; if it keeps happening, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id; the app shows it as Error ID), or its attempt_id; if no ID is shown, contact moonbase support. |
-| `deployment_maintenance` | | New deployments are temporarily paused. Existing missions keep serving. Wait and retry later; do not change database settings or start duplicate deploys. |
+| `deployment_maintenance` | | New deployments are temporarily paused. Existing projects keep serving. Wait and retry later; do not change database settings or start duplicate deploys. |
 | `deployment_maintenance` (a connector tool error or `deploy_status` result code) | Deploys paused for maintenance | moonbase is in a maintenance window and new deploys are paused; this one was not published, and the live version keeps serving. Deploy again in a few minutes. platform_status shows any maintenance notice moonbase has published. |
 | `waiting_for_maintenance` (a `deploy` result phase, status `in_progress`) | | Not an error. moonbase is in a maintenance window and accepted this version instead of refusing it; it starts publishing it automatically when maintenance ends, and the current live version keeps serving until then. Tell the person it is waiting. Poll `deploy_status` with the `attempt_id` about once a minute; do not start duplicate deploys. A newer deploy of the same project replaces the waiting one. Past `expires_at` it is not published (`expired_during_maintenance`): deploy again. Only new versions of an existing project wait this way: a `deploy` with `files` or `zip_base64`, and, where moonbase has it switched on, a ZIP sent to a `create_upload` link or the app's upload screen (the upload answers HTTP 202 with this receipt). Other sources and new projects still get `deployment_maintenance`. |
 | `service_draining` | | moonbase is restarting. Retry ✓ under the same bounded policy (wait the server's delay first). |

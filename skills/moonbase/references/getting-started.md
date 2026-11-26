@@ -1,4 +1,4 @@
-# Getting started: sign up and put the first mission online
+# Getting started: sign up and put the first project online
 
 Walk the user through these one step at a time. Wait for them after each
 part. moonbase is rolling out a new design, so a button may look slightly
@@ -55,7 +55,7 @@ Verify the email before taking the app online.
 3. If they want to upload the app themselves, or their AI tool can only chat,
    continue to Part 4.
 
-## Part 4. Upload your first mission
+## Part 4. Upload your first project
 
 If moonbase shows **"One more step before uploading"**, finish the account
 steps it asks for. If it asks for a phone number, enter it, choose
@@ -86,15 +86,15 @@ Steps:
    *A console shows each step: reserving the address, uploading, the
    security certificate, and a health check. For apps moonbase builds you
    also see unpacking, building and starting.*
-5. Wait. A static mission is usually live in seconds; an app moonbase builds
+5. Wait. A static project is usually live in seconds; an app moonbase builds
    is usually live in a minute or two (a big one can take longer).
 6. *You'll see "Your mission is live" (or "<name> is online").* Click
    **Open project** to see it, or **Go to mission control** to manage it.
 
 That link works for anyone, right now. Tell the user to share it. This
-`<address>.moonbase.host` link is automatic — the mission is live on it with
+`<address>.moonbase.host` link is automatic — the project is live on it with
 HTTPS the moment it deploys. A custom domain is an optional, later step
-(`custom-domains.md`), set up only after the mission already exists.
+(`custom-domains.md`), set up only after the project already exists.
 
 ### If moonbase asks a question during the launch
 
@@ -111,22 +111,22 @@ Sometimes moonbase finds something it wants to fix that needs the user's OK
 The console shows the first problem and an **Error ID** (`TRK-…`). Click
 **Copy Error ID** and keep it. Then open `troubleshooting.md`. This is a first
 deploy, so nothing is live yet — fixing the error and uploading again is all
-that's needed; you're not taking anything down. (Once a mission has a working
+that's needed; you're not taking anything down. (Once a project has a working
 version, a later failed deploy never replaces it — the live version keeps
 serving.)
 
 ## What the user has now
 
-- A **mission** with its own page, **Mission Control**: status, versions
+- A **project** with its own page, **Mission Control**: status, versions
   (**Mission Log**), traffic, environment variables and domains.
-- A list of all missions under **Missions**, and an overview on the
+- A list of all projects under **Missions**, and an overview on the
   **Dashboard**.
 - Next ideas, only if they fit: a custom domain (`custom-domains.md`), a new
   version (`versions-and-rollback.md`), letting their AI deploy for them
   (`deploy-for-the-user.md`).
 
-## The mission limit
+## The project limit
 
 If **New mission** is disabled or says "Mission limit reached", the plan's
-mission count is used up. Options: ship a **new version** of an existing
-mission instead, delete a mission you don't need, or upgrade (`billing.md`).
+project count is used up. Options: ship a **new version** of an existing
+project instead, delete a project you don't need, or upgrade (`billing.md`).

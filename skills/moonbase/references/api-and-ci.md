@@ -25,14 +25,14 @@ a connector. Use that path only after the person confirms their account.
 | | |
 |---|---|
 | `POST https://app.moonbase.cloud/api/projects/upload/stream` | Upload a ZIP (multipart), stream the deploy |
-| `GET https://app.moonbase.cloud/api/v1/sites/{address}/status` | Read a mission's state |
-| `GET https://app.moonbase.cloud/api/v1/sites/{address}/env` | List the env-var key names set on a mission |
+| `GET https://app.moonbase.cloud/api/v1/sites/{address}/status` | Read a project's state |
+| `GET https://app.moonbase.cloud/api/v1/sites/{address}/env` | List the env-var key names set on a project |
 | `PUT https://app.moonbase.cloud/api/v1/sites/{address}/env` | Set one or more env vars (see "Setting environment variables") |
 | `DELETE https://app.moonbase.cloud/api/v1/sites/{address}/env` | Delete one saved env var: JSON body `{"key": "NAME"}`, returns `{"deleted": true}` (`false` if that name wasn't saved); takes effect on the next deploy |
 
 Auth on **all five** — upload, status, and the env GET, PUT and DELETE — is the same:
 `Authorization: Bearer mb_live_…` (an API key from **API Keys**), same deploy
-scope, scoped to the missions that key owns. Always use `app.moonbase.cloud`.
+scope, scoped to the projects that key owns. Always use `app.moonbase.cloud`.
 The old `app.moonbase.host` only redirects.
 
 Passing the key with `-H "Authorization: Bearer $KEY"` puts it in the process's
@@ -54,8 +54,8 @@ with no client identity, so a missing or default `User-Agent` can be refused
 before it reaches the API.
 
 Form fields: `file` (required, the ZIP), `redeployProjectId` (an existing
-mission's id: ship a new version), `name` (address of a new mission),
-`displayName` (new missions only).
+project's id: ship a new version), `name` (address of a new project),
+`displayName` (new projects only).
 
 ## Reading the response
 
@@ -227,14 +227,14 @@ didn't land.
 
 **When the API asks for approval.** `consent_required` is the single
 case where the owner uses the browser: moonbase proposes build changes a key
-can't auto-accept, so the owner opens `consent_url`, deploys that mission once
+can't auto-accept, so the owner opens `consent_url`, deploys that project once
 from the browser and approves. Afterwards key deploys work again. Everything a
 key *does* auto-accept before the first production deploy — empty-value env
 var, start script, port rewrite, Node version, lockfile regeneration — is the
 ordinary Compatibility Engine set; only the rare leftover needs the person.
 
 Limits: a few deploys per 5 minutes and up to 100 per hour per account (plus
-a per-IP limit), one build at a time per mission, and the plan's mission,
+a per-IP limit), one build at a time per project, and the plan's project,
 storage and per-deploy size limits. Allow at least 10 minutes for a stream.
 If the connection drops, check the status endpoint before uploading again.
 
@@ -244,9 +244,9 @@ If the connection drops, check the status endpoint before uploading again.
 reachable but the app reported **not ready** (it needs configuration or is still
 warming up; `readiness.state` is `not_ready`, with the `path` and `http_status`
 probed); `false` also when the page's own files don't load (`asset_problem` in
-`done`, static missions too), which waiting won't fix: change the project
+`done`, static projects too), which waiting won't fix: change the project
 (`scripts/parse-deploy-result.sh` exits `4`); `null` or missing = readiness was not determined (no endpoint, a static-file
-mission, an inconclusive probe), which is treated as live. The status endpoint shows
+project, an inconclusive probe), which is treated as live. The status endpoint shows
 the same thing: `status` is `"deployed_not_ready"` (distinct from `failed`) and
 `appReady` is `false`; it is re-checked on read and flips to `live` once the
 app answers ready. `scripts/parse-deploy-result.sh` exits `3` for this case — the
@@ -259,7 +259,7 @@ An internationalised (`xn--`) live host is checked with `node`'s URL parser; a r
 1. Create a key on **API Keys** (it starts with `mb_live_`).
 2. In the GitHub repo: **Settings → Secrets and variables → Actions → New
    repository secret**. Name `MOONBASE_API_KEY`, value the key.
-3. Find the mission id in the mission's link
+3. Find the project id in the project's link
    (`https://app.moonbase.cloud/missions/<id>`) or from the status endpoint,
    and add it as `MOONBASE_MISSION_ID`.
 4. **Vendor BOTH helper scripts.** Copy `scripts/package-mission.sh` **and**
@@ -350,9 +350,9 @@ https://moonbase.cloud/docs/integrate-moonbase.
 
 ## Setting environment variables over the API
 
-An agent can finish configuring a mission — its database URL, API keys and
+An agent can finish configuring a project — its database URL, API keys and
 other secrets — without a human or a browser. Two calls, the same Bearer key
-and scope as a deploy, scoped to the missions that key owns.
+and scope as a deploy, scoped to the projects that key owns.
 
 **List the keys that are set** (never the values — they are write-only):
 
@@ -422,13 +422,13 @@ as a moonbase database's `DATABASE_URL`). A batch `PUT` that includes one
 writes nothing. The runtime defaults `PORT`, `NODE_ENV` and
 `NEXT_TELEMETRY_DISABLED` can be set with a `PUT`; a `DELETE` of one is refused
 with the same code. A replacement and a deletion are each recorded in
-the mission's Activity log by name only. Both apply on the next deploy.
+the project's Activity log by name only. Both apply on the next deploy.
 
 After an acknowledged write, deploy or redeploy so the app loads the saved
 configuration. Verify the feature or dependency that needs the variable.
 Keep the stored value out of test output, including health responses and logs.
 
-The whole set is written in **one transaction**. A full mission returns
+The whole set is written in **one transaction**. A full project returns
 `409 env_vars_limit` (with `max`), and an unreadable cap returns
 `503 mission_cap_unavailable`. Both cap responses refuse the write before
 storing anything. A `503 env_write_failed` means the write outcome could not
@@ -440,7 +440,7 @@ was lost.
 `GET` and see whether its name appeared. For an **overwrite**, `GET` can't tell
 you which value is stored (the name is there either way) — the write is atomic,
 so resending the same batch is safe **only when you are the single coordinated
-writer** for that mission (plain last-write-wins). If another authorized writer
+writer** for that project (plain last-write-wins). If another authorized writer
 may also be setting env on it (a second pipeline, a teammate, a rotation job), a
 blind resend can clobber a newer value written between your first attempt and
 the retry; then don't blind-retry — coordinate with the other writer. (A
@@ -450,15 +450,15 @@ future-API option, not something you can rely on now; today's supported path is
 writer coordination.) Never reconcile by reading a value back (values stay
 write-only); confirm at the app level — a check that shows **readiness only,
 never the value** (a dependent operation that works, not the secret echoed
-back). Setting a mission's
+back). Setting a project's
 secrets this way, rather than leaving them for the owner in the browser, is what
 keeps an automated deploy from going *live but not yet configured*.
 
 ## Not available in the API today
 
-Keys limited to one mission or read-only keys (there's only the deploy
+Keys limited to one project or read-only keys (there's only the deploy
 scope); redeploying by address in one call (look up the `id` first); listing
-all missions; and reading why a build failed after the stream is gone. A
+all projects; and reading why a build failed after the stream is gone. A
 shipped `.env` still supplies only its non-secret values at build time — real
 secrets go in with the env API above, or in **Mission Control → Environment
 Variables**.

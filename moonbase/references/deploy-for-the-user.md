@@ -36,7 +36,7 @@ A repeated batch can be sent after an interrupted upload. If a deploy is
 confirmed not to have happened, the session can be corrected and committed
 again. When `commit_upload` returns `status: "unknown"`, do not replay that
 session's commit. Check `deploy_status` with the returned slug to observe the
-mission's current state. An unknown outcome can be an older claim whose
+project's current state. An unknown outcome can be an older claim whose
 deploy may still finish, or a terminal uncertain outcome; staged bytes are
 not guaranteed to remain. Checking status does not release a claim or prove
 that this attempt never started, and `not_found` does not prove it never
@@ -118,7 +118,7 @@ secret manager or a stdin pipe is better.) If a key was pasted into the chat by
 accident, tell the user to delete it on the API Keys page and create a new one.
 
 Facts about keys: every key has one scope, **Deploy**. A key works for every
-mission on its account (it can't be limited to one mission). Up to 10 keys per
+project on its account (it can't be limited to one project). Up to 10 keys per
 account. Each key can be deleted on its own; the others keep working.
 
 ## Step 2. Package the project (the one packaging tool)
@@ -470,7 +470,7 @@ mission="$(bash "$S/package-mission.sh")" || exit 1   # fails closed; nothing to
 ```
 
 Shipping a **static build on purpose** (a prebuilt `dist/`, `build/` or `out/`
-is the mission)? Those directory names are blocked by default; add
+is the project)? Those directory names are blocked by default; add
 `--allow-build-output` to include them (list the exact files with `--manifest`,
 or run from the build folder so its `index.html` is at the root). It still
 blocks secrets, databases, logs, `node_modules` and `.git`, so the safeguards
@@ -481,18 +481,18 @@ a shippable artifact, so it's always excluded — ship `.next` without it.
 Check the rules in `building-for-moonbase.md` first: root layout, `PORT`, start
 command (Node), or the app object (Python).
 
-## Step 3. New mission, or new version?
+## Step 3. New project, or new version?
 
-- **New mission:** don't send `redeployProjectId`. Optionally send `name` (the
+- **New project:** don't send `redeployProjectId`. Optionally send `name` (the
   address: 3 to 32 lowercase letters, numbers, single hyphens, starting with a
   letter; random if left out) and `displayName`.
 - **The address** is the first label of the live URL the parser prints
   (`https://<address>.moonbase.host`). Use that for every status call, not
   the `name` you asked for: the two can differ, and a wrong one answers `not_found`.
   Keep it as `MISSION_ADDRESS`.
-- **"Update my mission X" / redeploy by name:** look up the mission's id from
+- **"Update my project X" / redeploy by name:** look up the project's id from
   its address first, then send it as `redeployProjectId`. **Never** send
-  `name=X` to update: that tries to create a second mission and fails with
+  `name=X` to update: that tries to create a second project and fails with
   `name_taken`.
 
 ```bash
@@ -503,11 +503,11 @@ printf 'Authorization: Bearer %s\n' "$MOONBASE_API_KEY" | curl -sS "https://app.
   -H "User-Agent: my-agent/1.0" | jq -re .id || { echo "No mission at that address (check the name/key)." >&2; exit 1; }
 ```
 
-The id is also in the mission's page link in the app
+The id is also in the project's page link in the app
 (`https://app.moonbase.cloud/missions/<id>`) and in the `done` event of the
 last deploy (`project_id`).
 
-**Keep the mission ID after the first deploy.** The parser prints it as
+**Keep the project ID after the first deploy.** The parser prints it as
 `project_id: <id>` when a deploy succeeds. Save it, and set
 `MOONBASE_MISSION_ID` to it for every later deploy of the same project (in
 the shell, in the project's own deploy notes, or as the CI secret in
@@ -793,10 +793,10 @@ esac
 ```
 
 A non-zero return that asks you to reconcile is the "unknown outcome" branch
-below: check the mission status (Step 5) before uploading again — never re-POST
+below: check the project status (Step 5) before uploading again — never re-POST
 blindly on an uncertain result.
 
-For a **new** mission, remove the `redeployProjectId` line (add
+For a **new** project, remove the `redeployProjectId` line (add
 `-F "name=my-idea"` if the user chose an address). After it succeeds, keep the
 `project_id` it prints and set `MOONBASE_MISSION_ID` to it for every later
 deploy of this project (Step 3).
@@ -893,7 +893,7 @@ sharing it.
 proposes build changes it won't make under an API key alone. Don't try to
 automate it: give the owner the `consent_url`, have them deploy that project
 **once** from their browser and approve the changes. After that, your API
-deploys to that mission work again. (An API-key deploy already auto-accepts
+deploys to that project work again. (An API-key deploy already auto-accepts
 the ordinary Compatibility Engine fixes — empty-value env var, start script,
 port rewrite, Node version, lockfile regeneration — *before* it goes live;
 `consent_required` is only the rare case that still needs a person. See
@@ -910,22 +910,22 @@ ones before you tell the user it's ready:
    expected content — not a server-error or crash page. A dynamic app can
    start and then crash on the first request (a missing dependency, a bad
    import), still after a clean `done`.
-2. **Check whether it's protected — don't assume it is.** A mission *can* have
+2. **Check whether it's protected — don't assume it is.** A project *can* have
    a password, but don't claim one is private until you've checked: a new
-   mission may have no password, leaving the link open to anyone. Request the
+   project may have no password, leaving the link open to anyone. Request the
    public URL and look at what comes back — moonbase's password gate (a `302` to
    `/__moonbase_password__/login`; a client that follows redirects ends on a
    `200` login page, which is the gate, not your app) means it's protected, so
    verify behind it;
    your app's own content rendering straight away means it's open. The status
    endpoint does not report protection, so this request is the check. Tell the
-   owner plainly whether the mission is currently password-protected or open,
+   owner plainly whether the project is currently password-protected or open,
    and never report a locked gate as a working app.
 3. **Set the secrets over the env API — the deploy form can't.** The deploy
    multipart form has **no env field**, and a shipped `.env` supplies only
    non-secret values, so a fresh deploy is *live but unconfigured* until you set
    the real ones. When you can run commands, finish this yourself instead of
-   handing it back: `PUT` the mission's secrets (database URL, API keys, auth
+   handing it back: `PUT` the project's secrets (database URL, API keys, auth
    config) to the env API (`GET`/`PUT /api/v1/sites/<slug>/env`, same key and
    scope — see `api-and-ci.md`). The `PUT`'s `set`/`count` receipt is your
    confirmation the write landed; a follow-up `GET` confirms a **new** key's
@@ -936,7 +936,7 @@ ones before you tell the user it's ready:
    reach the env API. Distinguish plainly: *source deployed* (done) vs
    *configured and ready* (secrets set, redeployed).
 4. **Persistence is wired, if the app needs it.** Confirm data goes to the
-   mission's managed database (declared in `moonbase.json`, read from
+   project's managed database (declared in `moonbase.json`, read from
    `DATABASE_URL` — see *Data and storage*), not the container disk that's wiped each
    deploy.
 5. **No public default account.** If the app has sign-in, don't leave a
@@ -944,13 +944,13 @@ ones before you tell the user it's ready:
    confirm there's no public default credential.
 
 Report honestly which stage you reached: **first deploy** (new address live),
-**update** (new version of an existing mission), **locked** (deployed but
+**update** (new version of an existing project), **locked** (deployed but
 behind a password / missing secrets), or **fully working** (verified on the
 real route with config and persistence in place). Also surface
 `self_repair_notice` (what moonbase fixed) and a non-empty `skipped_entries`
 (which files were left out).
 
-## Step 5. Check a mission's status
+## Step 5. Check a project's status
 
 ```bash
 set +x
@@ -967,19 +967,19 @@ few seconds until `deployInProgress` is `false`; if `currentVersion` went up,
 the new version is live at `publicUrl`. The reason for a failed build is only
 in the stream's `error` event.
 
-A key reads only its own account's missions; any other address answers
-`not_found`. There is no endpoint that lists all missions.
+A key reads only its own account's projects; any other address answers
+`not_found`. There is no endpoint that lists all projects.
 
 ## Saying it simply
 
-After a successful deploy, say something like: "Done! Your mission is live
+After a successful deploy, say something like: "Done! Your project is live
 at https://my-idea.moonbase.host. Anyone with this link can open it. Next
 time just say 'deploy this to moonbase' and I'll ship a new version to the
 same link."
 
 The `.moonbase.host` address is created automatically and is live with HTTPS
 the moment the deploy succeeds — don't wait on or set up a domain to go live.
-A custom domain is an optional, **later** step, added only after the mission
-exists (see `custom-domains.md`). So the order is: deploy → the mission is
+A custom domain is an optional, **later** step, added only after the project
+exists (see `custom-domains.md`). So the order is: deploy → the project is
 immediately live on its `.moonbase.host` address → optionally, later, add a
 custom domain.

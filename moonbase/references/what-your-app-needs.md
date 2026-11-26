@@ -1,7 +1,7 @@
 # What the app needs from outside itself
 
-A mission runs the app's own code, and moonbase provides its database: up to
-one managed PostgreSQL database per mission, on every plan, Free included,
+A project runs the app's own code, and moonbase provides its database: up to
+one managed PostgreSQL database per project, on every plan, Free included,
 created when the project's `moonbase.json` asks for one. It
 does not supply the other things that code
 *talks to* — another service's API, a mail or payments provider —
@@ -36,7 +36,7 @@ code:
 - **Addresses baked in from the machine it was built on.** This is the single
   most common reason an AI-built app goes live and nothing loads: the code
   carries `http://localhost:3000` or `127.0.0.1` — a database URL, an API base
-  URL, a redirect target — and none of it exists on the mission. moonbase does
+  URL, a redirect target — and none of it exists on the project. moonbase does
   flag these: `check_project` reports them (`hardcoded_localhost`) before a
   deploy, but the deploy itself reports them only afterwards and only as a
   medium-severity note, so a person who stopped reading at "live" never sees
@@ -49,8 +49,8 @@ conversation:
 
 | Pile | Example | What it needs |
 |---|---|---|
-| **Must exist and be reachable** | a database, an API the app calls on every request | the mission's managed database, declared in `moonbase.json`; for an API, a real, internet-reachable service and its address |
-| **Must have a credential** | an API key, a token, a mail provider's key | the person's own key, set as a mission environment variable |
+| **Must exist and be reachable** | a database, an API the app calls on every request | the project's managed database, declared in `moonbase.json`; for an API, a real, internet-reachable service and its address |
+| **Must have a credential** | an API key, a token, a mail provider's key | the person's own key, set as a project environment variable |
 | **Optional** | a feature flag, a label, a tuning number with a sane default | nothing; set it or leave it |
 
 A missing optional value is fine. A missing one from either of the first two
@@ -105,7 +105,7 @@ example data, decide with them whether the live version should have it.
 
 **If the app has "sign in with Google" or any other hosted sign-in**, the
 redirect URI is configured at *that provider*, not in moonbase, and it still
-points at the old address. Until someone adds the mission's live address to the
+points at the old address. Until someone adds the project's live address to the
 provider's allowed redirect list, every person who clicks sign in gets an error
 page. The app's own callback path doesn't change; the host in front of it does.
 Add the live address at the provider — and remember the person may be the only
@@ -113,12 +113,12 @@ one who can sign in there to do it, so tell them exactly what to add and where.
 
 ## 4. What the runtime decides (check these facts before you promise anything)
 
-Some of what an app needs is shaped by how a mission runs. These are facts
+Some of what an app needs is shaped by how a project runs. These are facts
 about the platform, not preferences, and each has one practical consequence:
 
 - **The app reaches its managed database with a standard driver.** moonbase
   sets `DATABASE_URL`; the connection needs verified TLS and a small pool
-  (`references/mission-control.md`, *Managed database*). A mission can also
+  (`references/mission-control.md`, *Managed database*). A project can also
   connect out to any public service on any port, such as an HTTPS API on 443.
   Only private, internal and cloud-metadata addresses are blocked (`10/8`,
   `172.16/12`, `192.168/16`, loopback, CGNAT, and the `169.254` range), so a
@@ -135,7 +135,7 @@ about the platform, not preferences, and each has one practical consequence:
 - **Nothing scheduled runs by itself.** There is no cron and no background
   worker: one web process, and on the free plan it sleeps when idle, so
   in-process timers stop with it. A nightly job has to be an HTTPS endpoint on
-  the mission that an outside scheduler calls.
+  the project that an outside scheduler calls.
 - **A request is cut off at sixty seconds.** A big export, a slow model call or
   a bulk import has to return quickly and continue elsewhere, or be broken into
   pieces. Holding one request open for minutes fails.
@@ -148,21 +148,21 @@ about the platform, not preferences, and each has one practical consequence:
 - **No WebSockets.** The connection is never upgraded, so a chat, a live
   dashboard or anything built on `socket.io` will not connect. Plain
   request/response works; polling works, bounded by the sixty-second limit.
-- **Free missions sleep after about thirty minutes idle** and wake themselves
+- **Free projects sleep after about thirty minutes idle** and wake themselves
   on the next request, so the first visit after a quiet spell takes a few
-  seconds. Paid missions stay warm, and static missions never sleep. That is
+  seconds. Paid projects stay warm, and static projects never sleep. That is
   the answer to "why was the first load slow?" — not a fault.
 
 If the app genuinely needs something this list rules out, say so before the
 upload, not after. A person told honestly that their chat app needs a different
 host is better served than one whose deploy "worked".
 
-## 5. Real values go in the mission, never in the code
+## 5. Real values go in the project, never in the code
 
 - A value that is the same for everyone and isn't secret — a public URL, a
   display name, a feature flag — can live in the code.
 - A value that is **theirs** — a connection string, an API key, a token, a
-  password — belongs in the mission's environment variables. Never paste one
+  password — belongs in the project's environment variables. Never paste one
   into a source file or a config file, never commit it, and never ask them to
   paste it into the chat. moonbase blocks an upload that looks like it carries
   a hardcoded credential (`hardcoded_secret_detected`), and a key that reached
@@ -187,9 +187,9 @@ job to the person who can't.
 
 - **Ask moonbase what's missing instead of guessing.** `list_env` returns the
   keys already set *and* the keys the uploaded code reads but hasn't got.
-  Anything in that second list from pile 1 or 2 is a live, broken mission.
+  Anything in that second list from pile 1 or 2 is a live, broken project.
   A key in the first list with source `engine` is one moonbase sets by
-  itself: for a mission with a managed database, `DATABASE_URL` and the two
+  itself: for a project with a managed database, `DATABASE_URL` and the two
   names that carry its certificate file and server name. Nothing is missing
   there and there is nothing to set. Before a new version, `check_project`
   with the project's `project_id` or `slug` does the same: with a ready

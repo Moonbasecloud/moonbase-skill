@@ -29,10 +29,10 @@ failures**, a **Weekly summary** and **Product updates**. Changes save as
 you switch them.
 
 The **Notifications** page lists moonbase's messages to you, newest first:
-each shows the message, which mission or area it's about, the time, its
+each shows the message, which project or area it's about, the time, its
 priority, whether it was emailed, and read or unread (**Mark as read**).
 Filter the list to find one. Messages cover things like a failed or
-completed deployment, a mission launched, paused, resumed or unavailable, a
+completed deployment, a project launched, paused, resumed or unavailable, a
 version rolled back, domain and certificate events, API keys created,
 revoked or expiring, unusual or new-device sign-ins, password changes,
 payments, invoices, plan changes, and usage or storage limits. Each one says
@@ -41,12 +41,12 @@ where to look next (Mission Control, Domains, Billing, API Keys).
 ## Webhooks
 
 **Account → Webhooks** lets you have moonbase call your own URL when events
-happen on your missions. Use it only if you have a server to receive them.
+happen on your projects. Use it only if you have a server to receive them.
 
 ## Activity log
 
 **Activity** lists what happened in your account, newest first: deployments,
-mission changes, sign-ins and account changes. Filter it by type. Version
+project changes, sign-ins and account changes. Filter it by type. Version
 downloads show up as "Version downloaded" (or "Downloaded v<number>").
 
 ## Settings
@@ -63,14 +63,14 @@ downloads show up as "Version downloaded" (or "Downloaded v<number>").
 ## Download your data
 
 **Account → Danger Zone → Export my data → Download everything** gives a zip
-of your account, every mission's settings and every version's files.
+of your account, every project's settings and every version's files.
 Environment variable values are included only if you confirm it's you with
 your password (and your authenticator code when two-factor is on); that
 download works once, only in the browser that asked for it, within 24 hours.
 You can request one export a day. (On the older design, **Download data
-export** gives a JSON file with your profile, missions, deployment history,
+export** gives a JSON file with your profile, projects, deployment history,
 API key and webhook details and account activity, without secret values or
-mission files; download mission files per version with **Download archive** in
+project files; download project files per version with **Download archive** in
 Mission Log, `versions-and-rollback.md`.)
 
 ## Delete your account

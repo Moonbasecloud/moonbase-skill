@@ -22,7 +22,7 @@ Be honest about two things:
    *You'll have a file like `my-app.zip` in your Downloads folder.*
 2. Don't unzip and rezip it: moonbase handles the single wrapper folder most
    builders put inside.
-3. Upload it to moonbase as a new mission (`getting-started.md`, Part 4), or
+3. Upload it to moonbase as a new project (`getting-started.md`, Part 4), or
    have an agent that can run commands deploy it (`deploy-for-the-user.md`).
 4. Set the app's settings and secrets (the payment, email or other keys it
    uses) in **Mission Control → Environment Variables**, then click
@@ -35,13 +35,13 @@ Be honest about two things:
 |---|---|---|
 | Lovable | Vite / React | Detected automatically; usually live within a minute or two. |
 | Bolt | Usually Vite-based | If an unusual setup fails, the deploy console shows the exact step. |
-| v0 | Next.js | Deployed as a dynamic (server-rendered) mission. Set its API keys as environment variables. A monorepo layout or unusual build script may need fixing. |
+| v0 | Next.js | Deployed as a dynamic (server-rendered) project. Set its API keys as environment variables. A monorepo layout or unusual build script may need fixing. |
 | Replit | Depends on the project | Node and static projects deploy. Python web apps (Flask/Django/FastAPI) deploy too when they expose a standard WSGI/ASGI app object and a `requirements.txt`; one with no startable app is rejected (`python_entrypoint_not_detected`). |
 
 ## Updating later
 
 Make changes in the builder, export a fresh ZIP, then in moonbase open the
-mission and click **Deploy new version**. Earlier versions stay in Mission
+project and click **Deploy new version**. Earlier versions stay in Mission
 Log if you need to go back.
 
 Guides: https://moonbase.cloud/docs/deploy-lovable-app,

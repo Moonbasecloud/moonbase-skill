@@ -23,7 +23,7 @@ Then ask the user to authorize the server: Cline opens the browser, the user sig
 
 ## Check it worked
 
-Call `list_missions`. It returns the account's missions; an empty list is a valid answer on a new account. If the call says the user is not signed in, run the authorization step again.
+Call `list_missions`. It returns the account's projects; an empty list is a valid answer on a new account. If the call says the user is not signed in, run the authorization step again.
 
 ## Other tools
 
