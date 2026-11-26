@@ -166,6 +166,16 @@ has it, else ${FULL_GUIDE_URL} (plain text). Read the section you need; don't
 answer from memory.
 `;
 
+// CLAUDE.md carries its own opening paragraph on top of the core, so it sits
+// closest to the limit. It keeps the two word rules and points to the guide for
+// the word table instead of repeating it.
+const WORD_TABLE_POINTER = `The other moonbase words: "Words moonbase uses" in the moonbase guide.`;
+function withWordTablePointer(core) {
+  const out = core.replace(/(## Words moonbase uses\n\n[\s\S]*?\n\n)(?:\|.*\n)+/, `$1${WORD_TABLE_POINTER}\n`);
+  if (out === core) throw new Error('core has no "Words moonbase uses" table to point from');
+  return out;
+}
+
 /** One-line header comment for a generated adapter: what it is, and where every format lives. */
 const AGENT_HEADER = (line) => `<!-- ${line} · all formats: https://moonbase.cloud/skill -->
 
@@ -192,7 +202,7 @@ export function buildKit(dir = SKILL_DIR) {
       `---\ndescription: ${description.replace(/\n/g, " ")}\nglobs:\nalwaysApply: false\n---\n\n` +
       AGENT_HEADER("moonbase Cursor rule: save as .cursor/rules/moonbase.mdc (the full guide, loaded when relevant)") +
       body,
-    "CLAUDE.md": `## moonbase\n\n` + `This project is hosted on moonbase (moonbase.cloud). When the user asks to\n` + `deploy, host, publish or share it, or asks anything about moonbase, follow\n` + `these instructions (or the moonbase skill, if it's installed).\n\n` + core + "\n" + FULL_GUIDE_POINTER,
+    "CLAUDE.md": `## moonbase\n\n` + `This project is hosted on moonbase (moonbase.cloud). When the user asks to\n` + `deploy, host, publish or share it, or asks anything about moonbase, follow\n` + `these instructions (or the moonbase skill, if it's installed).\n\n` + withWordTablePointer(core) + "\n" + FULL_GUIDE_POINTER,
     ".github/copilot-instructions.md":
       AGENT_HEADER("moonbase GitHub Copilot instructions: save as .github/copilot-instructions.md, or add to yours") + core + "\n" + FULL_GUIDE_POINTER,
     "chatgpt/instructions.txt": core + "\n" + CHAT_KNOWLEDGE("The file in this GPT's Knowledge"),

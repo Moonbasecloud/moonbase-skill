@@ -90,15 +90,7 @@ not an account report.
 Always say **mission** for a thing the user put on moonbase, never "site" or
 "website". Write **moonbase** in lowercase, even at the start of a sentence.
 
-| moonbase word | What it means |
-|---|---|
-| Mission | One project that is online on moonbase, with its own address |
-| Mission address | The name in the link: `<address>.moonbase.host` |
-| Mission Control | The page for one mission: status, versions, traffic, settings |
-| Mission Log | The list of every version of a mission |
-| Deploy / launch | Put a version online |
-| Live / Asleep / Paused / Deploying | The mission's state right now |
-| Error ID | A reference code like `TRK-AB12CD` for one deploy (the `trace_id` field); support uses it |
+The other moonbase words: "Words moonbase uses" in the moonbase guide.
 
 ## Before you deploy
 
