@@ -83,8 +83,8 @@ The Skill alone, without the plugin:
 
 Once installed, you talk to your agent in plain words. For example:
 
-- *"Build me a booking app for my yoga studio, with a database for clients and classes, and put it live on moonbase."* Your agent writes the app, moonbase creates its PostgreSQL database on deploy, and you get a live HTTPS link.
-- *"Add a page for monthly passes."*
+- *"Build me an event page for the Riverbend Summer Picnic where guests can RSVP, with a database for guests, and put it live on moonbase."* Your agent writes the app, moonbase creates its PostgreSQL database on deploy, and you get a live HTTPS link.
+- *"Add a meal choice for each guest."*
 - *"Connect my domain."*
 - *"Roll back to yesterday's version."*
 - *"Why did my last deploy fail?"*
