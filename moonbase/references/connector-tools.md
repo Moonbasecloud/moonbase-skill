@@ -29,7 +29,7 @@ for separately when connecting. Your connector's own tool list is the live one.
 ## missions:write (default)
 
 - `create_mission`: a new project and its first version.
-- `deploy`: a new version of an existing project.
+- `deploy`: a new version of an existing project; `changes` and `deleted` send only what changed.
 - `redeploy`: rebuilds the active version with the saved variables.
 - `create_upload`: a single-use upload link and shell command.
 - `upload_files`: sends files over the connector in batches.

@@ -61,7 +61,36 @@ one-time setting per client that allows the upload host, and a
 browser-assisted upload on the project's Deploy new version screen, are the
 other ways. A small text-only project can go inline as `files`, and
 `source_url` takes a public https ZIP or a public GitHub repository URL that
-moonbase downloads itself. This guide is the API key path for a developer who asks to
+moonbase downloads itself.
+
+**A new version of a project that is already live sends only what changed.**
+`deploy` takes `changes` (the files that are new or changed, the same shape
+as `files`) and `deleted` (paths to remove). moonbase applies them to the
+live version's stored files and publishes the result through the same
+checks as any deploy; every other file stays exactly as it was, so unchanged
+files are never sent again. Paths are relative to the project's stored tree,
+the layout `download_source` returns. `base_version` (optional) names the
+version the changes were made on; when it is not the live version, the
+deploy is refused with `base_version_stale` and `live_version`. A path in
+`deleted` that the live version does not have is refused with
+`patch_path_invalid`. A version with no stored copy gives
+`base_archive_missing`: deploy the whole project once, then send only what
+changed. `changes` carry up to 8 MiB, and the merged version keeps the usual
+limits. A patch can't be queued (`wait: false` or `idempotency_key`) and
+can't be combined with `files`, `zip_base64`, `source_url` or `file`.
+
+**List every file with `all_files`.** `deploy` and `create_mission` take
+`all_files`, every path in the project. Get all_files from the filesystem (a
+directory listing), never from memory. moonbase then refuses, before
+anything is built, when a listed file is missing from `files` (or, with
+`changes`, from both `changes` and the live version), with
+`files_listed_not_sent` naming the files; a listed path that is also in
+`deleted` is refused with `patch_path_invalid`. A listed folder counts when
+a file inside it is in the version. Paths a deploy leaves out anyway
+(`node_modules`, `.git`, `.env`, caches, logs, `.sql` files and setup docs)
+don't count.
+
+This guide is the API key path for a developer who asks to
 automate deploys from CI or their own scripts. An assistant without the
 connector does not ask for a key: the person adds the connector, or uploads
 the project ZIP on the project's Deploy new version screen. An assistant
