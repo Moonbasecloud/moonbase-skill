@@ -2,50 +2,20 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Deploy with your AI agent](https://img.shields.io/badge/deploy%20with-your%20AI%20agent-6E40C9.svg)](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)
 
-**AI built your app. moonbase runs everything else.**
-Hosting, database, domains, analytics, rollbacks, team access — and more. All in one platform, all run by your AI agent.
+**AI built your app. moonbase runs everything else.** Hosting, database, domains, analytics, rollbacks, team access, and more, all run by your AI agent through this Skill and the moonbase connector.
 
-This repository is the **moonbase Skill**: instructions that teach any AI coding agent how to work with moonbase. With it, your agent can deploy a project, read why a deploy failed, set environment variables, connect a custom domain, roll back to an earlier version, invite teammates, read visitor stats, and download a mission's source. Each mission can have a managed PostgreSQL database (up to one per mission, on every plan, Free included).
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Moonbasecloud/.github/main/profile/assets/project-overview.png" width="100%" alt="A project overview in moonbase: health, plan, visitors, live preview, password, domain, MoonGuard, badge and versions">
+  <br/><sub>One project in the moonbase app: health, visitors, domain, versions. (Demo data.)</sub>
+</p>
 
-**Quick install:** add the connector `https://app.moonbase.cloud/mcp` to your AI tool ([setup per tool](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)), or get the Skill file for your tool at [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch). Details in [Install](#install).
-
-**Current revision:** `r84` (2026-11-26) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
-
-### → [moonbase.cloud](https://moonbase.cloud/?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)
-
-## Two ways your agent works with moonbase
-
-1. **The moonbase connector (MCP): recommended.** Add a connector with this address to Claude, ChatGPT, Cursor or another assistant that supports connectors:
-
-   ```text
-   https://app.moonbase.cloud/mcp
-   ```
-
-   You sign in to moonbase in the browser and approve access. No API key is needed on this path, and nothing secret goes into the chat. Setup steps per tool: [Deploy from any AI chat](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch).
-2. **This Skill.** It gives the agent the full guide: how to prepare a project, what each result means and what to tell you. Use it alongside the connector, or on its own in tools without connectors.
-
-An API key is only for your own automation, such as CI or a script that calls the moonbase API. Keep it in a secret manager or an environment variable. Never paste it into a chat.
-
-## Tools with a setup guide
-
-Step-by-step setup for the connector: Claude, ChatGPT, Cursor, VS Code with GitHub Copilot, Gemini CLI and Devin Desktop (formerly Windsurf), in [Deploy from any AI chat](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch). Codex and other agents that read `AGENTS.md` can use the Skill file from `dist/`.
-
-## What the connector can do, and what it may touch
-
-| Permission | What it covers | Tools |
-|---|---|---|
-| Read, `missions:read` (granted by default) | See projects, versions, logs, domains, members, visitor numbers, status; check a project before a deploy | `list_missions` `mission_info` `deploy_status` `check_project` `list_versions` `list_env` `domain_status` `deploy_logs` `explain_error` `visitor_stats` `launch_check` (per project) `list_members` `import_status` (only where switched on) `platform_status` |
-| Write, `missions:write` (granted by default) | Deploy, change settings, domains, variables, members, password protection; open the database export page | `create_mission` `deploy` `redeploy` `create_upload` `upload_files` `commit_upload` `rollback` `set_env` `delete_env` `add_domain` `verify_domain` `remove_domain` `pause_mission` `resume_mission` `set_password` `remove_password` `invite_member` `set_member_role` `remove_member` `export_database` |
-| Account, `account:read` (granted by default) | Plan and usage, read-only | `account_usage` `upgrade_link` |
-| Delete a project, `missions:delete` (asked for separately) | Starts a deletion; the person finishes it in the moonbase app | `delete_mission` |
-| Delete old versions, `versions:delete` (asked for separately) | Deletes old versions for good, after the person says yes to the exact list | `delete_versions` |
-| Import a database, `databases:import` (asked for separately) | Replaces a project's moonbase database with a copy of another PostgreSQL database, after the person says yes to a preview | `import_database` (only where switched on) |
-| Download source, `missions:source` (asked for separately) | The raw source ZIP, which may contain secrets | `download_source` |
-| No permission | The build guide | `get_build_guide` |
-
-Your client sends the permissions it wants; you approve them in the browser, and you can review connected apps in your account. An assistant that asks for nothing gets only the first three rows, plus the build guide. Some tools are available only on accounts or projects where moonbase has switched them on. Other abilities, such as deleting old versions for good or importing a database, are separate permissions too.
+**Current revision:** `r84` (2026-11-26) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases) · [moonbase.cloud](https://moonbase.cloud/?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)
 
 ## Install
+
+**Quick install:** add the connector `https://app.moonbase.cloud/mcp` to your AI tool ([setup per tool](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)), or get the Skill file for your tool at [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch).
+
+### Install the plugin (Skill plus connector)
 
 This repository is also a plugin package: the Skill plus the moonbase connector, in one install. Pick your tool. On first use you sign in to moonbase in the browser and approve access; there is no API key to paste.
 
@@ -78,17 +48,21 @@ gemini extensions install https://github.com/Moonbasecloud/moonbase-skill
 
 What was tested: on 2026-11-25 a local copy of this package passed `claude plugin validate` and installed with Claude Code 2.1.251 (the Skill and the connector were both listed; sign-in was not part of that test). The Codex, Gemini CLI, Kiro, Cursor and Cline steps follow each tool's published documentation read on that date and have not been run by us yet.
 
-### What the plugin connects to
+### Add the connector only
 
-- **One remote server:** `https://app.moonbase.cloud/mcp`, run by moonbase, with OAuth sign-in. What it may do is in [What the connector can do](#what-the-connector-can-do-and-what-it-may-touch).
-- **Nothing else runs on install:** no hooks, no install scripts, no local server, no telemetry in the plugin. The Skill's two helper scripts run only when your agent runs them.
-- [Privacy](https://moonbase.cloud/privacy) · [Terms](https://moonbase.cloud/terms) · [Contact](https://moonbase.cloud/contact)
+The moonbase connector (MCP) is the recommended path. Add a connector with this address to Claude, ChatGPT, Cursor or another assistant that supports connectors:
 
-## Install the Skill
+```text
+https://app.moonbase.cloud/mcp
+```
+
+You sign in to moonbase in the browser and approve access. No API key is needed on this path, and nothing secret goes into the chat. Step-by-step setup for the connector covers Claude, ChatGPT, Cursor, VS Code with GitHub Copilot, Gemini CLI and Devin Desktop (formerly Windsurf), in [Deploy from any AI chat](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch). Codex and other agents that read `AGENTS.md` can use the Skill file from `dist/`.
+
+### Install the Skill
 
 The Skill alone, without the plugin:
 
-- **Easiest:** [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch) has the right file for your tool.
+- **From the website:** [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch) has the right file for your tool.
 - **From this repo:** take the file for your tool from `dist/`, or drop the whole `moonbase/` folder into a Claude-compatible assistant:
   - `AGENTS.md`: the cross-tool standard, for Codex and other agents that read it
   - `moonbase.mdc`: Cursor rule
@@ -99,7 +73,33 @@ The Skill alone, without the plugin:
 - **From a release:** each [release](https://github.com/Moonbasecloud/moonbase-skill/releases) carries the `.skill` bundle, the kit ZIP and the single-file guide.
 - **For agent builders:** the discovery index is at `https://moonbase.cloud/.well-known/agent-skills/index.json`.
 
-Example: *"Build me a booking app for my yoga studio, with a database for clients and classes, and put it live on moonbase."* Your agent writes the app, moonbase creates its PostgreSQL database on deploy, and you get a live HTTPS link. Then keep going in the same chat: *"Add a page for monthly passes."* *"Connect my domain."* *"Roll back to yesterday's version."*
+### What the plugin connects to
+
+- **One remote server:** `https://app.moonbase.cloud/mcp`, run by moonbase, with OAuth sign-in. What it may do is in the [Tools reference](#tools-reference).
+- **Nothing else runs on install:** no hooks, no install scripts, no local server, no telemetry in the plugin. The Skill's two helper scripts run only when your agent runs them.
+- [Privacy](https://moonbase.cloud/privacy) · [Terms](https://moonbase.cloud/terms) · [Contact](https://moonbase.cloud/contact)
+
+## What you can ask
+
+Once installed, you talk to your agent in plain words. For example:
+
+- *"Build me a booking app for my yoga studio, with a database for clients and classes, and put it live on moonbase."* Your agent writes the app, moonbase creates its PostgreSQL database on deploy, and you get a live HTTPS link.
+- *"Add a page for monthly passes."*
+- *"Connect my domain."*
+- *"Roll back to yesterday's version."*
+- *"Why did my last deploy fail?"*
+- *"Invite my teammate to this project."*
+
+## About this Skill
+
+This repository is the **moonbase Skill**: instructions that teach any AI coding agent how to work with moonbase. With it, your agent can deploy a project, read why a deploy failed, set environment variables, connect a custom domain, roll back to an earlier version, invite teammates, read visitor stats, and download a project's source. Each project can have a managed PostgreSQL database (up to one per project, on every plan, Free included).
+
+Your agent works with moonbase in two ways:
+
+1. **The moonbase connector (MCP), recommended.** It gives the agent the tools listed in the [Tools reference](#tools-reference). Setup is in [Add the connector only](#add-the-connector-only).
+2. **This Skill.** It gives the agent the full guide: how to prepare a project, what each result means and what to tell you. Use it alongside the connector, or on its own in tools without connectors.
+
+An API key is only for your own automation, such as CI or a script that calls the moonbase API. Keep it in a secret manager or an environment variable. Never paste it into a chat.
 
 ## Staying up to date
 
@@ -123,6 +123,28 @@ If its `revision` is higher than yours, download the new files from [moonbase.cl
 ## Safe by default
 
 This repo is documentation, plugin manifests, helper scripts and a build script. It holds no secrets. When the helper script packages a project, `.env` files, `node_modules` and `.git` are always left out.
+
+## Tools reference
+
+What the connector can do, and what it may touch.
+
+<details>
+<summary>Permissions and connector tools</summary>
+
+| Permission | What it covers | Tools |
+|---|---|---|
+| Read, `missions:read` (granted by default) | See projects, versions, logs, domains, members, visitor numbers, status; check a project before a deploy | `list_missions` `mission_info` `deploy_status` `check_project` `list_versions` `list_env` `domain_status` `deploy_logs` `explain_error` `visitor_stats` `launch_check` (per project) `list_members` `import_status` (only where switched on) `platform_status` |
+| Write, `missions:write` (granted by default) | Deploy, change settings, domains, variables, members, password protection; open the database export page | `create_mission` `deploy` `redeploy` `create_upload` `upload_files` `commit_upload` `rollback` `set_env` `delete_env` `add_domain` `verify_domain` `remove_domain` `pause_mission` `resume_mission` `set_password` `remove_password` `invite_member` `set_member_role` `remove_member` `export_database` |
+| Account, `account:read` (granted by default) | Plan and usage, read-only | `account_usage` `upgrade_link` |
+| Delete a project, `missions:delete` (asked for separately) | Starts a deletion; the person finishes it in the moonbase app | `delete_mission` |
+| Delete old versions, `versions:delete` (asked for separately) | Deletes old versions for good, after the person says yes to the exact list | `delete_versions` |
+| Import a database, `databases:import` (asked for separately) | Replaces a project's moonbase database with a copy of another PostgreSQL database, after the person says yes to a preview | `import_database` (only where switched on) |
+| Download source, `missions:source` (asked for separately) | The raw source ZIP, which may contain secrets | `download_source` |
+| No permission | The build guide | `get_build_guide` |
+
+</details>
+
+Your client sends the permissions it wants; you approve them in the browser, and you can review connected apps in your account. An assistant that asks for nothing gets only the first three rows, plus the build guide. Some tools are available only on accounts or projects where moonbase has switched them on. Other abilities, such as deleting old versions for good or importing a database, are separate permissions too.
 
 ## More
 
