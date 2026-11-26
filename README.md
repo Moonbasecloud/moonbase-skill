@@ -13,7 +13,12 @@
 
 ## Install
 
-**Quick install:** add the connector `https://app.moonbase.cloud/mcp` to your AI tool ([setup per tool](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)), or get the Skill file for your tool at [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch).
+Two ways to start:
+
+- **[Connect your AI](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)**: opens the moonbase connection wizard, which walks you through adding the connector to your AI tool.
+- **[Download the Skill](https://github.com/Moonbasecloud/moonbase-skill/releases/latest)**: opens the latest release, with the `.skill` bundle, the kit ZIP and the single-file guide.
+
+The other install paths for each tool are below.
 
 ### Install the plugin (Skill plus connector)
 
