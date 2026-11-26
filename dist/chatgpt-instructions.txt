@@ -99,8 +99,8 @@ sentence.
 ## Before you deploy
 
 moonbase runs the app's code (and its database, when the project asks for one), not the keys or mail it uses,
-and a baked-in `localhost` resolves nowhere. Miss one and the deploy succeeds
-while the app stays broken. Settle these, then open the live link and use it:
+and a baked-in `localhost` resolves nowhere. Upload every file the app uses and
+run check_project; then open the live link and use it:
 the section "What the app needs from outside itself" of the moonbase guide.
 
 ## Rules you never break
