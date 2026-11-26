@@ -45,14 +45,26 @@ window, with the same rules (owner or admin, paid plan):
 | Tool | What it does |
 |---|---|
 | `list_members` | The people with access and the open invitations: role, Pending or active, and whether this account may change or remove each one (each has a `person_id`). |
-| `invite_member` | Emails an invitation to an address with a `role`: `view`, `edit` or `admin`. Nothing is granted until they accept. |
-| `set_member_role` | Changes an accepted person's role (`person_id` from `list_members`). |
+| `invite_member` | Asks to invite an address with a `role`: `view`, `edit` or `admin`. Nothing is sent until a person signed in to moonbase confirms it in the app (see below), and nothing is granted until the invited person accepts. |
+| `set_member_role` | Changes an accepted person's role (`person_id` from `list_members`). A change that raises access (to `edit` or `admin`) waits for the same confirmation in the app; a change to `view`, or one that lowers access, is made by the call. |
 | `remove_member` | Removes someone's access, or cancels a pending invitation. |
 
 - The invite answer is the same whether or not the address already has a
   moonbase account.
 - Inviting, changing a role and removing someone are run only after the
   person names the project, the address or person, and the role.
+- Inviting someone, and raising someone's access (to Can edit or Can
+  manage), can't be finished from chat. The tool answers
+  `status: "confirmation_required"` with `confirm_url` and
+  `confirm_expires_at`: the project's **Share** window
+  with that change shown and waiting. Open that exact link for the person
+  (or give it to them). Nothing happens until someone signed in to moonbase
+  who may make the change clicks **Confirm invitation** or **Confirm
+  access** there, within 30 minutes; after that the link has expired and the
+  tool is called again for a new one. Say the change is done only after
+  `list_members` shows it.
+- Confirm is the person's own decision on moonbase; an agent that presses it
+  in the person's browser skips the check this step exists for.
 - Accepting is always done by the invited person, from the email, signed in
   with that address. No tool accepts for them.
 - Every result includes the project's page with the **Share** window open:

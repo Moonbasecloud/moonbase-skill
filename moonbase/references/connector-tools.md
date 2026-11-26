@@ -44,8 +44,12 @@ for separately when connecting. Your connector's own tool list is the live one.
 - `resume_mission`: brings a paused project back online.
 - `set_password`: saves or replaces the visitor password (owner only).
 - `remove_password`: deletes it and turns protection off (owner only).
-- `invite_member`: invites a person by email with a role.
-- `set_member_role`: changes the role of someone who accepted.
+- `invite_member`: asks to invite a person by email with a role; a person
+  signed in to moonbase confirms it in the app before it is sent.
+- `set_member_role`: changes the role of someone who accepted; a change that
+  raises access (to Can edit or Can manage) is confirmed in the app first.
+  Confirm is the person's own decision on moonbase; an agent that presses it
+  in the person's browser skips the check this step exists for.
 - `remove_member`: removes access, or cancels an invitation.
 - `export_database`: the database export page and its status.
 

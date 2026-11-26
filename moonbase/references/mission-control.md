@@ -112,9 +112,9 @@ day**.
 Traffic is per mission, not per custom domain. Visitors are counted, never
 capped, on every plan.
 
-## The "Powered by moonbase" badge
+## The "Made with moonbase" badge
 
-Missions can show a small "powered by moonbase" badge. On the free plan it's
+Missions can show a small "made with moonbase" badge. On the free plan it's
 always shown. On paid plans the owner can turn it off in the mission's
 **Badge** setting (**Show the moonbase badge**). Only the owner can change it,
 and it applies right away.

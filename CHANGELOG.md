@@ -3,6 +3,10 @@
 All notable changes to the moonbase skill are documented here. Versions track
 the live moonbase skill's revision (rNN).
 
+## r85 — 2026-11-26
+
+Synced to the live moonbase skill, revision r85.
+
 ## r84 — 2026-11-26
 
 - The Claude Code project snippet (`dist/CLAUDE-snippet.md`) no longer repeats the table of moonbase words; it points to "Words moonbase uses" in the full guide instead, which keeps the snippet shorter.
