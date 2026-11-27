@@ -79,8 +79,8 @@ changed. `changes` carry up to 8 MiB, and the merged version keeps the usual
 limits. A patch can't be queued (`wait: false` or `idempotency_key`) and
 can't be combined with `files`, `zip_base64`, `source_url` or `file`.
 
-**List every file with `all_files`.** `deploy` and `create_mission` take
-`all_files`, every path in the project. Get all_files from the filesystem (a
+**List every file with `all_files`.** `deploy` (a new version of an existing
+project) takes `all_files`, every path in the project. Get all_files from the filesystem (a
 directory listing), never from memory. moonbase then refuses, before
 anything is built, when a listed file is missing from `files` (or, with
 `changes`, from both `changes` and the live version), with
