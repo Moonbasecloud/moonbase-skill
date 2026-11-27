@@ -89,8 +89,8 @@ open links, give them that exact link), show them the record, and call
 domain that another account already proved stays theirs.
 
 If moonbase refuses to add the domain because the plan doesn't include
-custom domains, it names the cheapest plan that does: upgrade
-(`billing.md`), then add the domain again.
+custom domains, the refusal reads: "Custom domains are not included in your
+current plan."
 
 ## Honest limits
 

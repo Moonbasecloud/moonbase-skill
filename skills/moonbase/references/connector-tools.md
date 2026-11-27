@@ -21,6 +21,8 @@ measured.
 - `deploy_status`: live status, current version, the last failed attempt and
   the newest redeploy of the live version (`last_redeploy`).
 - `check_project`: checks a project before a deploy; deploys nothing.
+
+`check_project` reports `env_vars_referenced`, `env_vars_required`, `env_vars_optional`, and `env_vars_requirement_unknown` as names only. `env_vars_needed` includes owner-supplied required or uncertain references without a detected default; it is not proof that a saved value is missing. `env_configuration_checked` is false: saved settings were not read. `env_vars_missing_from_example` means absent from `.env.example`, not absent from the deployed project. `env_vars_provided_by_platform` lists runtime defaults, and a ready managed database moves its referenced connection names to `env_vars_provided_by_moonbase`; `env_vars_reserved` are managed names and are not values for the person to supply. `env_scan_coverage` reports file limits, truncation, parse failures and dynamic access. The scan parses JavaScript/TypeScript and literal inline script blocks; environment-object aliases, computed names and unsupported syntax can leave references unknown. Inline JavaScript in HTML and external scripts use the same non-blocking localhost warning, with file and line; a server listening on `PORT` is not that warning.
 - `list_versions`: versions, newest first, and which one is live.
 - `list_env`: environment variable names, never values.
 - `domain_status`: custom domains, their status and the TXT record.
@@ -64,9 +66,9 @@ measured.
 ## See plan and usage (default)
 
 - `account_usage`: the plan, each limit and its use, the payment state.
-- `upgrade_link`: a link to the plans page; the person pays there.
-  `less_than_you_have_now`, as in `account_usage`, says when that plan includes
-  less than the account has now.
+- `upgrade_link`: Returns a moonbase plan-selection link for a user who has requested information about changing their plan. Does not change billing or make a payment.
+  `less_than_you_have_now` says when that plan includes less than the account
+  has now.
 
 ## Start deleting a project
 
@@ -78,6 +80,6 @@ measured.
 
 ## Download source files
 
-- `download_source`: the project's source ZIP (it may contain secrets).
+- `download_source`: the project's source ZIP. Environment files (`.env`, `.env.*`, `*.env`; `.env.example` stays) are not in it: `excluded_secret_files` lists them by name, and `secret_files_note` says: "Secret files are not included: <names>. If the app reads values from these files, re-uploading this archive will leave them out — ask the user to add those values in the project's environment settings before you upload it again." Other files can still contain credentials or personal information.
 
 Where moonbase has turned importing on, the connector also lists `import_database`, under its own permission (Replace a database), and `import_status`, under Read projects.

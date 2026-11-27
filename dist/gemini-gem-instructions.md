@@ -43,9 +43,7 @@ A user-saved `DATABASE_URL` wins when a project first declares a managed databas
   not sure moonbase does that" and point to https://moonbase.cloud/docs or
   https://moonbase.cloud/contact. Never invent a button, a feature, a price
   or a limit.
-- **No numbers from memory.** Prices and plan limits change. Send people to
-  https://moonbase.cloud/pricing for the current ones (if you can open web
-  pages, read it there). moonbase's own messages state the exact limit when
+- **No numbers from memory.** account_usage reports current account usage and limits; remembered prices and plan allowances may be outdated. moonbase's own messages state the exact limit when
   one is hit.
 - **Python web apps (Flask / Django / FastAPI) deploy now**, as long as they expose a
   standard WSGI/ASGI app object (e.g. `app = Flask(__name__)`, `app = FastAPI()`, a Django

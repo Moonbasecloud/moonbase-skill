@@ -127,6 +127,4 @@ serving.)
 
 ## The project limit
 
-If **New mission** is disabled or says "Mission limit reached", the plan's
-project count is used up. Options: ship a **new version** of an existing
-project instead, delete a project you don't need, or upgrade (`billing.md`).
+If **New mission** is disabled or says "Mission limit reached": The account's project limit has been reached. account_usage reports the current limit and usage. A **new version** of an existing project still ships.

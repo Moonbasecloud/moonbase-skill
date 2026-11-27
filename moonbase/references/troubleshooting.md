@@ -256,10 +256,9 @@ safe to try again after waiting.
 A payment problem on the account shows as a banner across the signed-in app,
 and with the connector `account_usage` and `platform_status` return it as
 `payment`: its `state` (`ok`, `payment_failed` or `past_due`), for
-`past_due` the `grace_ends_at` when its grace period ends, and `billing_url`.
-When the state isn't `ok`, tell the person plainly and give them the
-`billing_url` link, where they can see what happens next and update their
-payment method. It's their own account only, and it has no card or amount in
+`past_due` the `grace_ends_at` when its grace period ends. When the state
+isn't `ok`, its `guidance` reads: "There is a payment issue with your existing
+subscription." It's their own account only, and it has no card or amount in
 it.
 
 ### API keys
@@ -299,7 +298,7 @@ it.
 | `fetch_failed` | Couldn't download the source | moonbase could not download the source from the given URL: it failed or took over 30 seconds, answered with an error or a redirect (moonbase doesn't follow redirects), or was empty. Check that the URL is public and links straight to the ZIP, or attach the file again, then deploy again. |
 | `url_not_allowed` | Address not allowed | moonbase doesn't download from that address. Use a public https URL, or upload the files instead. |
 | `invalid_input` | Invalid request | A value in the request was missing or invalid (for a deploy, often the source: files, zip_base64, or a source_url, which must be https). A tool error's message names it; a deploy_status result has the code only, so check the source. Fix it and try again. |
-| `payload_too_large` | Project too large to send this way | The project is larger than this way of sending it allows. For files or zip_base64 (8 MiB inline limit), use create_upload. A source_url or file download over the plan's size limit per deploy needs a smaller project or a bigger plan; account_usage shows the limit. |
+| `payload_too_large` | Project too large to send this way | The project is larger than this way of sending it allows. For files or zip_base64 (8 MiB inline limit), use create_upload. A source_url or file download over the size limit per deploy needs a smaller project; account_usage shows the limit. |
 | `base_version_stale` | Changes were based on an older version | The changes were made on a version that is no longer live, so nothing was published. The error's live_version is the version live now. Apply the changes on top of it (download_source returns its files), then deploy again with base_version set to live_version, or leave base_version out. |
 | `base_archive_missing` | No stored copy to apply changes to | moonbase has no usable stored copy of the live version (it is older than stored copies, its copy could not be read, or nothing is live yet), so only-what-changed can't be applied and nothing was published. Deploy the whole project once (files, zip_base64, upload_files and commit_upload, or create_upload); later deploys can send only what changed. |
 | `patch_path_invalid` | A changed or deleted path was refused | A path in changes or deleted was absolute, contained '..', appeared twice, would make a file and a folder share a name, or (in deleted) is not a file in the live version; the message names it. Nothing was published. Paths are relative to the project's stored tree, as download_source returns it. Fix the path and deploy again. |
@@ -331,11 +330,11 @@ it.
 | Code | Title | What it means → what to do |
 |---|---|---|
 | `plan_limit_exceeded` (`reason`: `max_deploy_size`) | Deploy size limit reached | Over the plan's per-upload size. Each upload can be up to your plan's per-deploy size. Make the ZIP smaller and check your plan's current per-deploy size. |
-| `plan_limit_exceeded` (`reason`: `max_sites`) | Mission limit reached | No free project slot. Ship a new version of an existing project, delete one, or upgrade. |
-| `plan_limit_exceeded` (`reason`: `max_storage`) | Storage limit reached | Would pass total storage. Delete older versions or projects, or upgrade. |
-| `plan_limit_exceeded` (a connector tool error or `deploy_status` result code) | Plan limit reached | This deploy would go past a limit of this account's plan (number of projects, storage, or size per deploy), so it was not published. For an upload, its reason field names the limit; a tool error's message names it too. account_usage shows each limit and its use. upgrade_link returns the plans page. |
-| `weight_overage` | Storage upgrade needed | Would pass the free storage. Upgrade or free up storage. |
-| `upgrade_required` | Upgrade required | This needs a paid plan. Upgrade. |
+| `plan_limit_exceeded` (`reason`: `max_sites`) | Mission limit reached | The account limit was reached. account_usage reports current usage and limits. |
+| `plan_limit_exceeded` (`reason`: `max_storage`) | Storage limit reached | The account limit was reached. account_usage reports current usage and limits. |
+| `plan_limit_exceeded` (a connector tool error or `deploy_status` result code) | Plan limit reached | The deployment exceeded an account limit. account_usage reports current usage and limits. For an upload, its reason field names the limit; a tool error's message names it too. |
+| `weight_overage` | Storage limit reached | The account limit was reached. account_usage reports current usage and limits. |
+| `upgrade_required` | Not included in the current plan | This feature is not included in your current plan. |
 
 Show the exact limit from the **structured fields** (`reason`, and
 `limit`/`current`/`max` where present), not by quoting the raw `message` (see

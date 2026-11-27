@@ -1,26 +1,21 @@
-# Plans, upgrading and billing
+# Plans and billing
 
-**Never quote a price or a plan number from memory.** Read them live at
-https://moonbase.cloud/pricing (or https://moonbase.cloud/docs/billing-overview)
-if you can open web pages, and say that's where they came from. Otherwise send
-the user there.
+Never quote a price or a plan allowance from memory. account_usage reports current account usage and limits.
 
-## What's live today
+Account usage shows your current entitlements.
+
+## When the person asks about plans
 
 - A free plan and paid plans (today: moonbase free, plus, pro and max), with
   monthly and yearly prices on the pricing page.
 - Plans differ in projects, storage and features; the size of one upload is currently the same on every plan. Visitors are counted, never capped. Custom domains and sharing need a paid plan.
 - Payments go through **Paddle**. Billing is self-serve.
 
-## Upgrade, step by step
+## When the person asks to change their plan
 
-1. Open **https://app.moonbase.cloud/upgrade** (or **Plans** / **Upgrade**
-   in the app).
-2. Pick the plan.
-3. Pay in the Paddle checkout window.
-4. *Access unlocks right after payment.* No waiting on support.
+Plan selection and payment take place in the signed-in moonbase website. The connector does not purchase or change a subscription.
 
-Change plans on **Plans** (https://app.moonbase.cloud/upgrade), cancel with **End your plan** in **Account → Danger Zone**, and update the payment method on **Billing**, any time.
+`upgrade_link` returns a plan-selection link for a person who has asked about changing their plan, with the plan, its price, billing interval and what it includes. Cancelling is **End your plan** in **Account → Danger Zone**, and the payment method is updated on **Billing**.
 
 ## Billing and usage pages
 
@@ -46,18 +41,15 @@ How usage counts:
 - **What `account_usage` shows is the account, not only the plan.** Each
   limit line is what this account has today. An account can have its own
   number of projects, apart from its plan's standard number; the Missions
-  line then says so and names what the plan includes by itself, and the next
-  plan's entry lists where its standard number is lower than what the
-  account has now. Say the plan by its name (the `plan` field). The plan id
-  beside it, and the plan named inside the upgrade link, are moonbase's own
-  identifiers and mean nothing to the person. The storage number given in
+  line then says so and names what the plan includes by itself. Say the plan
+  by its name (the `plan` field). The plan id beside it is moonbase's own
+  identifier and means nothing to the person. The storage number given in
   bytes is the same amount as the Storage line shows as used.
 
 ## What happens at a limit
 
 - **Storage:** an upload that would exceed the account's storage allowance is refused. account_usage reports current storage usage and limits. Deleting stored content is permanent and requires the person's decision.
-- **Missions:** **New mission** is disabled until a project is deleted or the
-  plan is upgraded. Shipping a new version of an existing project still works.
+- **Missions:** **New mission** is disabled while the project limit is reached. Shipping a new version of an existing project still works.
 - **One upload's size:** one ZIP can be up to the per-deploy size, which is currently the same on every plan, so upgrading does not raise it; storage is what differs. The limit applies to the ZIP you upload, and your plan's storage also applies to the unpacked total. `account_usage` shows the live per-deploy size.
 
 ## Refunds

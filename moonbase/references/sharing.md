@@ -4,8 +4,7 @@ You can invite people to a project so they can see it, deploy it, or manage
 it. This is about working **on** a project together. (To show the finished
 project to anyone, just send them its link; no invite needed.)
 
-Sharing is available on **paid plans**. On the free plan the **Share**
-window explains this and offers an upgrade.
+Sharing is available on **paid plans**. On a free plan the connector reports: "Sharing is not included in the project owner's current plan."
 
 ## The roles
 

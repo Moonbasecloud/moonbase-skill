@@ -52,10 +52,7 @@ Recipe**). Details: `building-for-moonbase.md`.
   `mission-control.md`.
 - Each upload can be up to your plan's per-deploy size. The limit applies to the ZIP you upload. Your plan's storage also applies to the unpacked total.
 
-**Never quote prices or plan numbers from memory.** They live in moonbase's
-plan data and can change. The current table is at
-https://moonbase.cloud/pricing and https://moonbase.cloud/docs/billing-overview.
-If you can open web pages, read the numbers there and say where you read them.
+**Never quote prices or plan numbers from memory.** account_usage reports current account usage and limits; remembered prices and plan allowances may be outdated.
 Inside the app, **Billing** shows the user's own plan and usage.
 
 ## Who it's for
