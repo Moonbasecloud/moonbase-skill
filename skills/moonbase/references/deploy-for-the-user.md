@@ -6,7 +6,34 @@ until they confirm.
 
 If their AI tool supports the moonbase connector, follow
 **https://moonbase.cloud/docs/deploy-from-ai-chat** first. The person signs
-in to connect it. With the connector, a project with images, fonts or other
+in to connect it.
+
+**A new app: create the project first, then send the app in one deploy.**
+Call `create_mission` with the `name` alone, before writing the app. In
+seconds the project, its address and its managed PostgreSQL database exist,
+with a placeholder page live at the link; `database: false` makes a static
+project with no database. The result carries `url`, `project_id`, `database`
+(its `state`, with a `message` when the account isn't offered one),
+`launch_budget`, `moonwalk` and `next_step`. Say the moonwalk line and give
+the person the link at once. Then write the app and send all its files in one
+`deploy` (that `project_id`) with `changes`, which carries up to 8 MiB; it
+goes through the usual checks. Each deploy, the create included, uses one
+launch, and an account has a few launches per 5 minutes (`launch_budget`
+shows how many are left and when the next one frees up). So send a larger
+app in two deploys at most, never a few files at a time: put the entry files
+in the second (`package.json`, the start file, and `moonbase.json` with the
+app's own `migrate` command beside the same `database` entry; for a static
+project, `index.html`), so the first still serves the placeholder. moonbase
+sets `DATABASE_URL`; the starter's `server.js` stays until the app's own file
+replaces it or `deleted` removes it. After the last deploy, read
+`after_deploy`. Don't write the whole app into `create_mission`'s arguments:
+the model has to output every byte before moonbase receives anything, which
+takes minutes. A name-only create can be queued like any create
+(`wait: false`, `idempotency_key`); the same key with the same name and
+options returns the same attempt. Static pages on a project created with its
+database stay a Node project: create it with `database: false` instead.
+
+With the connector, a project with images, fonts or other
 binary files, or over about 100 KB, publishes through `create_upload`: it
 returns a single-use upload link (10 minutes) and the one-line `curl` command
 that sends the ZIP from any shell that has it (the code sandbox, a device

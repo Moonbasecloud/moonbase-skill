@@ -265,7 +265,12 @@ PostgreSQL database**, which moonbase creates and runs:
   version goes live and sets `DATABASE_URL` for the app. Nobody types a
   connection string, and the person opens no account anywhere else. A
   `DATABASE_URL` the person saved before is kept, and no managed database is
-  created over it. No app gets a database automatically.
+  created over it. A project created with `create_mission` and the name
+  alone already has its database (its starter `moonbase.json` has
+  `"migrate": "true"`, a no-op); the app's own `moonbase.json` keeps that
+  `database` entry and names its real migrate command. `database: false`
+  on that call makes a static project with no database. No other app gets a
+  database automatically.
 - **The app reads `DATABASE_URL` from the environment**, with a standard
   PostgreSQL driver. Verified TLS is required and is the app's to configure
   in its driver. The connection code, the migrate

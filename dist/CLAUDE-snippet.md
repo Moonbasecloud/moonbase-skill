@@ -33,11 +33,12 @@ can use:
    needs no API key. They can then ask "Take my app online with moonbase."
 
    Confirm the project and that they want it online. Leave out
-   credentials and `.env` files. With images or over about 100 KB:
-   `create_upload` gives one `curl` line for a shell (no API key;
-   single-use, 10 minutes). Host blocked: `upload_files`, then
-   `commit_upload`, over the connector; recovery steps (parts, unknown
-   outcomes): the section "Deploying for the user (when you can run commands)" of the moonbase guide. Small text-only projects
+   credentials and `.env` files. A new app: `create_mission` with the
+   name first, no files; project, address and database exist at once.
+   Say the moonwalk line, give the link, then send the app as `deploy`
+   `changes` in one deploy (two at most). A shell with images or over
+   ~100 KB: `create_upload` (one single-use `curl` line). Recovery
+   steps: the section "Deploying for the user (when you can run commands)" of the moonbase guide. Small text-only projects
    go inline as `files`. Redeploy: only `changes` and `deleted` vs the live
    version. A visitor password (`password` or
    `generate_password`) is visible in the chat; the person decides. Check `app_ready` (or

@@ -20,7 +20,7 @@
       "tools": "Cursor",
       "kitPath": ".cursor/rules/moonbase.mdc",
       "download": "/skill/files/moonbase.mdc",
-      "use": "Save as .cursor/rules/moonbase.mdc in your project. The full guide (about 277 KB), loaded only when the conversation is about hosting or moonbase."
+      "use": "Save as .cursor/rules/moonbase.mdc in your project. The full guide (about 283 KB), loaded only when the conversation is about hosting or moonbase."
     },
     {
       "id": "claude-md",

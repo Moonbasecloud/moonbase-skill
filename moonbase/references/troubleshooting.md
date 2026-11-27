@@ -168,6 +168,9 @@ variable. Make the app work from the root of its address, then upload it again.
 
 | Symptom | Cause → fix |
 |---|---|
+| A new project created with the name alone still shows its placeholder page | The app's files haven't all gone live yet. Send them in one `deploy` with `changes` (two at most, entry files such as `package.json`, the start file and `moonbase.json`, or `index.html`, in the second). A failed deploy leaves the previous version live: read its error, fix it, send it again. Static pages on a project created with its database keep serving the starter: delete that project and create it again with `database: false`. |
+| A deploy after a name-only create is refused with `rate_limited` | Each deploy, the create included, uses one of the few launches per 5 minutes. Wait the time the message gives (`launch_budget` shows it), then send the rest in one deploy. |
+| `create_mission` result shows `database.state: "not_available"` | The account isn't offered a managed database right now, so the project was created without one and `DATABASE_URL` isn't set by moonbase. `database.message` says so; `account_usage` shows the Managed database line. |
 | "Waking up your app" / loading screen | A sleeping free-plan project waking up. Wait a second or two. |
 | Changed an environment variable but nothing changed | Changes apply on the next deploy. With the connector, after the person approves the live change, call `redeploy` to rebuild the active stored archive with the saved values. It keeps the same version number and requires a usable active archive. Check an unconfirmed outcome with `deploy_status` before another attempt. |
 | Domain won't verify | Record must match exactly; A for main domain, CNAME for subdomain; Cloudflare grey cloud; wait up to 48h; click **Verify** again. |

@@ -28,7 +28,7 @@ for separately when connecting. Your connector's own tool list is the live one.
 
 ## missions:write (default)
 
-- `create_mission`: a new project and its first version.
+- `create_mission`: a new project. With the name alone, the project, its address and its database exist in seconds (`database: false` for a static project); the app then goes live in one `deploy` with `changes` (two at most).
 - `deploy`: a new version of an existing project; `changes` and `deleted` send only what changed.
 - `redeploy`: rebuilds the active version with the saved variables.
 - `create_upload`: a single-use upload link and shell command.
