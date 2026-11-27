@@ -9,14 +9,13 @@ If their AI tool supports the moonbase connector, follow
 in to connect it.
 
 **A new app: create the project first, then send the app in one deploy.**
-Call `create_mission` with the `name` alone, before writing the app. In
+Call `create_project` with the `name` alone, before writing the app. In
 seconds the project, its address and its managed PostgreSQL database exist,
 with a placeholder page live at the link; `database: false` makes a static
 project with no database. The result carries `url`, `project_id`, `database`
 (its `state`, with a `message` when the account isn't offered one),
-`launch_budget`, `moonwalk` and `next_step`. Say the moonwalk line and give
-the person the link at once. Then write the app and send all its files in one
-`deploy` (that `project_id`) with `changes`, which carries up to 8 MiB; it
+`launch_budget` and `next_step`. After create_project, say at most: "Your address is reserved: <url>. Deploying now." Then
+write the app and send all its files in one `deploy` (that `project_id`) with `changes`, which carries up to 8 MiB; it
 goes through the usual checks. Each deploy, the create included, uses one
 launch, and an account has a few launches per 5 minutes (`launch_budget`
 shows how many are left and when the next one frees up). So send a larger
@@ -26,11 +25,13 @@ app's own `migrate` command beside the same `database` entry; for a static
 project, `index.html`), so the first still serves the placeholder. moonbase
 sets `DATABASE_URL`; the starter's `server.js` stays until the app's own file
 replaces it or `deleted` removes it. After the last deploy, read
-`after_deploy`. Don't write the whole app into `create_mission`'s arguments:
+`after_deploy`. Give the link as done only after after_deploy.state is ok or ok_with_warnings (not broken, unconfirmed or suspicious); with ok_with_warnings, name the warning in one plain line. Don't write the whole app into `create_project`'s arguments:
 the model has to output every byte before moonbase receives anything, which
-takes minutes. A name-only create can be queued like any create
+takes minutes. Where `create_project` lists `wait` and `idempotency_key` (queued deploys,
+switched on per connection), a name-only create can be queued like any create
 (`wait: false`, `idempotency_key`); the same key with the same name and
-options returns the same attempt. Static pages on a project created with its
+options returns the same attempt. Where they aren't listed, create it without
+them; a `deploying` result is followed with `deploy_status` by `slug`. Static pages on a project created with its
 database stay a Node project: create it with `database: false` instead.
 
 With the connector, a project with images, fonts or other
@@ -58,6 +59,8 @@ file. The result's `incomplete` list names the parts still missing.
 session, including a file whose parts are incomplete. It does not delete a
 published version. `expected_files` on `commit_upload` checks the complete
 staged file list and any checksums you supply before publication.
+
+Send each file's real contents, never a placeholder token such as `__INDEX__`: `after_deploy.state: suspicious` means the live home page looks like one, so resend the real files.
 
 A repeated batch can be sent after an interrupted upload. If a deploy is
 confirmed not to have happened, the session can be corrected and committed

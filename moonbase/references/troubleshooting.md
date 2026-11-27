@@ -48,10 +48,14 @@ there is no replacement ID to infer from the version or project name.
 A `trace_id`-only call looks up the caller's recorded failed attempt by its exact
 Error ID, including a first deploy whose project no longer exists. That lookup
 uses no slug or project reference; reusing a project's name does not attach old
-failures to the new project. It returns no build log, raw error or activity
-metadata. Preflight validation refusals (`upload_rejected`) are not attempted
+failures to the new project. When moonbase kept that failure's detail, the
+result adds `trace_attempt`, with the same fields as `deploy_status`'s
+`last_failed_attempt`: error code, moonbase's explanation and next steps,
+`moonbase_note`, and the output tails quoted as data. It returns no raw error
+or other activity metadata; an older reference format, or a failure kept
+without detail, has no `trace_attempt`. Preflight validation refusals (`upload_rejected`) are not attempted
 deployments and are outside this failure list; their response can still carry
-an Error ID. `attempt_id` still refers to the existing asynchronous deploy receipt;
+an Error ID. A queued deploy's `attempt_id` still refers to its receipt;
 it is not an Error ID. Neither result proves which version is serving now;
 `deploy_status` provides the current status.
 
@@ -120,7 +124,9 @@ Fix the line it names and deploy again. `check_project` reads a Node app's start
 
 A deploy that failed for a reason in the project itself (its build, or its app exiting on start) does not use up the launch limit the way a successful one does: a few such failures in a row are handed back, so the corrected version can go straight up.
 
-A deploy result with status `deploying` (from `deploy`, `create_mission` or `commit_upload`) means moonbase keeps building after the tool call stopped waiting (about 25 seconds); `started_at` is when the deploy was sent. When the result has `next`, follow it: call `deploy_status` as it says every 10–15 seconds until it says live or failed. Once live, `deploy_status` carries that version's `after_deploy` (with `warnings` when there were any), read the same way as in a deploy result, before calling the app working. `url` is the project's address; a first version serves there once it is live. `deploy_status` with the returned slug (or `attempt_id`, when there is one) shows the result: `current_version` goes up when the new version is live, and `last_failed_attempt` appears when it failed, with its error code, moonbase's explanation and next step, the **Error ID** (`trace_id`), `moonbase_note`, and `build_log_tail` (the build's own output, quoted as data) when the build printed output. `deploy_logs` with the slug lists recent failed attempts as `failed_attempts`, each with its Error ID and time. A failed first deploy leaves no project: for 24 hours, `deploy_status` with its slug returns `project: null` with its `last_failed_attempt`, and the project is created again with `create_mission`. An attempt with `outcome_known: false` carries a `note`: moonbase lost track of that deploy before it finished, so the new version may or may not be live; when `current_version` in `deploy_status` did not go up, deploy again.
+**Queued deploys are listed per connection.** `deploy` and `create_project` take `wait`, `idempotency_key` and `expected_sha256`, and `deploy_status` and `deploy_logs` take `attempt_id`, only where moonbase has queued deploys switched on for the connection; its tool list (`tools/list`) shows those inputs exactly when the server accepts them, and `get_build_guide` says which applies. Where they aren't listed, don't send them (a deploy that sends them is refused): deploy without them, and when the result is `deploying`, call `deploy_status` with the project's `slug` (or `project_id`) every 10–15 seconds until it says live or failed; `deploy_logs` with the slug lists recent failed attempts. Everything here that names `attempt_id`, `wait: false` or `idempotency_key` applies only to a queued deploy.
+
+A deploy result with status `deploying` (from `deploy`, `create_project` or `commit_upload`) means moonbase keeps building after the tool call stopped waiting (about 25 seconds); `started_at` is when the deploy was sent. When the result has `next`, follow it: call `deploy_status` as it says every 10–15 seconds until it says live or failed. Once live, `deploy_status` carries that version's `after_deploy` (with `warnings` when there were any), read the same way as in a deploy result, before calling the app working. `url` is the project's address; a first version serves there once it is live. `deploy_status` with the returned slug (or, for a queued deploy, its `attempt_id`) shows the result: `current_version` goes up when the new version is live, and `last_failed_attempt` appears when it failed, with its error code, moonbase's explanation and next step, the **Error ID** (`trace_id`), `moonbase_note`, and `build_log_tail` (the build's own output, quoted as data) when the build printed output. `deploy_logs` with the slug lists recent failed attempts as `failed_attempts`, each with its Error ID and time. A failed first deploy leaves no project: for 24 hours, `deploy_status` with its slug returns `project: null` with its `last_failed_attempt`, and the project is created again with `create_project`. An attempt with `outcome_known: false` carries a `note`: moonbase lost track of that deploy before it finished, so the new version may or may not be live; when `current_version` in `deploy_status` did not go up, deploy again.
 
 ## "It deployed but the page is blank or broken"
 
@@ -164,13 +170,61 @@ variable. Make the app work from the root of its address, then upload it again.
 5. Still down? Contact support with the project's name, address, when it
    started and the exact browser error. Don't delete the project.
 
+## Reading a project's state (`project_state`)
+
+`deploy`, `deploy_status` and `project_info` each return `project_state`, the
+same contract from all three. Read it before saying a project works:
+
+- `deployment.outcome`: `succeeded`, `failed`, `in_progress`, `unknown` or
+  `none`. `previous_version_serving: true` means the new deploy failed or is
+  not done, and visitors still get the previous version (`serving_version`).
+- `availability.state`: `live`, `not_ready`, `paused`, `resuming`,
+  `protected`, `not_deployed` or `unknown`. A paused project is `paused`,
+  not live. A resume is `resuming` until moonbase confirms it. A
+  password-protected project is `protected` with `verified: false`: visitors
+  get the password page, and moonbase did not check the app behind it.
+- `app_readiness`: the app's own readiness answer (`path`, usually `/readyz`,
+  `http_status` and the `version` it was asked about). A static project shows
+  `static_files`: its files are served, and there is no app to be ready.
+- `page_reachability`: the public address's `http_status` and `served_by`.
+  A paused project's page can answer 200; `served_by: paused_page` and
+  `app_answering: false` say that is not the app.
+- `observed`: the version this describes and when it was read.
+
+The older fields (`status`, `status_label`, `app_ready`, `after_deploy`) are
+unchanged.
+
+## Reading a publish result (`publication`)
+
+Every way of publishing returns the same fields: `deploy`, `commit_upload`, the
+`done` event a `create_upload` link's upload ends with, and `deploy_status`
+for a queued deploy's `attempt_id`:
+
+- `after_deploy`: what moonbase saw on the page (`state`, `findings`,
+  `next_steps`). On a password-protected project it says the check saw the
+  password page, not the app.
+- `files_published`: the files moonbase published. A file it left out is never
+  in this count.
+- `publication.files_skipped`: each file left out, with its `reason`
+  (`secret_env_file`, `private_key_file`, `private_key_content`,
+  `version_control_folder`, `server_config_file`, `file_type_not_served` or
+  `not_served_unknown`). Keys and settings belong in `set_env`, not in a
+  renamed file. `os_files_dropped` counts files like `.DS_Store`.
+- `publication.files_received`: every file moonbase received, including the
+  ones it did not publish. It is not a published count.
+- `publication.observed: false` (a deploy moonbase confirmed afterwards): the
+  file counts are `null`, meaning not known, not zero.
+
+A deploy's result and the `create_upload` `done` event also carry
+`project_state`. `skipped_entries` and the other older fields are unchanged.
+
 ## Other symptoms
 
 | Symptom | Cause → fix |
 |---|---|
 | A new project created with the name alone still shows its placeholder page | The app's files haven't all gone live yet. Send them in one `deploy` with `changes` (two at most, entry files such as `package.json`, the start file and `moonbase.json`, or `index.html`, in the second). A failed deploy leaves the previous version live: read its error, fix it, send it again. Static pages on a project created with its database keep serving the starter: delete that project and create it again with `database: false`. |
 | A deploy after a name-only create is refused with `rate_limited` | Each deploy, the create included, uses one of the few launches per 5 minutes. Wait the time the message gives (`launch_budget` shows it), then send the rest in one deploy. |
-| `create_mission` result shows `database.state: "not_available"` | The account isn't offered a managed database right now, so the project was created without one and `DATABASE_URL` isn't set by moonbase. `database.message` says so; `account_usage` shows the Managed database line. |
+| `create_project` result shows `database.state: "not_available"` | The account isn't offered a managed database right now, so the project was created without one and `DATABASE_URL` isn't set by moonbase. `database.message` says so; `account_usage` shows the Managed database line. |
 | "Waking up your app" / loading screen | A sleeping free-plan project waking up. Wait a second or two. |
 | Changed an environment variable but nothing changed | Changes apply on the next deploy. With the connector, after the person approves the live change, call `redeploy` to rebuild the active stored archive with the saved values. It keeps the same version number and requires a usable active archive. Check an unconfirmed outcome with `deploy_status` before another attempt. |
 | Domain won't verify | Record must match exactly; A for main domain, CNAME for subdomain; Cloudflare grey cloud; wait up to 48h; click **Verify** again. |
@@ -230,12 +284,12 @@ it.
 | `empty_selection` | Nothing to upload | Shown only in the moonbase web app; tools never receive it. |
 | `drop_without_file` | That was a link, not a file | Shown only in the moonbase web app; tools never receive it. |
 | `file_read_failed` | Couldn't read that file | Shown only in the moonbase web app; tools never receive it. |
-| `zip_unsafe` | Upload rejected for safety | This upload's structure tripped one of moonbase's safety checks (an unusual file count, size or path), so it was rejected before any of its files were unpacked. Check that the ZIP holds only your project's files, then upload again. If it holds only the project's files and is still refused, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or its attempt_id; if no ID is shown, contact moonbase support. |
+| `zip_unsafe` | Upload rejected for safety | This upload's structure tripped one of moonbase's safety checks (an unusual file count, size or path), so it was rejected before any of its files were unpacked. Check that the ZIP holds only your project's files, then upload again. If it holds only the project's files and is still refused, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or a queued deploy's attempt_id; if no ID is shown, contact moonbase support. |
 | `no_html_or_package_json_found` | We couldn't find anything to launch | No `index.html` or `package.json` anywhere. Add one. |
 | `no_html_found` | No HTML found | Looks static but has no `.html` file. Include one. |
 | `referenced_files_missing` | Some files your pages use weren't uploaded | A page a visitor can reach names styles, scripts, images or fonts that aren't in the upload; `paths` lists them (the message names up to 10). A project of plain files is stopped before going live; a Node app whose code may serve the files another way gets the same words as a warning and goes live. Names are case-sensitive (`Styles.css` is not `styles.css`), and a `../` path that leaves the project counts as missing. Add them and upload again. `check_project` reports the same before a deploy. |
 | `static_folder_missing` | A folder your app serves wasn't uploaded | A warning: the start file serves a folder with `express.static` that isn't in the upload or is empty. The app still goes live; add the folder if its pages or files belong in it. |
-| `classification_error` | We couldn't read this upload | Something about this upload's structure confused our inspector. The person can contact moonbase support with the error ID from the failed deploy's result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or its attempt_id; if no ID is shown, contact moonbase support. |
+| `classification_error` | We couldn't read this upload | Something about this upload's structure confused our inspector. The person can contact moonbase support with the error ID from the failed deploy's result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or a queued deploy's attempt_id; if no ID is shown, contact moonbase support. |
 | `go_not_supported` | Go apps can't run on moonbase yet | moonbase doesn't run Go. If the project has a web frontend, build it and upload those files. |
 | `python_entrypoint_not_detected` | We couldn't find where your Python app starts | This is a Python project. moonbase runs Python web apps, but couldn't find one here it knows how to start: it looks for a Flask, FastAPI or Django app. Add a top-level `app = Flask(__name__)` or `app = FastAPI()` in a root `app.py`, `main.py` or `server.py`, or a Django `manage.py` and `wsgi.py`, then deploy again. |
 | `python_runtime_not_supported` | We couldn't find where your Python app starts | Legacy code with the same meaning as `python_entrypoint_not_detected`; a current upload won't return it. Add a top-level `app = Flask(__name__)` or `app = FastAPI()` in a root `app.py`, `main.py` or `server.py`, or a Django `manage.py` and `wsgi.py`, then deploy again. |
@@ -253,7 +307,7 @@ it.
 | `files_listed_not_sent` | Files in the project weren't sent | all_files listed files that were not in the deploy (not in files, or for changes, neither in changes nor in the live version), so nothing was published; the message and the error's missing list name them. Add those files to files (or changes), keep all_files as the directory listing shows it, and deploy again. |
 | `source_digest_mismatch` | Upload didn't match its checksum | The ZIP moonbase received or downloaded for this queued deploy didn't match the expected_sha256 given, so it was not published. Check that expected_sha256 is the SHA-256 of that exact ZIP (for a source_url, that the file hasn't changed), or leave it out when sending files. Then deploy again with a new idempotency_key. |
 | `hardcoded_secret_detected` | Possible secret found in your upload | A possible key or credential was found in the files and the upload was stopped. Remove the credential from the uploaded files, use environment variables, and upload again. If the credential is real, rotate it with its provider. When all matches are in test or fixture files, the refusal suggests leaving them out of the ZIP or source after confirming that the app builds and runs without them. A Firebase web config's `apiKey` (in an object with `authDomain` and `projectId`) is not refused; any other `AIza` Google key is, so move it to an environment variable read by server code. |
-| `malware_detected` | Upload blocked — malware detected | Our malware scanner found something harmful in this upload and blocked it before deploying. If the person believes this is a false positive, they can contact moonbase support with the error ID from the failed deploy's result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or its attempt_id; if no ID is shown, contact moonbase support. |
+| `malware_detected` | Upload blocked — malware detected | Our malware scanner found something harmful in this upload and blocked it before deploying. If the person believes this is a false positive, they can contact moonbase support with the error ID from the failed deploy's result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or a queued deploy's attempt_id; if no ID is shown, contact moonbase support. |
 | `scanner_unavailable` | Upload paused — scanner temporarily unavailable | Retry ✓ in a few minutes. |
 | `scan_incomplete` | Upload paused — scan didn't finish | Retry ✓ in a few minutes. |
 | `scan_too_large` | Upload paused — file too large to scan | Make it smaller, or contact support. |
@@ -270,7 +324,7 @@ it.
 | `project_not_found` | Mission not found | The project you're updating isn't found or isn't yours. Pick the right project (API: look up the id with the status endpoint). |
 | `upload_token_slug_mismatch` | | Internal upload token used for another project. API users: use the API key. |
 | `upload_token_slug_mismatch` (an upload link's response) | Upload link is for another project | This upload link belongs to a different project. Get a new link from create_upload for this project. |
-| `not_found` (a connector tool error or `deploy_status` result code) | Not found | The project, version, domain, deploy attempt or person asked for doesn't exist or isn't this account's; a tool error's message says which. list_missions shows this account's projects, and list_versions a project's versions. |
+| `not_found` (a connector tool error or `deploy_status` result code) | Not found | The project, version, domain, deploy attempt or person asked for doesn't exist or isn't this account's; a tool error's message says which. list_projects shows this account's projects, and list_versions a project's versions. |
 
 ### Plan limits
 
@@ -292,14 +346,14 @@ Show the exact limit from the **structured fields** (`reason`, and
 | Code | Title | What it means → what to do |
 |---|---|---|
 | `deploy_in_progress` | A deploy is already running | One build per project at a time. Retry ✓ after `retry_after_sec` seconds. |
-| `superseded_by_newer_version` (a `deploy_status` result code) | Replaced by a newer version | Not an error. A newer deploy or upload of the same project replaced this one; deploy_status with the newer attempt_id shows its progress. |
+| `superseded_by_newer_version` (a `deploy_status` result code) | Replaced by a newer version | Not an error. A newer deploy or upload of the same project replaced this one; deploy_status with the newer queued deploy's attempt_id, or the project's slug, shows its progress. |
 | `source_unavailable` (a `deploy_status` result code) | Stored upload could not be read | moonbase could not read back the stored upload after maintenance, so this version was not published. The current live version is unchanged. Upload this version again. |
 | `expired_during_maintenance` (a `deploy_status` result code) | Waited past its maintenance deadline | This version was still waiting at its expires_at and was not published. The live version is unchanged. Deploy again: for a queued deploy, with a new idempotency_key; for an upload link, with a new link from create_upload. |
 | `auth_required` (a `deploy_status` result code) | Deploy's access was not accepted | This deploy's access was missing or not accepted: the upload token was absent, mistyped, already used or expired, or the connection's access had expired or was revoked. It was not published, and the live version is unchanged. Deploy again (for a queued deploy, with a new idempotency_key); with a create_upload link, get a new one from create_upload if the token was already used or expired, and send its x-upload-token header exactly as given; if moonbase asks for approval, reconnect it in the assistant's connector settings. |
 | `async_deploy_unavailable` (a `deploy_status` result code) | Queued deploy couldn't run | moonbase couldn't run this queued deploy safely just now, so it was not published. The live version is unchanged. Deploy again shortly: for a queued deploy, with a new idempotency_key, or start a regular deploy (without wait:false or idempotency_key); for an upload link, with a new link from create_upload. |
 | `deploy_history_pending` (a `deploy_status` result code) | Published, still being recorded | This version was published, but moonbase is still recording it in the project's history, and a new deploy of this project is refused, or waits in the queue until that finishes or the queued deploy expires. Check deploy_status with the attempt_id; it is not necessary to deploy again. If it then reports the history entry missing, contact moonbase support with the attempt ID. |
 | `deploy_interrupted_before_dispatch` (a `deploy_status` result code) | Deploy stopped before publishing | This deploy was interrupted before publishing began and was not published. The live version is unchanged. Deploy again: for a queued deploy, with a new idempotency_key; for an upload link, with a new link from create_upload. |
-| `project_not_found` (a `deploy_status` result code) | Project not available | The project this version was for was deleted, archived or renamed, or is not this account's, so it was not published. list_missions shows the projects this account can deploy to. |
+| `project_not_found` (a `deploy_status` result code) | Project not available | The project this version was for was deleted, archived or renamed, or is not this account's, so it was not published. list_projects shows the projects this account can deploy to. |
 | `deploy_failed` | Deploy failed | This deploy did not finish normally, and the new version may or may not be live. Check deploy_status before deploying again (with the attempt ID if the deploy returned one); deploy_logs for the project lists recent failed attempts. |
 | `queue_expired` | Queued deploy never started | This deploy waited in the queue for 15 minutes without starting and was not published. The live version is unchanged. Deploy again with a new idempotency_key; if it keeps happening, check platform_status. |
 | `deploy_queue_full` | Too many deploys waiting | This account, or moonbase as a whole, already has as many deploys waiting as moonbase holds at once. Wait a few minutes, then try again; deploy_status for a project shows its waiting deploy. |
@@ -316,7 +370,7 @@ Show the exact limit from the **structured fields** (`reason`, and
 ### Password at deploy time
 
 A visitor password can be given only with a new project's first launch: the
-`password` form field, or `password` / `generate_password` on create_mission
+`password` form field, or `password` / `generate_password` on create_project
 and create_upload. A new version can't carry one. A project with no password
 gets it from set_password; change a saved password with set_password and
 `replace: true`, after the person confirms. Replacement keeps protection on or off
@@ -335,12 +389,12 @@ current protection state. Mission Control → **Password protection** also chang
 
 | Code | Title | What it means → what to do |
 |---|---|---|
-| `internal` | Something went wrong | Something went wrong on moonbase's side, and this version is not live. Try again; if it keeps happening, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or its attempt_id; if no ID is shown, contact moonbase support. |
-| `migration_disk_low` | We couldn't run your database migration | moonbase's build server didn't have enough free disk space to run the migration, so it didn't start and made no changes to the database's tables or data. This is on moonbase's side, not the migration. Deploy again in a few minutes; if it keeps happening, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id; the app shows it as Error ID), or its attempt_id; if no ID is shown, contact moonbase support. |
-| `docker_build_limits_unavailable` | We couldn't start your build | moonbase couldn't confirm the safety limits on its build machine, so the build didn't start and nothing was deployed; a version that was already live is still live. This is on moonbase's side. Deploy again in a few minutes; if it keeps happening, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id; the app shows it as Error ID), or its attempt_id; if no ID is shown, contact moonbase support. |
+| `internal` | Something went wrong | Something went wrong on moonbase's side, and this version is not live. Try again; if it keeps happening, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id, or trkId in an upload link's response; the app shows it as Error ID), or a queued deploy's attempt_id; if no ID is shown, contact moonbase support. |
+| `migration_disk_low` | We couldn't run your database migration | moonbase's build server didn't have enough free disk space to run the migration, so it didn't start and made no changes to the database's tables or data. This is on moonbase's side, not the migration. Deploy again in a few minutes; if it keeps happening, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id; the app shows it as Error ID), or a queued deploy's attempt_id; if no ID is shown, contact moonbase support. |
+| `docker_build_limits_unavailable` | We couldn't start your build | moonbase couldn't confirm the safety limits on its build machine, so the build didn't start and nothing was deployed; a version that was already live is still live. This is on moonbase's side. Deploy again in a few minutes; if it keeps happening, the person can contact moonbase support with the error ID from the failed deploy's result (trace_id; the app shows it as Error ID), or a queued deploy's attempt_id; if no ID is shown, contact moonbase support. |
 | `deployment_maintenance` | | New deployments are temporarily paused. Existing projects keep serving. Wait and retry later; do not change database settings or start duplicate deploys. |
 | `deployment_maintenance` (a connector tool error or `deploy_status` result code) | Deploys paused for maintenance | moonbase is in a maintenance window and new deploys are paused; this one was not published, and the live version keeps serving. Deploy again in a few minutes. platform_status shows any maintenance notice moonbase has published. |
-| `waiting_for_maintenance` (a `deploy` result phase, status `in_progress`) | | Not an error. moonbase is in a maintenance window and accepted this version instead of refusing it; it starts publishing it automatically when maintenance ends, and the current live version keeps serving until then. Tell the person it is waiting. Poll `deploy_status` with the `attempt_id` about once a minute; do not start duplicate deploys. A newer deploy of the same project replaces the waiting one. Past `expires_at` it is not published (`expired_during_maintenance`): deploy again. Only new versions of an existing project wait this way: a `deploy` with `files` or `zip_base64`, and, where moonbase has it switched on, a ZIP sent to a `create_upload` link or the app's upload screen (the upload answers HTTP 202 with this receipt). Other sources and new projects still get `deployment_maintenance`. |
+| `waiting_for_maintenance` (a `deploy` result phase, status `in_progress`) | | Not an error. moonbase is in a maintenance window and accepted this version instead of refusing it; it starts publishing it automatically when maintenance ends, and the current live version keeps serving until then. Tell the person it is waiting. Poll `deploy_status` with this queued deploy's `attempt_id` about once a minute; do not start duplicate deploys. A newer deploy of the same project replaces the waiting one. Past `expires_at` it is not published (`expired_during_maintenance`): deploy again. Only new versions of an existing project wait this way: a `deploy` with `files` or `zip_base64`, and, where moonbase has it switched on, a ZIP sent to a `create_upload` link or the app's upload screen (the upload answers HTTP 202 with this receipt). Other sources and new projects still get `deployment_maintenance`. |
 | `service_draining` | | moonbase is restarting. Retry ✓ under the same bounded policy (wait the server's delay first). |
 | `service_draining` (a connector tool error or `deploy_status` result code) | Service restarting | moonbase is restarting this service and isn't accepting new deploys for a moment. Deploy again in a minute. |
 | `http_<status>` | Request failed (HTTP <status>) | The request failed with HTTP <status> and nothing was published. Deploy again; if it repeats, check platform_status. |

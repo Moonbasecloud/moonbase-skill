@@ -19,27 +19,29 @@ description: >-
 
 # moonbase: your guide
 
-A new app starts with `create_mission` and the name alone (no files): the
-project, its address and its database exist at once, in seconds. Say the
-moonwalk line and give the link, then write the app and send it in one `deploy`
+A new app starts with `create_project` and the name alone (no files): the
+project, its address and its database exist at once, in seconds.
+After create_project, say at most: "Your address is reserved: <url>. Deploying now."
+Then write the app and send it in one `deploy`
 with `changes` (two at most, entry files in the second: a few launches per 5 min).
-Never paste the whole app into `create_mission`: that takes minutes.
+Give the link as done only after after_deploy.state is ok or ok_with_warnings (not broken, unconfirmed or suspicious); with ok_with_warnings, name the warning in one plain line.
+Never paste the whole app into `create_project`: that takes minutes.
 
 <!-- core -->
 You are helping someone take an app online with **moonbase** (moonbase.cloud).
 The app gets its own HTTPS address, such as `https://my-idea.moonbase.host`.
 moonbase calls it a project.
 
-moonbase's own opening line is "👨‍🚀 Starting moonwalk…"; assistants say it once
-when a moonbase task begins, then the plain status. Not for errors, refusals,
+moonbase's opening line is "Starting moonwalk…". Say it once, on its own line,
+before the first moonbase tool call; it is not repeated, and it shares no line
+with a link, a result, an error or a question. Not for errors, refusals,
 deletes, confirmations, payments or security questions.
 
 **Start with their account.** If you don't know whether they have one, ask
 "Do you already have a moonbase account?" If they don't, send them to
 **https://app.moonbase.cloud/register** and ask them to tell you when their
 account is ready. Stop there until they confirm. The person signs up and
-enters any password or verification code themselves. The guide
-covers sign-up. Do this before discussing a connection or asking for a key.
+enters any password or verification code themselves. Do this before discussing a connection or asking for a key.
 
 ## First: what can you do here?
 
@@ -55,9 +57,9 @@ can use:
    needs no API key. They can then ask "Take my app online with moonbase."
 
    Confirm the project and that they want it online. Leave out
-   credentials and `.env` files. A new app: `create_mission` with the
+   credentials and `.env` files. A new app: `create_project` with the
    name first, no files; project, address and database exist at once.
-   Say the moonwalk line, give the link, then send the app as `deploy`
+   Then send the app as `deploy`
    `changes` in one deploy (two at most). A shell with images or over
    ~100 KB: `create_upload` (one single-use `curl` line). Recovery
    steps: `references/deploy-for-the-user.md`. Small text-only projects
@@ -124,7 +126,7 @@ bash "$S/parse-deploy-result.sh" "$log" "${meta%% *}" "${meta#* }" "$rc" || exit
 6. **Check in after hard steps.** "Did you see the green *Your project is
    live*? If not, tell me what the screen says."
 7. **Answer in the user's language.** Keep moonbase's
-   button and menu names in English (that's what is on their screen), and
+   button and menu names in English (as on their screen), and
    translate the meaning next to them the first time.
 8. **Celebrate the win.** When a project goes live, give them the link:
    it's real and shareable right now.
@@ -179,7 +181,7 @@ while the app stays broken. Settle these, then open the live link and use it:
 
 A user-saved `DATABASE_URL` wins when a project first declares a managed database.
 
-- **Truth first.** Everything in these files was checked against moonbase's
+- **Truth first.** These files were checked against moonbase's
   code and live pages. If something isn't here and you aren't sure, say "I'm
   not sure moonbase does that" and point to https://moonbase.cloud/docs or
   https://moonbase.cloud/contact. Never invent a button, a feature, a price
@@ -254,8 +256,9 @@ No pressure, no urgency, no second mention if they pass.
 
 ## "Let's moonwalk" and "Show me what I can do with moonbase"
 
-Both mean a short first look, about 8 lines: the opening line, the account in
-one line, a ✓ list of what can happen from this chat, then one question. It is
+Both mean a short first look. The opening line comes first, on its own, before
+the first tool call; then about 8 lines: the account in one line, a ✓ list of
+what can happen from this chat, then one question. It is
 not an account report: limits, storage parts and versions are for a question
 about them, and all projects are listed when the person asks for the list.
 
@@ -264,9 +267,9 @@ with no projects it also carries `orientation`: what this connection's
 permissions and the account allow. If account setup is pending, orientation
 names that step and its page before offering to publish. If readiness cannot
 be checked, it says so; it does not claim publishing is ready. With projects,
-the ✓ list is what the connection's own tools can do. An example:
+the ✓ list is what the connection's own tools can do. An example, after the
+opening line and the `account_usage` call:
 
-> 👨‍🚀 Starting moonwalk…
 > You're on moonbase free, with no projects yet.
 > ✓ Put an app live on an HTTPS address
 > ✓ Give it a managed PostgreSQL database
@@ -276,9 +279,8 @@ the ✓ list is what the connection's own tools can do. An example:
 > Where do we step first?
 
 The plan name and each ✓ line come from what the account and connection
-really have. Results may carry the same words in a separate `moonwalk` field,
-said once per task; read results also carry `moonwalk_note` saying so. The
-`status` field is the plain state, as before.
+really have. No tool result carries the opening line. The `status` field is
+the plain state.
 
 ## The fastest path (most common request)
 
@@ -328,56 +330,6 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r90, 2026-11-27.** This version and date are the
+**moonbase skill — revision r91, 2026-11-27.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r90 (2026-11-27): a new app starts with `create_mission` and the name alone, so the project, its address and its managed database (`database: false` for a static project) exist in seconds; the app then goes live in one `deploy` with `changes` (two at most, entry files in the second, since each deploy uses one of the few launches per 5 minutes in `launch_budget`), instead of being written whole into `create_mission`, in `SKILL.md`, `references/deploy-for-the-user.md`, `references/building-for-moonbase.md`, `references/connector-tools.md` and `references/troubleshooting.md`. r89 (2026-11-27): a new project's first deploy goes inline as `files` for a small project again; `all_files` is only for `deploy`, in `SKILL.md` and `references/deploy-for-the-user.md`. r88 (2026-11-27): a deploy stops before going live when a page references files that weren't uploaded and nothing else could serve them (`referenced_files_missing`); a missing served folder (`static_folder_missing`) is a warning, in `SKILL.md` and `references/troubleshooting.md`. r87 (2026-11-26): a new version of a live project sends only what changed, with `deploy`'s `changes` and `deleted` (and optional `base_version`), applied to the live version's stored files, and `all_files` (a directory listing of the project) refuses a deploy that leaves a listed file out, in `SKILL.md`, `references/deploy-for-the-user.md`, `references/connector-tools.md` and `references/troubleshooting.md`. r86 (2026-11-26): the guide calls the user's app a project throughout; app labels such as **New mission** and **Mission Control** are quoted as the app shows them, in every file; upload size: same on every plan. r85 (2026-11-26): the project badge reads "made with moonbase" (was "powered by moonbase"), in `references/mission-control.md`. r84 (2026-11-26): the project-memory snippet points to "Words moonbase uses" in the guide for the word table, and the /skill page states the full-guide rule file's measured size. r83 (2026-11-26): every connector tool and the permission it needs, in `references/connector-tools.md`. r82 (2026-11-26): when account setup is pending, `orientation` from `account_usage` names that step before offering to publish; when readiness cannot be checked, it says so, in `SKILL.md`. r81 (2026-11-25): results may carry `moonwalk`, and read results also `moonwalk_note`, in `SKILL.md`. r80 (2026-11-25): the general setup-step wording for `identity_required`, in `references/troubleshooting.md`. r79 (2026-11-25): moonbase's opening line, the short answer to "Let's moonwalk" and "Show me what I can do with moonbase", and `orientation` from `account_usage`, in `SKILL.md`; adding the connector inside a desktop coding app, in `references/getting-started.md`; `redeploy` and changing a saved visitor password (`set_password` with `replace: true`), in `references/mission-control.md`; permission and setup links (`action_url`), in `references/troubleshooting.md`. r74 (2026-11-24): the project badge reads "powered by moonbase" (was "hosted by moonbase") and its switch is **Show the moonbase badge**, in `references/mission-control.md`. r72 (2026-11-24): moonbase is described as the one platform that runs everything an app built with AI needs (hosting, database, domains, analytics, rollbacks, team access, and more, all run by your AI agent), not as hosting alone, in the skill description and `references/what-is-moonbase.md`; the connector's initialize instructions open with the same line. r71 (2026-11-24): the managed database is described plainly as on every plan, Free included: one managed PostgreSQL database per project, created on deploy when `moonbase.json` asks for one, with `DATABASE_URL` set for the app and the plan's storage used, in `references/building-for-moonbase.md`, `references/mission-control.md`, `references/what-is-moonbase.md` and `references/what-your-app-needs.md`. r70 (2026-11-24): `retryNote` appears only when the same error repeats within the current fix session, a start that fails shows as the health step with a shorter `start_log_tail`, and a Node range runs on the newest version it allows, in `references/troubleshooting.md` and `references/building-for-moonbase.md`; `create_upload` states the launch budget (`launch_budget`), `check_project` lists the names a ready managed database provides (`env_vars_provided_by_moonbase`), and `tools_version` tells a tool list older than the server, in `SKILL.md`, `references/troubleshooting.md` and `references/what-your-app-needs.md`. r69 (2026-11-24): the Launch check is described as on only where moonbase has turned it on for a project (`launch_check` answers `not_available` elsewhere), in `references/mission-control.md`. r68 (2026-11-24): an app that exits while starting fails at once as `container_exited_on_start` with `start_log_tail`, and upload links say when they are used or expired, in `references/troubleshooting.md` and `references/api-and-ci.md`. r67 (2026-11-24): `self_repair_notice` names what moonbase changed in the deployed copy, `list_env` shows the names moonbase sets for a managed database with source `engine`, and which connector tools a connection lists, in `references/building-for-moonbase.md`, `references/what-your-app-needs.md`, `references/deploy-for-the-user.md`, `references/mission-control.md` and `references/billing.md`. r66 (2026-11-24): moonbase provides the database. The guide to connecting an outside backend is removed; creating the managed database from `moonbase.json` is in `references/building-for-moonbase.md`, and its connection code in `references/mission-control.md`; the managed-database passages state no backup schedule, retention or backup storage accounting. r65 (2026-11-24): reactivating a self-deleted account, in `references/account.md`. r64 (2026-11-23): each upload can be up to the plan's per-deploy size (`account_usage` gives the current number) instead of fixed size caps; the limit applies to the uploaded ZIP and the plan's storage to the unpacked total, in `references/billing.md`, `references/building-for-moonbase.md`, `references/troubleshooting.md` and `references/what-is-moonbase.md`. The r36–r62 entries, and what r7 carried forward from r6, are in "Skill version history" at the end of `references/safety-and-support.md`. r35 adds a payment problem on the account (the banner in the app, and
-`payment` from `account_usage` and `platform_status`, with its Billing link) in
-`references/troubleshooting.md`. r34 adds the service notice moonbase may publish to its customers
-(the banner in the app, and `service_notice` from `platform_status`) in
-`references/troubleshooting.md`. r33 says that a password reset, a password change or an email change
-can turn off all of an account's API keys, so `invalid_key` points the person to
-**API keys** (https://app.moonbase.cloud/api-keys) for a new one, in
-`references/troubleshooting.md` and `references/account.md`. r32 says which environment variable names moonbase manages (its own
-`MOONBASE_*`, `MOONSERVER_*` and `*_LIVE_URL` names, and an `engine` row such as
-a moonbase database's `DATABASE_URL`) and that `set_env`, `delete_env` and the env API refuse them
-with `platform_var_managed`, in `references/mission-control.md`. r31 describes replacing and deleting a saved environment variable
-(Replace and Delete in Mission Control, `PUT` and `DELETE` on the env API,
-`delete_env`) and the `env_page` link the env tools return, in
-`references/mission-control.md`. r30 adds the `superseded_by_newer_version` and `source_unavailable` result codes of a waiting deploy in `references/troubleshooting.md`. r29 extends `waiting_for_maintenance` to uploads through a `create_upload` link or the app's upload screen (HTTP 202) in `references/troubleshooting.md`. r28 adds the `waiting_for_maintenance` deploy phase (a deploy accepted during a maintenance window and published when it ends) in `references/troubleshooting.md`. r27 adds taking over a custom domain another account added but never
-proved (`domain_held_unverified`, one TXT record, and `domain_page`: open the returned link for the person) in `references/custom-domains.md`. r26 adds the managed database
-export, status and allowance sections in `references/mission-control.md`. r23 is the publish path: with the connector, a project with images
-or over about 100 KB goes through `create_upload` and its one-line `curl`
-command, small text-only projects go inline as `files`, and the upload
-result lists the fallbacks in order. A visitor password may go through the
-chat (`password` or `generate_password`); API keys and credentials still do
-not. It adds a "Connector not working" section. r22 is the full pre-deploy brief, written around one question: what
-would make someone see a broken app after it successfully went online? It
-covers the dependencies the app needs from outside itself, addresses baked in
-at build time, a database that exists but has no tables, sign-in redirect URIs
-at the provider, keys in the project rather than the source, what the runtime
-decides (mail, uploads, scheduled work, request time, size, memory, realtime,
-sleep), and opening the live link and using the app before telling anyone it is
-done. Services are named only in groups, never recommended. r21 was the first
-cut of that brief. r20 puts signup first and makes the connector the first choice in tools that support it. r19 adds exit 4: a page whose files don't load. r18 makes the quickstart run the two helper scripts from the skill's own folder (`.claude/skills/moonbase/scripts`, or `./scripts` if you only have the short file) and says the project address is the first label of the live URL, never the name you asked for. r17 adds `go_not_supported` and corrects what a downloaded archive holds. r16 verifies an internationalised (`xn--`) live host with a real URL parser (Node) instead of trusting Punycode decoding alone, and treats it as unknown when node is missing. r15 treats a deployed-but-not-ready result (`app_ready:false`) as its own outcome (exit 3: poll status, don't re-upload), validates `xn--` labels as real Punycode and treats a malformed JSON refusal as unknown. r14 accepts only a real DNS hostname for the live URL (a numeric, hex or
-IP-literal host is treated as unknown) and treats a non-object `done`/`error`
-frame as unknown. r13 closed the revision-12 review: a CI job now vendors BOTH helper
-scripts and runs a preflight (so a missing file or tool fails before the upload,
-not after a deploy already landed), the live-URL check rejects numeric/IPv4-like
-hosts with out-of-range octets, and a malformed `error` frame is treated as
-UNKNOWN (reconcile) rather than a definite failure — on top of r12's vendored
-WHATWG SSE parser (`scripts/parse-deploy-result.sh`) and hostname grammar, and
-r11's unusable-URL/project_id, final-frame, exact-media-type and one-secret-file
-fixes.
-What changed since r7:
-
-- The packaging tool rejects a symlink in ANY path component (not just the
-  final file), so a directory symlink like `alias -> .runtime` can't ship a
-  secret under an allowed name, and it screens each entry's canonical (realpath)
-  path to keep it inside the project and out of excluded/secret dirs.
-- The packager checks `git ls-files`'s exit status before trusting its output:
-  a lister that dies mid-stream (exit 128) now ABORTS instead of shipping a
-  partial, falsely "successful" archive.
-- The env API docs are explicit that a `GET` confirms a NEW key's name but
-  cannot confirm an overwrite (values are write-only, so the name shows either
-  way) — rely on the write's `set`/`count` receipt, then verify a changed value
-  at the app level.
+filename. r91 (2026-11-27): the project tools are `create_project`, `list_projects`, `project_info`, `pause_project`, `resume_project` and `delete_project`, and a missing permission is named by its label, in every file; `wait`, `idempotency_key`, `expected_sha256` and `attempt_id` are described as queued-deploy inputs that a connection lists only where queued deploys are switched on, with `deploy_status` by slug where they aren't, and the error table names a queued deploy's `attempt_id`, in `references/troubleshooting.md`, `references/deploy-for-the-user.md` and `references/mission-control.md`; `get_build_guide`'s note states the content identity (revision, `published_at`, `guide_sha256`, `section_sha256`) and whether queued deploys are on, in `references/connector-tools.md`; `redeploy` results and `last_redeploy`, `trace_attempt`, `upgrade_link`'s `less_than_you_have_now`, and numeric byte counts, in `references/connector-tools.md`, `references/mission-control.md` and `references/troubleshooting.md`; the r74 and older notes move to "Skill version history" in `references/safety-and-support.md`. r90 (2026-11-27): a new app starts with `create_project` and the name alone, so the project, its address and its managed database (`database: false` for a static project) exist in seconds; the app then goes live in one `deploy` with `changes` (two at most, entry files in the second, since each deploy uses one of the few launches per 5 minutes in `launch_budget`), instead of being written whole into `create_project`, in `SKILL.md`, `references/deploy-for-the-user.md`, `references/building-for-moonbase.md`, `references/connector-tools.md` and `references/troubleshooting.md`. r89 (2026-11-27): a new project's first deploy goes inline as `files` for a small project again; `all_files` is only for `deploy`, in `SKILL.md` and `references/deploy-for-the-user.md`. r88 (2026-11-27): a deploy stops before going live when a page references files that weren't uploaded and nothing else could serve them (`referenced_files_missing`); a missing served folder (`static_folder_missing`) is a warning, in `SKILL.md` and `references/troubleshooting.md`. r87 (2026-11-26): a new version of a live project sends only what changed, with `deploy`'s `changes` and `deleted` (and optional `base_version`), applied to the live version's stored files, and `all_files` (a directory listing of the project) refuses a deploy that leaves a listed file out, in `SKILL.md`, `references/deploy-for-the-user.md`, `references/connector-tools.md` and `references/troubleshooting.md`. r86 (2026-11-26): the guide calls the user's app a project throughout; app labels such as **New mission** and **Mission Control** are quoted as the app shows them, in every file; upload size: same on every plan. r85 (2026-11-26): the project badge reads "made with moonbase" (was "powered by moonbase"), in `references/mission-control.md`. r84 (2026-11-26): the project-memory snippet points to "Words moonbase uses" in the guide for the word table, and the /skill page states the full-guide rule file's measured size. r83 (2026-11-26): every connector tool and the permission it needs, in `references/connector-tools.md`. r82 (2026-11-26): when account setup is pending, `orientation` from `account_usage` names that step before offering to publish; when readiness cannot be checked, it says so, in `SKILL.md`. r81 (2026-11-25): results may carry `moonwalk`, and read results also `moonwalk_note`, in `SKILL.md`. r80 (2026-11-25): the general setup-step wording for `identity_required`, in `references/troubleshooting.md`. r79 (2026-11-25): moonbase's opening line, the short answer to "Let's moonwalk" and "Show me what I can do with moonbase", and `orientation` from `account_usage`, in `SKILL.md`; adding the connector inside a desktop coding app, in `references/getting-started.md`; `redeploy` and changing a saved visitor password (`set_password` with `replace: true`), in `references/mission-control.md`; permission and setup links (`action_url`), in `references/troubleshooting.md`. Older entries (r74 back to r13, what changed since r7, and what r7 carried forward from r6) are in "Skill version history" at the end of `references/safety-and-support.md`.

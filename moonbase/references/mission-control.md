@@ -50,7 +50,13 @@ Control.
 4. **Changes take effect on the next deploy.** With the connector, after the
    person approves the live change, call `redeploy` with the project_id or
    slug to rebuild its active stored archive with the current saved values.
-   This keeps the same version number and needs no file upload. It requires
+   This keeps the same version number and needs no file upload. The result
+   names this rebuild: `operation_id`, `completed_at` and `config_revision`
+   (built from the saved variables' names and change times, never their
+   values; `null` for a static project). `deploy_status` and `deploy_logs`
+   show the newest as `last_redeploy`, while `last_deployed_at` keeps the
+   version's own time. `config_revision` does not confirm what the running
+   app loaded. It requires
    a live stored version; `no_active_deployment` or `archive_parity_pending`
    means there is no usable archive for this path. A new upload can deploy
    the project instead. An unconfirmed outcome is checked with `deploy_status`
@@ -151,7 +157,7 @@ Each project can have its own password. Only the project's owner can set it.
 - If the page says "Password protection is unavailable right now", moonbase
   has it switched off for new passwords for the moment; existing passwords
   keep working and can still be changed or removed.
-- **A new project can be launched with a password**: `create_mission`'s
+- **A new project can be launched with a password**: `create_project`'s
   `password`, or a `password` form field on the first deploy. moonbase's
   server asks for it before the first version is published (the same
   static-file caching caveat applies). For an **existing**
@@ -160,7 +166,7 @@ Each project can have its own password. Only the project's owner can set it.
   `set_password` without `replace`, which refuses a project that already has a saved password).
   To change a saved password, call `set_password` with `replace: true` or change it in Mission Control.
   Replacement keeps protection on or off as it was; `password_changed: true` confirms the change and does not report the current protection state.
-- **Through the connector:** `create_mission` and `create_upload` take
+- **Through the connector:** `create_project` and `create_upload` take
   `password`, or `generate_password: true` (moonbase makes one and returns it);
   `set_password` sets the first password on an existing project; `replace: true` changes a saved password while preserving whether protection is on or off. Ask the person to confirm the replacement before calling it. A visitor password keeps
   people out of the project; it is not an account secret, so it may go
@@ -334,10 +340,10 @@ its environment values.
 
 ## Managed database status
 
-Use `mission_info` or `deploy_status` with the owned project's `project_id` or
+Use `project_info` or `deploy_status` with the owned project's `project_id` or
 `slug`. These existing read tools return `database`, `database_page` and
-`database_next_steps`. Polling `deploy_status` with an `attempt_id` returns
-that deployment attempt rather than database status.
+`database_next_steps`. Polling `deploy_status` with an `attempt_id` (an input only where queued
+deploys are on) returns that deployment attempt rather than database status.
 
 `database` is the same owner-only metadata view used by Mission Control:
 connection, storage measurements and freshness, backup evidence, and access
@@ -354,6 +360,18 @@ project, and each database still requires actual generation-bound enrollment, wh
 A connected database alone does not establish backup
 enrollment, a successful backup, restore readiness or general availability.
 No retention or recovery guarantee follows from this status response.
+
+`recovery_state` (in `project_info`, `deploy_status` and `export_database`)
+keeps six facts apart: `connected`, `export_available` (a new export can be
+requested), `export_completed` (an export of this database was built),
+`backup_enrolled`, `backup_verified` and `restore_demonstrated`. Each has a
+`state` of `yes`, `no` or `unknown`, a `reason` and `evidence`. It is `yes`
+only with its evidence; `unknown` means no evidence reached moonbase, so do
+not report it as yes or no. `backup_verified` means a backup file's checksum
+was checked when it was written, not that a restore works.
+`restore_demonstrated` is `no` (`no_non_destructive_restore_tool`): moonbase
+has no tool that restores a database without replacing it. Never turn these
+into a backup schedule, retention period, recovery point or recovery time.
 
 When human action needs the database screen, **open the exact `database_page`**
 (`/missions/<project_id>/database`, the project's Database page, for its owner) for the person. If the client cannot open
@@ -386,8 +404,9 @@ period, maximum data-loss window or restore capability from plan eligibility
 or from a tool being present. Report only the backup status evidence returned
 for that database and point its owner to the Database page.
 
-A project never holds two databases. An existing database recovers in place
-without creating another, and a project whose earlier database is still
+A project never holds two databases. An existing database, including one
+whose setup failed, is set up again in place rather than a new one being
+created, and a project whose earlier database is still
 waiting to be removed is refused a new one until that finishes. A refusal is
 not permission to remove another database, backup or recovery record; follow
 the returned account guidance and ask support about unresolved resources.
@@ -457,4 +476,4 @@ this section with the account's own storage limit and what happens past it.
 
 ### Pending protection purge
 
-`mission_info` returns `protection_cache_purge.status` for the owner: `pending` means a protection purge is queued or in progress; `not_queued` means no pending job was found; `unknown` means the status could not be read. No pending job is not proof that every cached copy has been cleared.
+`project_info` returns `protection_cache_purge.status` for the owner: `pending` means a protection purge is queued or in progress; `not_queued` means no pending job was found; `unknown` means the status could not be read. No pending job is not proof that every cached copy has been cleared.

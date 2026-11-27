@@ -55,11 +55,7 @@ How usage counts:
 
 ## What happens at a limit
 
-- **Storage:** an upload that would go past the plan's storage is refused,
-  and the message says how much room is needed. Free space (delete older
-  versions or projects; see `versions-and-rollback.md`) or move to a bigger plan. On the largest plan, live
-  files past the allowance are billed at the overage rate shown on the
-  pricing page instead.
+- **Storage:** an upload that would exceed the account's storage allowance is refused. account_usage reports current storage usage and limits. Deleting stored content is permanent and requires the person's decision.
 - **Missions:** **New mission** is disabled until a project is deleted or the
   plan is upgraded. Shipping a new version of an existing project still works.
 - **One upload's size:** one ZIP can be up to the per-deploy size, which is currently the same on every plan, so upgrading does not raise it; storage is what differs. The limit applies to the ZIP you upload, and your plan's storage also applies to the unpacked total. `account_usage` shows the live per-deploy size.

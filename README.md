@@ -9,7 +9,7 @@ This repository is the **moonbase Skill**: instructions that teach any AI coding
 
 **Quick install:** add the connector `https://app.moonbase.cloud/mcp` to your AI tool ([setup per tool](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)), or get the Skill file for your tool at [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch). Details in [Install](#install).
 
-**Current revision:** `r90` (2026-11-27) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
+**Current revision:** `r91` (2026-11-27) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
 
 ### → [moonbase.cloud](https://moonbase.cloud/?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)
 
@@ -34,13 +34,13 @@ Step-by-step setup for the connector: Claude, ChatGPT, Cursor, VS Code with GitH
 
 | Permission | What it covers | Tools |
 |---|---|---|
-| Read, `missions:read` (granted by default) | See projects, versions, logs, domains, members, visitor numbers, status; check a project before a deploy | `list_missions` `mission_info` `deploy_status` `check_project` `list_versions` `list_env` `domain_status` `deploy_logs` `explain_error` `visitor_stats` `launch_check` (per project) `list_members` `import_status` (only where switched on) `platform_status` |
-| Write, `missions:write` (granted by default) | Deploy, change settings, domains, variables, members, password protection; open the database export page | `create_mission` `deploy` `redeploy` `create_upload` `upload_files` `commit_upload` `rollback` `set_env` `delete_env` `add_domain` `verify_domain` `remove_domain` `pause_mission` `resume_mission` `set_password` `remove_password` `invite_member` `set_member_role` `remove_member` `export_database` |
-| Account, `account:read` (granted by default) | Plan and usage, read-only | `account_usage` `upgrade_link` |
-| Delete a project, `missions:delete` (asked for separately) | Starts a deletion; the person finishes it in the moonbase app | `delete_mission` |
-| Delete old versions, `versions:delete` (asked for separately) | Deletes old versions for good, after the person says yes to the exact list | `delete_versions` |
-| Import a database, `databases:import` (asked for separately) | Replaces a project's moonbase database with a copy of another PostgreSQL database, after the person says yes to a preview | `import_database` (only where switched on) |
-| Download source, `missions:source` (asked for separately) | The raw source ZIP, which may contain secrets | `download_source` |
+| Read projects (granted by default) | See projects, versions, logs, domains, members, visitor numbers, status; check a project before a deploy | `list_projects` `project_info` `deploy_status` `check_project` `list_versions` `list_env` `domain_status` `deploy_logs` `explain_error` `visitor_stats` `launch_check` (per project) `list_members` `import_status` (only where switched on) `platform_status` |
+| Deploy and manage projects (granted by default) | Deploy, change settings, domains, variables, members, password protection; open the database export page | `create_project` `deploy` `redeploy` `create_upload` `upload_files` `commit_upload` `rollback` `set_env` `delete_env` `add_domain` `verify_domain` `remove_domain` `pause_project` `resume_project` `set_password` `remove_password` `invite_member` `set_member_role` `remove_member` `export_database` |
+| See plan and usage (granted by default) | Plan and usage, read-only | `account_usage` `upgrade_link` |
+| Start deleting a project (asked for separately) | Starts a deletion; the person finishes it in the moonbase app | `delete_project` |
+| Delete old versions (asked for separately) | Deletes old versions for good, after the person says yes to the exact list | `delete_versions` |
+| Replace a database (asked for separately) | Replaces a project's moonbase database with a copy of another PostgreSQL database, after the person says yes to a preview | `import_database` (only where switched on) |
+| Download source files (asked for separately) | The raw source ZIP, which may contain secrets | `download_source` |
 | No permission | The build guide | `get_build_guide` |
 
 Your client sends the permissions it wants; you approve them in the browser, and you can review connected apps in your account. An assistant that asks for nothing gets only the first three rows, plus the build guide. Some tools are available only on accounts or projects where moonbase has switched them on. Other abilities, such as deleting old versions for good or importing a database, are separate permissions too.
@@ -115,7 +115,7 @@ If its `revision` is higher than yours, download the new files from [moonbase.cl
 
 - **`moonbase/`**: the Skill: `SKILL.md` plus `references/` (what moonbase is, getting started, deploying for you, building for moonbase, what your app needs, builder platforms, API and CI, custom domains, versions and rollback, sharing and team access, Mission Control, account, billing, troubleshooting, safety and support) and the helper `scripts/`.
 - **`skills/moonbase/`**: the same Skill, in the folder plugin formats read. Generated at each release; identical to `moonbase/`.
-- **Plugin manifests** (version `1.90.0`, from the Skill revision): `plugin.json` and `mcp.json` ([Agent Plugins](https://agent-plugins.org)), `.agents/`, `.claude-plugin/`, `.cursor-plugin/`, `gemini-extension.json`, `lhm.plugin.json`, with `llms-install.md` and `assets/`.
+- **Plugin manifests** (version `1.91.0`, from the Skill revision): `plugin.json` and `mcp.json` ([Agent Plugins](https://agent-plugins.org)), `.agents/`, `.claude-plugin/`, `.cursor-plugin/`, `gemini-extension.json`, `lhm.plugin.json`, with `llms-install.md` and `assets/`.
 - **`dist/`**: ready-made files per tool, generated from `moonbase/` for each release.
 - **`moonbase-guide.md`**: the whole Skill as one file, for chats that take a single file.
 - **`build.mjs` / `adapters.json`**: the build that makes every format from `moonbase/` (`node build.mjs kit <folder>`).
