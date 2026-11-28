@@ -1,6 +1,6 @@
 {
   "name": "moonbase",
-  "version": "1.99.0",
+  "version": "1.100.0",
   "description": "Deploy and run AI-built apps on moonbase: hosting, PostgreSQL, domains, rollbacks, analytics.",
   "mcpServers": {
     "moonbase": {

@@ -2,7 +2,7 @@
 
 Never quote a price or a plan allowance from memory. account_usage reports current account usage and limits.
 
-Account usage shows your current entitlements.
+Account usage shows your current entitlements and any scheduled plan change.
 
 ## When the person asks about plans
 
@@ -16,6 +16,8 @@ Account usage shows your current entitlements.
 Plan selection and payment take place in the signed-in moonbase website. The connector does not purchase or change a subscription.
 
 `upgrade_link` returns a plan-selection link for a person who has asked about changing their plan, with the plan, its price, billing interval and what it includes. Cancelling is **End your plan** in **Account → Danger Zone**, and the payment method is updated on **Billing**.
+
+A move to a bigger plan applies straight away. A move to a smaller plan, and a cancel to the free plan, are applied around the renewal: the account keeps its current plan until shortly before it, and **Plans** and **Billing** show what changes and on which date. While a move to a smaller plan is scheduled, new projects and storage are held to the smaller plan's limits. A move to a smaller plan is scheduled around the renewal and is applied only after the projects and storage fit the smaller plan and the change is confirmed. While it is waiting, the account remains on its current plan and renewals may be charged at its price. waiting_for_fit is true when the account does not fit; the owner can receive an email explaining what to remove or free up and can review the status on Billing. **Keep my current plan** there drops the scheduled change, except in the last hours before the renewal while it is being applied. With the connector, `account_usage` returns it as `scheduled_plan_change` (`change`, `to_plan`, `effective_at`, `waiting_for_fit`), or null when nothing is scheduled.
 
 ## Billing and usage pages
 
