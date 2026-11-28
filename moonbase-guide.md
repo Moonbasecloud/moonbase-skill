@@ -355,7 +355,7 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r97, 2026-11-28.** This version and date are the
+**moonbase skill — revision r98, 2026-11-28.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
 filename. r97 (2026-11-28): adds a concrete first-deploy example and custom-connector setup help; existing commit replay facts are preserved. r94 (2026-11-27): every publication path shares the bounded home-page assessment; a served placeholder is suspicious, while publication success and app readiness stay separate. Older receipts without a page assessment remain unconfirmed. placeholder troubleshooting preserves the original project, its versions and database, with status/source checks before a separately approved change, in the section "Troubleshooting" below. r93 (2026-11-27): the downgrade lock states no pause or deletion consequence (today's code never pauses or deletes a locked project), and the connector and guide report neutral entitlement facts without an upgrade directive, in the section "Troubleshooting" below. r92 (2026-11-27): limit results are neutral account facts; plan-selection detail only from `upgrade_link`, on request; `download_source` omits .env files and warns that re-uploading the archive leaves out the secret files' values; `check_project` lists the env names an app reads. r91 (2026-11-27): the project tools are `create_project`, `list_projects`, `project_info`, `pause_project`, `resume_project` and `delete_project`, and a missing permission is named by its label, in every file; `wait`, `idempotency_key`, `expected_sha256` and `attempt_id` are described as queued-deploy inputs that a connection lists only where queued deploys are switched on, with `deploy_status` by slug where they aren't, and the error table names a queued deploy's `attempt_id`, in the section "Troubleshooting" below, the section "Deploying for the user (when you can run commands)" below and the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below; `get_build_guide`'s note states the content identity (revision, `published_at`, `guide_sha256`, `section_sha256`) and whether queued deploys are on, in the section "Connector tools" below; `redeploy` results and `last_redeploy`, `trace_attempt`, `upgrade_link`'s `less_than_you_have_now`, and numeric byte counts, in the section "Connector tools" below, the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below and the section "Troubleshooting" below; the r74 and older notes move to "Skill version history" in the section "Safety and support" below. r90 (2026-11-27): a new app starts with `create_project` and the name alone, so the project, its address and its managed database (`database: false` for a static project) exist in seconds; the app then goes live in one `deploy` with `changes` (two at most, entry files in the second, since each deploy uses one of the few launches per 5 minutes in `launch_budget`), instead of being written whole into `create_project`, in `SKILL.md`, the section "Deploying for the user (when you can run commands)" below, the section "Building for moonbase: a project that deploys first time" below, the section "Connector tools" below and the section "Troubleshooting" below. r89 (2026-11-27): a new project's first deploy goes inline as `files` for a small project again; `all_files` is only for `deploy`, in `SKILL.md` and the section "Deploying for the user (when you can run commands)" below. r88 (2026-11-27): a deploy stops before going live when a page references files that weren't uploaded and nothing else could serve them (`referenced_files_missing`); a missing served folder (`static_folder_missing`) is a warning, in `SKILL.md` and the section "Troubleshooting" below. r87 (2026-11-26): a new version of a live project sends only what changed, with `deploy`'s `changes` and `deleted` (and optional `base_version`), applied to the live version's stored files, and `all_files` (a directory listing of the project) refuses a deploy that leaves a listed file out, in `SKILL.md`, the section "Deploying for the user (when you can run commands)" below, the section "Connector tools" below and the section "Troubleshooting" below. r86 (2026-11-26): the guide calls the user's app a project throughout; app labels such as **New mission** and **Mission Control** are quoted as the app shows them, in every file; upload size: same on every plan. r85 (2026-11-26): the project badge reads "made with moonbase" (was "powered by moonbase"), in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below. r84 (2026-11-26): the project-memory snippet points to "Words moonbase uses" in the guide for the word table, and the /skill page states the full-guide rule file's measured size. r83 (2026-11-26): every connector tool and the permission it needs, in the section "Connector tools" below. r82 (2026-11-26): when account setup is pending, `orientation` from `account_usage` names that step before offering to publish; when readiness cannot be checked, it says so, in `SKILL.md`. r81 (2026-11-25): results may carry `moonwalk`, and read results also `moonwalk_note`, in `SKILL.md`. r80 (2026-11-25): the general setup-step wording for `identity_required`, in the section "Troubleshooting" below. r79 (2026-11-25): moonbase's opening line, the short answer to "Let's moonwalk" and "Show me what I can do with moonbase", and `orientation` from `account_usage`, in `SKILL.md`; adding the connector inside a desktop coding app, in the section "Getting started: sign up and put the first project online" below; `redeploy` and changing a saved visitor password (`set_password` with `replace: true`), in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below; permission and setup links (`action_url`), in the section "Troubleshooting" below. Older entries (r74 back to r13, what changed since r7, and what r7 carried forward from r6) are in "Skill version history" at the end of the section "Safety and support" below.
 
@@ -4005,8 +4005,20 @@ same contract from all three. Read it before saying a project works:
   `app_answering: false` say that is not the app.
 - `observed`: the version this describes and when it was read.
 
-The older fields (`status`, `status_label`, `app_ready`, `after_deploy`) are
-unchanged.
+`project_state` is authoritative. The older top-level fields keep their names
+and types, and are derived from it, so they agree with it:
+
+- `app_ready` is `true` only when `availability.state` is `live` and
+  `app_readiness.state` is `ready`; `false` when the app reported not ready;
+  otherwise `null` (protected, paused, resuming, not deployed, unknown, and a
+  static project, which has no app to be ready).
+- `status` is `paused` for a paused project and `resuming` during a resume,
+  `live` or "deployed_not_ready" exactly when `availability.state` is `live`
+  or `not_ready`. A protected project keeps its deployed `status`.
+- `status_label` matches `availability.label` for `live`, `not_ready`,
+  `paused`, `resuming` and `protected`.
+
+`after_deploy` is unchanged.
 
 ### Reading a publish result (`publication`)
 
@@ -4017,20 +4029,35 @@ for a queued deploy's `attempt_id`:
 - `after_deploy`: what moonbase saw on the page (`state`, `findings`,
   `next_steps`). On a password-protected project it says the check saw the
   password page, not the app.
-- `files_published`: the files moonbase published. A file it left out is never
-  in this count.
-- `publication.files_skipped`: each file left out, with its `reason`
-  (`secret_env_file`, `private_key_file`, `private_key_content`,
-  `version_control_folder`, `server_config_file`, `file_type_not_served` or
-  `not_served_unknown`). Keys and settings belong in `set_env`, not in a
-  renamed file. `os_files_dropped` counts files like `.DS_Store`.
-- `publication.files_received`: every file moonbase received, including the
-  ones it did not publish. It is not a published count.
-- `publication.observed: false` (a deploy moonbase confirmed afterwards): the
-  file counts are `null`, meaning not known, not zero.
+- `files_published`: for static projects, files the host serves; for dynamic
+  apps, the source files handed to the build (`files_published_kind` identifies
+  which). Dynamic source files are not a count of HTTP-served output;
+  `files_served` is `null` for a dynamic app.
+- `publication.files_received`: files in the complete input-version ZIP,
+  before normalization. This is not an `upload_files` batch count or the
+  changed-file count of a patch deploy.
+- `publication.files_packaged`: files in the final ZIP dispatched to the host.
+- `publication.os_files_dropped`: OS entries removed upstream and by the host,
+  where both stages were measured. OS entries are counted, not listed.
+- `publication.files_excluded` and `files_excluded_count`: other upstream
+  removals, with reasons such as `project_metadata`, `setup_instructions`,
+  `secret_env_file`, `database_setup_file`, `dependency_folder`,
+  `lockfile_regenerated` or `left_out_by_moonbase`.
+- `publication.files_skipped` and `files_skipped_count`: host-refused entries
+  and their reasons. These are separate from upstream removals.
+- `publication.files_generated`: zero only when preparation proves that no
+  unmatched output entry was introduced; otherwise `null`. Injected or
+  renamed-and-edited files are not guessed from differences between totals.
+- `publication.counts_add_up`: whether the measured input and output counts
+  reconcile. An unmeasured count or origin is `null`, never a guessed zero;
+  the reconciliation flag is then `null` too. Reconciled results
+  (`publication.observed: false`) have unknown counts.
+- Matching legacy top-level count fields use these same boundaries. A missing
+  field in an older receipt remains unknown; it is not evidence of no drops.
 
 A deploy's result and the `create_upload` `done` event also carry
-`project_state`. `skipped_entries` and the other older fields are unchanged.
+`project_state`. `skipped_entries` lists measured non-OS host skips; it is
+`null` when that observation is unavailable.
 
 ### Other symptoms
 

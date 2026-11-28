@@ -191,8 +191,20 @@ same contract from all three. Read it before saying a project works:
   `app_answering: false` say that is not the app.
 - `observed`: the version this describes and when it was read.
 
-The older fields (`status`, `status_label`, `app_ready`, `after_deploy`) are
-unchanged.
+`project_state` is authoritative. The older top-level fields keep their names
+and types, and are derived from it, so they agree with it:
+
+- `app_ready` is `true` only when `availability.state` is `live` and
+  `app_readiness.state` is `ready`; `false` when the app reported not ready;
+  otherwise `null` (protected, paused, resuming, not deployed, unknown, and a
+  static project, which has no app to be ready).
+- `status` is `paused` for a paused project and `resuming` during a resume,
+  `live` or "deployed_not_ready" exactly when `availability.state` is `live`
+  or `not_ready`. A protected project keeps its deployed `status`.
+- `status_label` matches `availability.label` for `live`, `not_ready`,
+  `paused`, `resuming` and `protected`.
+
+`after_deploy` is unchanged.
 
 ## Reading a publish result (`publication`)
 
@@ -203,20 +215,35 @@ for a queued deploy's `attempt_id`:
 - `after_deploy`: what moonbase saw on the page (`state`, `findings`,
   `next_steps`). On a password-protected project it says the check saw the
   password page, not the app.
-- `files_published`: the files moonbase published. A file it left out is never
-  in this count.
-- `publication.files_skipped`: each file left out, with its `reason`
-  (`secret_env_file`, `private_key_file`, `private_key_content`,
-  `version_control_folder`, `server_config_file`, `file_type_not_served` or
-  `not_served_unknown`). Keys and settings belong in `set_env`, not in a
-  renamed file. `os_files_dropped` counts files like `.DS_Store`.
-- `publication.files_received`: every file moonbase received, including the
-  ones it did not publish. It is not a published count.
-- `publication.observed: false` (a deploy moonbase confirmed afterwards): the
-  file counts are `null`, meaning not known, not zero.
+- `files_published`: for static projects, files the host serves; for dynamic
+  apps, the source files handed to the build (`files_published_kind` identifies
+  which). Dynamic source files are not a count of HTTP-served output;
+  `files_served` is `null` for a dynamic app.
+- `publication.files_received`: files in the complete input-version ZIP,
+  before normalization. This is not an `upload_files` batch count or the
+  changed-file count of a patch deploy.
+- `publication.files_packaged`: files in the final ZIP dispatched to the host.
+- `publication.os_files_dropped`: OS entries removed upstream and by the host,
+  where both stages were measured. OS entries are counted, not listed.
+- `publication.files_excluded` and `files_excluded_count`: other upstream
+  removals, with reasons such as `project_metadata`, `setup_instructions`,
+  `secret_env_file`, `database_setup_file`, `dependency_folder`,
+  `lockfile_regenerated` or `left_out_by_moonbase`.
+- `publication.files_skipped` and `files_skipped_count`: host-refused entries
+  and their reasons. These are separate from upstream removals.
+- `publication.files_generated`: zero only when preparation proves that no
+  unmatched output entry was introduced; otherwise `null`. Injected or
+  renamed-and-edited files are not guessed from differences between totals.
+- `publication.counts_add_up`: whether the measured input and output counts
+  reconcile. An unmeasured count or origin is `null`, never a guessed zero;
+  the reconciliation flag is then `null` too. Reconciled results
+  (`publication.observed: false`) have unknown counts.
+- Matching legacy top-level count fields use these same boundaries. A missing
+  field in an older receipt remains unknown; it is not evidence of no drops.
 
 A deploy's result and the `create_upload` `done` event also carry
-`project_state`. `skipped_entries` and the other older fields are unchanged.
+`project_state`. `skipped_entries` lists measured non-OS host skips; it is
+`null` when that observation is unavailable.
 
 ## Other symptoms
 
