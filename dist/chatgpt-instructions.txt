@@ -32,8 +32,8 @@ can use:
    Then send the app as `deploy`
    `changes` in one deploy (two at most). A shell with images or over
    ~100 KB: `create_upload` (one single-use `curl` line). Recovery
-   steps: the section "Deploying for the user (when you can run commands)" of the moonbase guide. Small text-only projects
-   go inline as `files`. Redeploy: only `changes` and `deleted` vs the live
+   steps: the section "Deploying for the user (when you can run commands)" of the moonbase guide. For a full small text-only version,
+   `deploy` accepts `files`. Redeploy: only `changes` and `deleted` vs the live
    version. A visitor password (`password` or
    `generate_password`) is visible in the chat; the person decides. Check `app_ready` (or
    `deploy_status`) before calling the app online.

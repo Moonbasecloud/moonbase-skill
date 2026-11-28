@@ -84,4 +84,20 @@ measured.
 
 - `download_source`: the project's source ZIP. Environment files (`.env`, `.env.*`, `*.env`; `.env.example` stays) are not in it: `excluded_secret_files` lists them by name, and `secret_files_note` says: "Secret files are not included: <names>. If the app reads values from these files, re-uploading this archive will leave them out — ask the user to add those values in the project's environment settings before you upload it again." Other files can still contain credentials or personal information.
 
+<!-- first-deploy-example -->
+### First deploy example
+
+Call these tools in order. Replace `<project_id>` with `project_id` from the first result.
+
+```json
+{"name":"create_project","arguments":{"name":"my-project"}}
+```
+
+```json
+{"name":"deploy","arguments":{"project_id":"<project_id>","changes":[{"path":"index.html","content":"<!doctype html><html lang=\"en\"><head><title>Hello</title></head><body><h1>Hello from moonbase</h1></body></html>"}]}}
+```
+
+For a full small text-only version, `deploy` also accepts `files` instead of `changes`; do not combine them.
+<!-- /first-deploy-example -->
+
 Where moonbase has turned importing on, the connector also lists `import_database`, under its own permission (Replace a database), and `import_status`, under Read projects.
