@@ -45,7 +45,7 @@ measured.
   names the rebuild (`operation_id`, `completed_at`, `config_revision`).
 - `create_upload`: a single-use upload link and shell command.
 - `upload_files`: sends files over the connector in batches.
-- `commit_upload`: publishes the files sent with `upload_files`.
+- `commit_upload`: publishes the files sent with `upload_files`. A recorded outcome returned with `already_committed: true` starts no new publication and is read before launch-budget checks. Generated password values are not replayed.
 - `rollback`: makes an earlier version live again.
 - `set_env`: sets environment variables.
 - `delete_env`: deletes one environment variable.
