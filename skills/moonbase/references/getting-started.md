@@ -118,7 +118,7 @@ serving.)
 ## What the user has now
 
 - A **project** with its own page, **Mission Control**: status, versions
-  (**Mission Log**), traffic, environment variables and domains.
+  (**Versions**), traffic, environment variables and domains.
 - A list of all projects under **Missions**, and an overview on the
   **Dashboard**.
 - Next ideas, only if they fit: a custom domain (`custom-domains.md`), a new

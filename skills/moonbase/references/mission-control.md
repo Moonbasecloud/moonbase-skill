@@ -11,7 +11,7 @@ approves the live change. It keeps the same version number. See
 size and recent visitors) or by clicking a project on the **Dashboard**.
 
 It shows: the live status, the latest deployment and every version
-(**Mission Log**), traffic for the last 30 days, **Environment Variables** and
+(**Versions**), traffic for the last 30 days, **Environment Variables** and
 domains. Each project has its own link in the app (`/missions/<id>`), so
 refreshing or sharing that link keeps you on the same project.
 
@@ -29,7 +29,7 @@ refreshing or sharing that link keeps you on the same project.
 - On the free plan, **dynamic** projects (Node.js, Next.js) go to sleep after
   about 30 minutes without visitors, to save resources.
 - **Static projects never sleep.**
-- The next visitor wakes it in a second or two, behind a short loading
+- The next visitor wakes it, behind a short loading
   screen ("Waking up your app"). Nothing is broken.
 - Explain it simply: "Your app takes a nap when nobody's around and wakes up
   as soon as someone knocks."

@@ -71,7 +71,7 @@ You can request one export a day. (On the older design, **Download data
 export** gives a JSON file with your profile, projects, deployment history,
 API key and webhook details and account activity, without secret values or
 project files; download project files per version with **Download archive** in
-Mission Log, `versions-and-rollback.md`.)
+Versions, `versions-and-rollback.md`.)
 
 ## Delete your account
 

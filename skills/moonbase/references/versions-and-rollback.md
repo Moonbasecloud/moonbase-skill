@@ -18,14 +18,14 @@ If the new version fails, nothing goes offline: the previous version keeps
 serving. Changed environment variables? Deploying a new version (even the
 same ZIP) is what applies them.
 
-## See every version: Mission Log
+## See every version: Versions
 
-In Mission Control, **Mission Log** lists every version: when it was
+In Mission Control, **Versions** lists every version: when it was
 deployed, its size and framework, with the live one marked.
 
 ## Go back to an earlier version (rollback)
 
-1. In **Mission Log**, find the version you want.
+1. In **Versions**, find the version you want.
 2. Click **Restore this version**.
 3. *moonbase redeploys that version's stored ZIP (no upload needed), and it
    becomes the live version.*
@@ -37,7 +37,7 @@ build later, they should keep that ZIP themselves.
 
 ## Download a version (your files stay yours)
 
-1. In **Mission Log**, find the version.
+1. In **Versions**, find the version.
 2. Click **Download archive**.
 3. *You get `<mission>-v<number>.zip`, exactly the ZIP that version was
    deployed from.*
@@ -58,7 +58,7 @@ build later, they should keep that ZIP themselves.
 Every stored version counts toward the plan's storage, so deleting old
 versions frees room.
 
-- **One version:** in **Mission Log**, click **Delete version** on its row
+- **One version:** in **Versions**, click **Delete version** on its row
   and type DELETE.
 - **Many at once:** under the list, set **Newest versions to keep** and click
   **Delete older versions**. *moonbase shows how many versions will go and

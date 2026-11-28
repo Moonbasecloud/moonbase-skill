@@ -157,7 +157,7 @@ sentence.
 | Project | One app that is online on moonbase, with its own address |
 | Mission address | The name in the link: `<address>.moonbase.host` |
 | Mission Control | The page for one project: status, versions, traffic, settings |
-| Mission Log | The list of every version of a project |
+| Versions | The list of every version of a project |
 | Deploy / launch | Put a version online |
 | Live / Asleep / Paused / Deploying | The project's state right now |
 | Error ID | A reference code like `TRK-AB12CD` for one deploy (the `trace_id` field); support uses it |
@@ -340,9 +340,9 @@ moonbase is down. moonbase's current status is at
 
 ## Skill version
 
-**moonbase skill — revision r98, 2026-11-28.** This version and date are the
+**moonbase skill — revision r99, 2026-11-28.** This version and date are the
 source of truth for which build you're running; don't infer it from a download
-filename. r97 (2026-11-28): adds a concrete first-deploy example and custom-connector setup help; existing commit replay facts are preserved. r94 (2026-11-27): every publication path shares the bounded home-page assessment; a served placeholder is suspicious, while publication success and app readiness stay separate. Older receipts without a page assessment remain unconfirmed. placeholder troubleshooting preserves the original project, its versions and database, with status/source checks before a separately approved change, in the section "Troubleshooting" below. r93 (2026-11-27): the downgrade lock states no pause or deletion consequence (today's code never pauses or deletes a locked project), and the connector and guide report neutral entitlement facts without an upgrade directive, in the section "Troubleshooting" below. r92 (2026-11-27): limit results are neutral account facts; plan-selection detail only from `upgrade_link`, on request; `download_source` omits .env files and warns that re-uploading the archive leaves out the secret files' values; `check_project` lists the env names an app reads. r91 (2026-11-27): the project tools are `create_project`, `list_projects`, `project_info`, `pause_project`, `resume_project` and `delete_project`, and a missing permission is named by its label, in every file; `wait`, `idempotency_key`, `expected_sha256` and `attempt_id` are described as queued-deploy inputs that a connection lists only where queued deploys are switched on, with `deploy_status` by slug where they aren't, and the error table names a queued deploy's `attempt_id`, in the section "Troubleshooting" below, the section "Deploying for the user (when you can run commands)" below and the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below; `get_build_guide`'s note states the content identity (revision, `published_at`, `guide_sha256`, `section_sha256`) and whether queued deploys are on, in the section "Connector tools" below; `redeploy` results and `last_redeploy`, `trace_attempt`, `upgrade_link`'s `less_than_you_have_now`, and numeric byte counts, in the section "Connector tools" below, the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below and the section "Troubleshooting" below; the r74 and older notes move to "Skill version history" in the section "Safety and support" below. r90 (2026-11-27): a new app starts with `create_project` and the name alone, so the project, its address and its managed database (`database: false` for a static project) exist in seconds; the app then goes live in one `deploy` with `changes` (two at most, entry files in the second, since each deploy uses one of the few launches per 5 minutes in `launch_budget`), instead of being written whole into `create_project`, in `SKILL.md`, the section "Deploying for the user (when you can run commands)" below, the section "Building for moonbase: a project that deploys first time" below, the section "Connector tools" below and the section "Troubleshooting" below. r89 (2026-11-27): a new project's first deploy goes inline as `files` for a small project again; `all_files` is only for `deploy`, in `SKILL.md` and the section "Deploying for the user (when you can run commands)" below. r88 (2026-11-27): a deploy stops before going live when a page references files that weren't uploaded and nothing else could serve them (`referenced_files_missing`); a missing served folder (`static_folder_missing`) is a warning, in `SKILL.md` and the section "Troubleshooting" below. r87 (2026-11-26): a new version of a live project sends only what changed, with `deploy`'s `changes` and `deleted` (and optional `base_version`), applied to the live version's stored files, and `all_files` (a directory listing of the project) refuses a deploy that leaves a listed file out, in `SKILL.md`, the section "Deploying for the user (when you can run commands)" below, the section "Connector tools" below and the section "Troubleshooting" below. r86 (2026-11-26): the guide calls the user's app a project throughout; app labels such as **New mission** and **Mission Control** are quoted as the app shows them, in every file; upload size: same on every plan. r85 (2026-11-26): the project badge reads "made with moonbase" (was "powered by moonbase"), in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below. r84 (2026-11-26): the project-memory snippet points to "Words moonbase uses" in the guide for the word table, and the /skill page states the full-guide rule file's measured size. r83 (2026-11-26): every connector tool and the permission it needs, in the section "Connector tools" below. r82 (2026-11-26): when account setup is pending, `orientation` from `account_usage` names that step before offering to publish; when readiness cannot be checked, it says so, in `SKILL.md`. r81 (2026-11-25): results may carry `moonwalk`, and read results also `moonwalk_note`, in `SKILL.md`. r80 (2026-11-25): the general setup-step wording for `identity_required`, in the section "Troubleshooting" below. r79 (2026-11-25): moonbase's opening line, the short answer to "Let's moonwalk" and "Show me what I can do with moonbase", and `orientation` from `account_usage`, in `SKILL.md`; adding the connector inside a desktop coding app, in the section "Getting started: sign up and put the first project online" below; `redeploy` and changing a saved visitor password (`set_password` with `replace: true`), in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below; permission and setup links (`action_url`), in the section "Troubleshooting" below. Older entries (r74 back to r13, what changed since r7, and what r7 carried forward from r6) are in "Skill version history" at the end of the section "Safety and support" below.
+filename. r99 (2026-11-28): no wake time promised; the version list is **Versions**, as the app shows it (was Mission Log). r97 (2026-11-28): adds a concrete first-deploy example and custom-connector setup help; existing commit replay facts are preserved. r94 (2026-11-27): every publication path shares the bounded home-page assessment; a served placeholder is suspicious, while publication success and app readiness stay separate. Older receipts without a page assessment remain unconfirmed. placeholder troubleshooting preserves the original project, its versions and database, with status/source checks before a separately approved change, in the section "Troubleshooting" below. r93 (2026-11-27): the downgrade lock states no pause or deletion consequence (today's code never pauses or deletes a locked project), and the connector and guide report neutral entitlement facts without an upgrade directive, in the section "Troubleshooting" below. r92 (2026-11-27): limit results are neutral account facts; plan-selection detail only from `upgrade_link`, on request; `download_source` omits .env files and warns that re-uploading the archive leaves out the secret files' values; `check_project` lists the env names an app reads. r91 (2026-11-27): the project tools are `create_project`, `list_projects`, `project_info`, `pause_project`, `resume_project` and `delete_project`, and a missing permission is named by its label, in every file; `wait`, `idempotency_key`, `expected_sha256` and `attempt_id` are described as queued-deploy inputs that a connection lists only where queued deploys are switched on, with `deploy_status` by slug where they aren't, and the error table names a queued deploy's `attempt_id`, in the section "Troubleshooting" below, the section "Deploying for the user (when you can run commands)" below and the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below; `get_build_guide`'s note states the content identity (revision, `published_at`, `guide_sha256`, `section_sha256`) and whether queued deploys are on, in the section "Connector tools" below; `redeploy` results and `last_redeploy`, `trace_attempt`, `upgrade_link`'s `less_than_you_have_now`, and numeric byte counts, in the section "Connector tools" below, the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below and the section "Troubleshooting" below; the r74 and older notes move to "Skill version history" in the section "Safety and support" below. r90 (2026-11-27): a new app starts with `create_project` and the name alone, so the project, its address and its managed database (`database: false` for a static project) exist in seconds; the app then goes live in one `deploy` with `changes` (two at most, entry files in the second, since each deploy uses one of the few launches per 5 minutes in `launch_budget`), instead of being written whole into `create_project`, in `SKILL.md`, the section "Deploying for the user (when you can run commands)" below, the section "Building for moonbase: a project that deploys first time" below, the section "Connector tools" below and the section "Troubleshooting" below. r89 (2026-11-27): a new project's first deploy goes inline as `files` for a small project again; `all_files` is only for `deploy`, in `SKILL.md` and the section "Deploying for the user (when you can run commands)" below. r88 (2026-11-27): a deploy stops before going live when a page references files that weren't uploaded and nothing else could serve them (`referenced_files_missing`); a missing served folder (`static_folder_missing`) is a warning, in `SKILL.md` and the section "Troubleshooting" below. r87 (2026-11-26): a new version of a live project sends only what changed, with `deploy`'s `changes` and `deleted` (and optional `base_version`), applied to the live version's stored files, and `all_files` (a directory listing of the project) refuses a deploy that leaves a listed file out, in `SKILL.md`, the section "Deploying for the user (when you can run commands)" below, the section "Connector tools" below and the section "Troubleshooting" below. r86 (2026-11-26): the guide calls the user's app a project throughout; app labels such as **New mission** and **Mission Control** are quoted as the app shows them, in every file; upload size: same on every plan. r85 (2026-11-26): the project badge reads "made with moonbase" (was "powered by moonbase"), in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below. r84 (2026-11-26): the project-memory snippet points to "Words moonbase uses" in the guide for the word table, and the /skill page states the full-guide rule file's measured size. r83 (2026-11-26): every connector tool and the permission it needs, in the section "Connector tools" below. r82 (2026-11-26): when account setup is pending, `orientation` from `account_usage` names that step before offering to publish; when readiness cannot be checked, it says so, in `SKILL.md`. r81 (2026-11-25): results may carry `moonwalk`, and read results also `moonwalk_note`, in `SKILL.md`. r80 (2026-11-25): the general setup-step wording for `identity_required`, in the section "Troubleshooting" below. r79 (2026-11-25): moonbase's opening line, the short answer to "Let's moonwalk" and "Show me what I can do with moonbase", and `orientation` from `account_usage`, in `SKILL.md`; adding the connector inside a desktop coding app, in the section "Getting started: sign up and put the first project online" below; `redeploy` and changing a saved visitor password (`set_password` with `replace: true`), in the section "Mission Control: status, sleep, pause, password, environment variables, analytics, database export" below; permission and setup links (`action_url`), in the section "Troubleshooting" below. Older entries (r74 back to r13, what changed since r7, and what r7 carried forward from r6) are in "Skill version history" at the end of the section "Safety and support" below.
 
 ---
 
@@ -1982,7 +1982,7 @@ serving.)
 ### What the user has now
 
 - A **project** with its own page, **Mission Control**: status, versions
-  (**Mission Log**), traffic, environment variables and domains.
+  (**Versions**), traffic, environment variables and domains.
 - A list of all projects under **Missions**, and an overview on the
   **Dashboard**.
 - Next ideas, only if they fit: a custom domain (the section "Custom domains"), a new
@@ -2855,14 +2855,14 @@ If the new version fails, nothing goes offline: the previous version keeps
 serving. Changed environment variables? Deploying a new version (even the
 same ZIP) is what applies them.
 
-### See every version: Mission Log
+### See every version: Versions
 
-In Mission Control, **Mission Log** lists every version: when it was
+In Mission Control, **Versions** lists every version: when it was
 deployed, its size and framework, with the live one marked.
 
 ### Go back to an earlier version (rollback)
 
-1. In **Mission Log**, find the version you want.
+1. In **Versions**, find the version you want.
 2. Click **Restore this version**.
 3. *moonbase redeploys that version's stored ZIP (no upload needed), and it
    becomes the live version.*
@@ -2874,7 +2874,7 @@ build later, they should keep that ZIP themselves.
 
 ### Download a version (your files stay yours)
 
-1. In **Mission Log**, find the version.
+1. In **Versions**, find the version.
 2. Click **Download archive**.
 3. *You get `<mission>-v<number>.zip`, exactly the ZIP that version was
    deployed from.*
@@ -2895,7 +2895,7 @@ build later, they should keep that ZIP themselves.
 Every stored version counts toward the plan's storage, so deleting old
 versions frees room.
 
-- **One version:** in **Mission Log**, click **Delete version** on its row
+- **One version:** in **Versions**, click **Delete version** on its row
   and type DELETE.
 - **Many at once:** under the list, set **Newest versions to keep** and click
   **Delete older versions**. *moonbase shows how many versions will go and
@@ -3073,7 +3073,7 @@ the section "Mission Control: status, sleep, pause, password, environment variab
 size and recent visitors) or by clicking a project on the **Dashboard**.
 
 It shows: the live status, the latest deployment and every version
-(**Mission Log**), traffic for the last 30 days, **Environment Variables** and
+(**Versions**), traffic for the last 30 days, **Environment Variables** and
 domains. Each project has its own link in the app (`/missions/<id>`), so
 refreshing or sharing that link keeps you on the same project.
 
@@ -3091,7 +3091,7 @@ refreshing or sharing that link keeps you on the same project.
 - On the free plan, **dynamic** projects (Node.js, Next.js) go to sleep after
   about 30 minutes without visitors, to save resources.
 - **Static projects never sleep.**
-- The next visitor wakes it in a second or two, behind a short loading
+- The next visitor wakes it, behind a short loading
   screen ("Waking up your app"). Nothing is broken.
 - Explain it simply: "Your app takes a nap when nobody's around and wakes up
   as soon as someone knocks."
@@ -3715,7 +3715,7 @@ You can request one export a day. (On the older design, **Download data
 export** gives a JSON file with your profile, projects, deployment history,
 API key and webhook details and account activity, without secret values or
 project files; download project files per version with **Download archive** in
-Mission Log, the section "Versions and rollback".)
+Versions, the section "Versions and rollback".)
 
 ### Delete your account
 
@@ -3964,7 +3964,7 @@ variable. Make the app work from the root of its address, then upload it again.
 2. Works there but not on your domain? It's the domain: check the DNS record
    and status on **Domains** (the section "Custom domains").
 3. Neither works? Open **Mission Control**: is it **Paused** (resume it) or
-   **Asleep** (the first visit wakes it in a second or two)?
+   **Asleep** (the first visit wakes it)?
 4. Try another network, to rule out your connection.
 5. Still down? Contact support with the project's name, address, when it
    started and the exact browser error. Don't delete the project.
@@ -4051,7 +4051,7 @@ A deploy's result and the `create_upload` `done` event also carry
 | A new project created with the name alone still shows its placeholder page | Keep the existing project, its saved versions and its database. Read `deploy_status` and the latest attempt's error; an unconfirmed outcome needs reconciliation before any retry. Inspect the deployed source and the `check_project` detection of the complete intended source, including its start script. The database-backed starter runs `server.js` from `package.json`; adding `index.html` alone does not replace that server. After the person approves the change, update the existing app's start file to serve its pages and publish to the same project, preserving its database declaration and migrate command. A managed database requires a dynamic app; no in-place conversion to a static project is offered here. If a separate static project is needed, explain the limitation and get explicit authorization to create another project with `database: false`; keep the original project and all its data. Deleting a project or account is never a troubleshooting step. |
 | A deploy after a name-only create is refused with `rate_limited` | Each deploy, the create included, uses one of the few launches per 5 minutes. Wait the time the message gives (`launch_budget` shows it), then send the rest in one deploy. |
 | `create_project` result shows `database.state: "not_available"` | The account isn't offered a managed database right now, so the project was created without one and `DATABASE_URL` isn't set by moonbase. `database.message` says so; `account_usage` shows the Managed database line. |
-| "Waking up your app" / loading screen | A sleeping free-plan project waking up. Wait a second or two. |
+| "Waking up your app" / loading screen | A sleeping free-plan project waking up. Wait a moment. |
 | Changed an environment variable but nothing changed | Changes apply on the next deploy. With the connector, after the person approves the live change, call `redeploy` to rebuild the active stored archive with the saved values. It keeps the same version number and requires a usable active archive. Check an unconfirmed outcome with `deploy_status` before another attempt. |
 | Domain won't verify | Record must match exactly; A for main domain, CNAME for subdomain; Cloudflare grey cloud; wait up to 48h; click **Verify** again. |
 | Adding a domain says another account added it but never proved it (`domain_held_unverified`) | Add the TXT record moonbase shows (name and value) at the DNS provider, then add the domain again. Over the connector, open the returned `domain_page` link for the person. See the section "Custom domains". |

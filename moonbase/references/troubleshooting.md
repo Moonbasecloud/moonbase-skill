@@ -165,7 +165,7 @@ variable. Make the app work from the root of its address, then upload it again.
 2. Works there but not on your domain? It's the domain: check the DNS record
    and status on **Domains** (`custom-domains.md`).
 3. Neither works? Open **Mission Control**: is it **Paused** (resume it) or
-   **Asleep** (the first visit wakes it in a second or two)?
+   **Asleep** (the first visit wakes it)?
 4. Try another network, to rule out your connection.
 5. Still down? Contact support with the project's name, address, when it
    started and the exact browser error. Don't delete the project.
@@ -252,7 +252,7 @@ A deploy's result and the `create_upload` `done` event also carry
 | A new project created with the name alone still shows its placeholder page | Keep the existing project, its saved versions and its database. Read `deploy_status` and the latest attempt's error; an unconfirmed outcome needs reconciliation before any retry. Inspect the deployed source and the `check_project` detection of the complete intended source, including its start script. The database-backed starter runs `server.js` from `package.json`; adding `index.html` alone does not replace that server. After the person approves the change, update the existing app's start file to serve its pages and publish to the same project, preserving its database declaration and migrate command. A managed database requires a dynamic app; no in-place conversion to a static project is offered here. If a separate static project is needed, explain the limitation and get explicit authorization to create another project with `database: false`; keep the original project and all its data. Deleting a project or account is never a troubleshooting step. |
 | A deploy after a name-only create is refused with `rate_limited` | Each deploy, the create included, uses one of the few launches per 5 minutes. Wait the time the message gives (`launch_budget` shows it), then send the rest in one deploy. |
 | `create_project` result shows `database.state: "not_available"` | The account isn't offered a managed database right now, so the project was created without one and `DATABASE_URL` isn't set by moonbase. `database.message` says so; `account_usage` shows the Managed database line. |
-| "Waking up your app" / loading screen | A sleeping free-plan project waking up. Wait a second or two. |
+| "Waking up your app" / loading screen | A sleeping free-plan project waking up. Wait a moment. |
 | Changed an environment variable but nothing changed | Changes apply on the next deploy. With the connector, after the person approves the live change, call `redeploy` to rebuild the active stored archive with the saved values. It keeps the same version number and requires a usable active archive. Check an unconfirmed outcome with `deploy_status` before another attempt. |
 | Domain won't verify | Record must match exactly; A for main domain, CNAME for subdomain; Cloudflare grey cloud; wait up to 48h; click **Verify** again. |
 | Adding a domain says another account added it but never proved it (`domain_held_unverified`) | Add the TXT record moonbase shows (name and value) at the DNS provider, then add the domain again. Over the connector, open the returned `domain_page` link for the person. See `custom-domains.md`. |
