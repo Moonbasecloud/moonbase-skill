@@ -60,7 +60,7 @@ session, including a file whose parts are incomplete. It does not delete a
 published version. `expected_files` on `commit_upload` checks the complete
 staged file list and any checksums you supply before publication.
 
-Send each file's real contents, never a placeholder token such as `__INDEX__`: `after_deploy.state: suspicious` means the live home page looks like one, so resend the real files.
+Send each file's real contents, never a placeholder token such as `__INDEX__`. A published version can have `after_deploy.state: suspicious`: its served home page may be a placeholder token, the default nginx page, the moonbase starter, or a tiny static page without a title. Publication success and app readiness are separate. A default-server observation needs source/routing diagnosis, not an automatic source rewrite. Check the finding before sending the intended files; a missing or incomplete page assessment remains unconfirmed, including older receipts that recorded only an HTTP status.
 
 A repeated batch can be sent after an interrupted upload. If a deploy is
 confirmed not to have happened, the session can be corrected and committed

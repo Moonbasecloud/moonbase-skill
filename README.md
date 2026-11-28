@@ -9,7 +9,7 @@ This repository is the **moonbase Skill**: instructions that teach any AI coding
 
 **Quick install:** add the connector `https://app.moonbase.cloud/mcp` to your AI tool ([setup per tool](https://moonbase.cloud/docs/deploy-from-ai-chat?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)), or get the Skill file for your tool at [moonbase.cloud/connect](https://moonbase.cloud/connect?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch). Details in [Install](#install).
 
-**Current revision:** `r93` (2026-11-27) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
+**Current revision:** `r94` (2026-11-27) · [What changed](CHANGELOG.md) · [All releases](https://github.com/Moonbasecloud/moonbase-skill/releases)
 
 ### → [moonbase.cloud](https://moonbase.cloud/?utm_source=github&utm_medium=moonbase-skill&utm_campaign=gh-launch)
 
@@ -115,7 +115,7 @@ If its `revision` is higher than yours, download the new files from [moonbase.cl
 
 - **`moonbase/`**: the Skill: `SKILL.md` plus `references/` (what moonbase is, getting started, deploying for you, building for moonbase, what your app needs, builder platforms, API and CI, custom domains, versions and rollback, sharing and team access, Mission Control, account, billing, troubleshooting, safety and support) and the helper `scripts/`.
 - **`skills/moonbase/`**: the same Skill, in the folder plugin formats read. Generated at each release; identical to `moonbase/`.
-- **Plugin manifests** (version `1.93.0`, from the Skill revision): `plugin.json` and `mcp.json` ([Agent Plugins](https://agent-plugins.org)), `.agents/`, `.claude-plugin/`, `.cursor-plugin/`, `gemini-extension.json`, `lhm.plugin.json`, with `llms-install.md` and `assets/`.
+- **Plugin manifests** (version `1.94.0`, from the Skill revision): `plugin.json` and `mcp.json` ([Agent Plugins](https://agent-plugins.org)), `.agents/`, `.claude-plugin/`, `.cursor-plugin/`, `gemini-extension.json`, `lhm.plugin.json`, with `llms-install.md` and `assets/`.
 - **`dist/`**: ready-made files per tool, generated from `moonbase/` for each release.
 - **`moonbase-guide.md`**: the whole Skill as one file, for chats that take a single file.
 - **`build.mjs` / `adapters.json`**: the build that makes every format from `moonbase/` (`node build.mjs kit <folder>`).

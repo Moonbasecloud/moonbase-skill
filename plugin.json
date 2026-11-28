@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "moonbase",
-  "version": "1.93.0",
+  "version": "1.94.0",
   "description": "Deploy and run AI-built apps on moonbase: hosting, PostgreSQL, domains, rollbacks, analytics.",
   "author": {
     "name": "moonbase",
